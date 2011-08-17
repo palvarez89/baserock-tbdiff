@@ -66,11 +66,6 @@ static bool _otap_create_cmd_file_create(FILE* stream, file_stat_t* f) {
 }
 
 static bool _otap_create_cmd_file_delta(FILE* stream, file_stat_t* a, file_stat_t* b) {
-	if(!_otap_create_fwrite_cmd(stream, otap_cmd_file_delta)
-		|| !_otap_create_fwrite_string(stream, b->name)
-		|| !_otap_create_fwrite_mtime(stream, b->mtime))
-		return false;
-	
 	FILE* fpa = file_stat_fopen(a, "rb");
 	if(fpa == NULL)
 		return false;
@@ -103,17 +98,12 @@ static bool _otap_create_cmd_file_delta(FILE* stream, file_stat_t* a, file_stat_
 	}
 	uint32_t start = o;
 	
-	if(fwrite(&start, 4, 1, stream) != 1) {
-		fclose(fpa); fclose(fpb);
-		return false;
-	}
-	
 	if((fseek(fpa, 0, SEEK_END) != 0) || (fseek(fpb, 0, SEEK_END) != 0)) {
 		fclose(fpa); fclose(fpb);
 		return false;
 	}
 	
-	// TODO - Find end.
+	// Find length.
 	long flena = ftell(fpa);
 	long flenb = ftell(fpb);
 	
@@ -122,6 +112,7 @@ static bool _otap_create_cmd_file_delta(FILE* stream, file_stat_t* a, file_stat_
 		return false;
 	}
 	
+	// Find end.
 	blks[0] = 256; blks[1] = 256;
 	for(o = 0; true; o += blks[1]) {
 		blks[0] = ((flena - o) < 256     ? (flena - o) : 256    );
@@ -159,18 +150,21 @@ static bool _otap_create_cmd_file_delta(FILE* stream, file_stat_t* a, file_stat_
 	uint32_t end = (flena - o);
 	if(end < start)
 		end = start;
-	if(fwrite(&end, 4, 1, stream) != 1) {
-		fclose(fpb);
-		return false;
-	}
 	
 	uint32_t size = (flenb - (o + start));
-	if(fwrite(&size, 4, 1, stream) != 1) {
+	
+	if((end == start) && (size == 0)) {
 		fclose(fpb);
-		return false;
+		return true;
 	}
 	
-	if(fseek(fpb, start, SEEK_SET) != 0) {
+	if(!_otap_create_fwrite_cmd(stream, otap_cmd_file_delta)
+		|| !_otap_create_fwrite_string(stream, b->name)
+		|| !_otap_create_fwrite_mtime(stream, b->mtime)
+		|| (fwrite(&start, 4, 1, stream) != 1)
+		|| (fwrite(&end, 4, 1, stream) != 1)
+		|| (fwrite(&size, 4, 1, stream) != 1)
+		|| (fseek(fpb, start, SEEK_SET) != 0)) {
 		fclose(fpb);
 		return false;
 	}
