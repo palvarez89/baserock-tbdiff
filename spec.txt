@@ -1,0 +1,44 @@
+PATCH FORMAT
+
+0x00 IDENTIFY <ident>
+0x01 UPDATE
+
+0x10 DIR_CREATE <dir> <metadata>
+0x11 DIR_ENTER  <dir>
+0x12 DIR_LEAVE  <count>
+
+0x20 FILE_CREATE <file> <metadata> <data>
+0x21 FILE_DELTA  <file> <metadata> <delta>
+
+0x30 COPY <source> <dest> <metadata>
+0x31 MOVE <source> <dest> <metadata>
+0x32 DELETE <entity>
+
+
+
+struct {
+	uint8_t count; // Encodes values 1...256 (i.e. +1)
+} count_t;
+
+struct {
+	uint16_t len;
+	char*    name;
+} name_t;
+
+struct {
+	uint32_t mtime;
+} metadata_t;
+
+struct {
+	uint32_t size;
+	void*    data;
+} data_t;
+
+struct {
+	uint32_t start, end;
+	patch_data_t delta;
+} delta_t;
+
+
+
+The ident is a name structure containing "CodeThink:OTAPv0"
