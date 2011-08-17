@@ -11,7 +11,7 @@
 
 
 
-bool _isdir(const char* path) {
+static bool _isdir(const char* path) {
 	DIR* dp = opendir(path);
 	if(dp == NULL)
 		return false;

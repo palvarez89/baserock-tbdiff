@@ -13,11 +13,7 @@
 
 
 
-
-
-
-
-bool _otap_apply_identify(FILE* stream) {
+static bool _otap_apply_identify(FILE* stream) {
 	uint8_t cmd;
 	if(fread(&cmd, 1, 1, stream) != 1)
 		return false;
@@ -26,15 +22,15 @@ bool _otap_apply_identify(FILE* stream) {
 	uint16_t nlen;
 	if(fread(&nlen, 2, 1, stream) != 1)
 		return false;
-	if(nlen != otap_ident.len)
+	if(strlen(otap_ident) != nlen)
 		return false;
 	char nstr[nlen];
 	if(fread(nstr, 1, nlen, stream) != nlen)
 		return false;
-	return (strncmp(nstr, otap_ident.name, nlen) == 0);
+	return (strncmp(nstr, otap_ident, nlen) == 0);
 }
 
-bool _otap_apply_cmd_dir_create(FILE* stream) {
+static bool _otap_apply_cmd_dir_create(FILE* stream) {
 	uint16_t dlen;
 	if(fread(&dlen, 2, 1, stream) != 1)
 		return false;
@@ -54,7 +50,7 @@ bool _otap_apply_cmd_dir_create(FILE* stream) {
 	return (mkdir(dname, (S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)) == 0);
 }
 
-bool _otap_apply_cmd_dir_enter(FILE* stream, uintptr_t* depth) {
+static bool _otap_apply_cmd_dir_enter(FILE* stream, uintptr_t* depth) {
 	uint16_t dlen;
 	if(fread(&dlen, 2, 1, stream) != 1)
 		return false;
@@ -70,7 +66,7 @@ bool _otap_apply_cmd_dir_enter(FILE* stream, uintptr_t* depth) {
 	return (chdir(dname) == 0);
 }
 
-bool _otap_apply_cmd_dir_leave(FILE* stream, uintptr_t* depth) {
+static bool _otap_apply_cmd_dir_leave(FILE* stream, uintptr_t* depth) {
 	uint8_t count;
 	if(fread(&count, 1, 1, stream) != 1)
 		return false;
@@ -93,7 +89,7 @@ bool _otap_apply_cmd_dir_leave(FILE* stream, uintptr_t* depth) {
 
 
 
-bool _otap_apply_cmd_file_create(FILE* stream) {
+static bool _otap_apply_cmd_file_create(FILE* stream) {
 	uint16_t flen;
 	if(fread(&flen, 2, 1, stream) != 1)
 		return false;
@@ -140,7 +136,7 @@ bool _otap_apply_cmd_file_create(FILE* stream) {
 	return true;
 }
 
-bool _otap_apply_cmd_file_delta(FILE* stream) {
+static bool _otap_apply_cmd_file_delta(FILE* stream) {
 	uint16_t flen;
 	if(fread(&flen, 2, 1, stream) != 1)
 		return false;
@@ -219,7 +215,7 @@ bool _otap_apply_cmd_file_delta(FILE* stream) {
 
 
 
-bool __otap_apply_cmd_entity_delete(const char* name) {
+static bool __otap_apply_cmd_entity_delete(const char* name) {
 	DIR* dp = opendir(name);
 	if(dp == NULL) {
 		FILE* fp = fopen(name, "rb");
@@ -250,7 +246,7 @@ bool __otap_apply_cmd_entity_delete(const char* name) {
 	return (remove(name) == 0);
 }
 	
-bool _otap_apply_cmd_entity_delete(FILE* stream) {
+static bool _otap_apply_cmd_entity_delete(FILE* stream) {
 	uint16_t elen;
 	if(fread(&elen, 2, 1, stream) != 1)
 		return false;
@@ -281,10 +277,8 @@ bool otap_apply(FILE* stream) {
 			return false;
 		switch(cmd) {
 			case otap_cmd_dir_create:
-				if(!_otap_apply_cmd_dir_create(stream)) {
-					printf("mkdir fail\n");
+				if(!_otap_apply_cmd_dir_create(stream))
 					return false;
-				}
 				break;
 			case otap_cmd_dir_enter:
 				if(!_otap_apply_cmd_dir_enter(stream, &depth))
@@ -295,25 +289,19 @@ bool otap_apply(FILE* stream) {
 					return false;
 				break;
 			case otap_cmd_file_create:
-				if(!_otap_apply_cmd_file_create(stream)) {
-					printf("create fail\n");
+				if(!_otap_apply_cmd_file_create(stream))
 					return false;
-				}
 				break;
 			case otap_cmd_file_delta:
-				if(!_otap_apply_cmd_file_delta(stream)) {
-					printf("delta fail\n");
+				if(!_otap_apply_cmd_file_delta(stream))
 					return false;
-				}
 				break;
 			case otap_cmd_entity_move:
 			case otap_cmd_entity_copy:
 				return false; // TODO - Implement.
 			case otap_cmd_entity_delete:
-				if(!_otap_apply_cmd_entity_delete(stream)) {
-					printf("delete fail\n");
+				if(!_otap_apply_cmd_entity_delete(stream))
 					return false;
-				}
 				break;
 			case otap_cmd_update:
 				flush = true;

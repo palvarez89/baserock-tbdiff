@@ -21,26 +21,7 @@ typedef enum {
 	otap_cmd_entity_delete = 0x32
 } otap_cmd_e;
 
-typedef struct {
-	uint16_t len;
-	char*    name;
-} otap_name_t;
-
-typedef struct {
-	uint32_t mtime;
-} otap_metadata_t;
-
-typedef struct {
-	uint32_t size;
-	void*    data;
-} otap_data_t;
-
-typedef struct {
-	uint32_t start, end;
-	otap_data_t delta;
-} otap_delta_t;
-
-static const otap_name_t otap_ident = { 16, "CodeThink:OTAPv0" };
+extern const char* otap_ident;;
 
 
 

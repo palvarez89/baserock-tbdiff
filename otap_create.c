@@ -12,38 +12,36 @@
 
 
 
-bool _otap_create_write_string(FILE* stream, const char* string) {
+static bool _otap_create_fwrite_cmd(FILE* stream, uint8_t cmd) {
+	return (fwrite(&cmd, 1, 1, stream) == 1);
+}
+
+static bool _otap_create_fwrite_string(FILE* stream, const char* string) {
 	uint16_t slen = strlen(string);
 	if(fwrite(&slen, 2, 1, stream) != 1)
 		return false;
 	return (fwrite(string, 1, slen, stream) == slen);
 }
 
-bool _otap_create_cmd_ident(FILE* stream) {
-	uint8_t token = otap_cmd_identify;
-	if(fwrite(&token, 1, 1, stream) != 1)
-		return false;
-	if(fwrite(&otap_ident.len, 2, 1, stream) != 1)
-		return false;
-	return (fwrite(otap_ident.name, 1, otap_ident.len, stream) == otap_ident.len);
+static bool _otap_create_fwrite_mtime(FILE* stream, uint32_t mtime) {
+	return (fwrite(&mtime, 4, 1, stream) == 1);
 }
 
-bool _otap_create_cmd_update(FILE* stream) {
-	uint8_t token = otap_cmd_update;
-	return (fwrite(&token, 1, 1, stream) == 1);
+
+
+static bool _otap_create_cmd_ident(FILE* stream) {
+	return (_otap_create_fwrite_cmd(stream, otap_cmd_identify)
+		&& _otap_create_fwrite_string(stream, otap_ident));
 }
 
-bool _otap_create_cmd_file_create(FILE* stream, file_stat_t* f) {
-	uint8_t cmd = otap_cmd_file_create;
-	if(fwrite(&cmd, 1, 1, stream) != 1)
-		return false;
-	
-	if(!_otap_create_write_string(stream, f->name))
-		return false;
-		
-	// Write metadata.
-	uint32_t mtime = f->mtime;
-	if(fwrite(&mtime, 4, 1, stream) != 1)
+static bool _otap_create_cmd_update(FILE* stream) {
+	return _otap_create_fwrite_cmd(stream, otap_cmd_update);
+}
+
+static bool _otap_create_cmd_file_create(FILE* stream, file_stat_t* f) {
+	if(!_otap_create_fwrite_cmd(stream, otap_cmd_file_create)
+		|| !_otap_create_fwrite_string(stream, f->name)
+		|| !_otap_create_fwrite_mtime(stream, f->mtime))
 		return false;
 	
 	uint32_t size = f->size;
@@ -67,19 +65,10 @@ bool _otap_create_cmd_file_create(FILE* stream, file_stat_t* f) {
 	return true;
 }
 
-bool _otap_create_cmd_file_delta(FILE* stream, file_stat_t* a, file_stat_t* b) {
-	// Write command.
-	uint8_t cmd = otap_cmd_file_delta;
-	if(fwrite(&cmd, 1, 1, stream) != 1)
-		return false;
-	
-	// Write filename.
-	if(!_otap_create_write_string(stream, b->name))
-		return false;
-
-	// Write metadata.
-	uint32_t mtime = b->mtime;
-	if(fwrite(&mtime, 4, 1, stream) != 1)
+static bool _otap_create_cmd_file_delta(FILE* stream, file_stat_t* a, file_stat_t* b) {
+	if(!_otap_create_fwrite_cmd(stream, otap_cmd_file_delta)
+		|| !_otap_create_fwrite_string(stream, b->name)
+		|| !_otap_create_fwrite_mtime(stream, b->mtime))
 		return false;
 	
 	FILE* fpa = file_stat_fopen(a, "rb");
@@ -199,36 +188,24 @@ bool _otap_create_cmd_file_delta(FILE* stream, file_stat_t* a, file_stat_t* b) {
 	return true;
 }
 
-bool _otap_create_cmd_dir_create(FILE* stream, dir_stat_t* d) {
-	uint8_t cmd = otap_cmd_dir_create;
-	if(fwrite(&cmd, 1, 1, stream) != 1)
-		return false;
-	if(!_otap_create_write_string(stream, d->name))
-		return false;
-	
-	// Write metadata.
-	uint32_t mtime = d->mtime;
-	if(fwrite(&mtime, 4, 1, stream) != 1)
-		return false;
-	
-	return true;
+static bool _otap_create_cmd_dir_create(FILE* stream, dir_stat_t* d) {
+	return (_otap_create_fwrite_cmd(stream, otap_cmd_dir_create)
+		&& _otap_create_fwrite_string(stream, d->name)
+		&& _otap_create_fwrite_mtime(stream, d->mtime));
 }
 
-bool _otap_create_cmd_dir_enter(FILE* stream, const char* name) {
-	uint8_t cmd = otap_cmd_dir_enter;
-	if(fwrite(&cmd, 1, 1, stream) != 1)
-		return false;
-	return _otap_create_write_string(stream, name);
+static bool _otap_create_cmd_dir_enter(FILE* stream, const char* name) {
+	return (_otap_create_fwrite_cmd(stream, otap_cmd_dir_enter)
+		&& _otap_create_fwrite_string(stream, name));
 }
 
-bool _otap_create_cmd_dir_leave(FILE* stream, uintptr_t count) {
+static bool _otap_create_cmd_dir_leave(FILE* stream, uintptr_t count) {
 	if(count == 0)	
 		return true;
-	
-	uint8_t token = otap_cmd_dir_leave;
-	if(fwrite(&token, 1, 1, stream) != 1)
+	if(!_otap_create_fwrite_cmd(stream, otap_cmd_dir_leave))
 		return false;
 	
+	uint8_t token;
 	if(count > 256) {
 		token = 255;
 		for(; count > 256; count -= 256) {
@@ -241,16 +218,14 @@ bool _otap_create_cmd_dir_leave(FILE* stream, uintptr_t count) {
 	return (fwrite(&token, 1, 1, stream) == 1);
 }
 
-bool _otap_create_cmd_entity_delete(FILE* stream, const char* name) {
-	uint8_t cmd = otap_cmd_entity_delete;
-	if(fwrite(&cmd, 1, 1, stream) != 1)
-		return false;
-	return _otap_create_write_string(stream, name);
+static bool _otap_create_cmd_entity_delete(FILE* stream, const char* name) {
+	return (_otap_create_fwrite_cmd(stream, otap_cmd_entity_delete)
+		&& _otap_create_fwrite_string(stream, name));
 }
 
 
 
-bool _otap_create_dir(FILE* stream, dir_stat_t* d) {
+static bool _otap_create_dir(FILE* stream, dir_stat_t* d) {
 	if(!_otap_create_cmd_dir_create(stream, d))
 		return false;
 	if(!_otap_create_cmd_dir_enter(stream, d->name))
@@ -271,7 +246,7 @@ bool _otap_create_dir(FILE* stream, dir_stat_t* d) {
 	return true;
 }
 
-bool _otap_create(FILE* stream, dir_stat_t* a, dir_stat_t* b) {
+static bool _otap_create(FILE* stream, dir_stat_t* a, dir_stat_t* b) {
 	uintptr_t i;
 	for(i = 0; i < b->dcount; i++) {
 		dir_stat_t* _b = ((dir_stat_t**)b->entries)[i];

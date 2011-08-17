@@ -33,8 +33,6 @@ int main(int argc, char** argv) {
 		return EXIT_FAILURE;
 	}
 	
-	//dir_stat_print(0, dstat[0]);
-	
 	FILE* fp = fopen("patch.otap", "wb");
 	if(fp == NULL) {
 		fprintf(stderr, "Error: Unable to open patch for writing.\n");
