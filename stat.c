@@ -3,8 +3,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include <dirent.h>
+#include <unistd.h>
 #include <sys/stat.h>
 
 
@@ -47,7 +49,7 @@ dir_stat_t* dir_stat(dir_stat_t* parent, const char* path) {
 	
 	uint32_t dcount = 0, fcount = 0;
 	struct dirent* entry;
-	while(entry = readdir(dp)) {
+	while((entry = readdir(dp)) != NULL) {
 		if((strcmp(entry->d_name, "..") == 0) || (strcmp(entry->d_name, ".") == 0))
 			continue;
 		if(_isdir(entry->d_name))
@@ -74,7 +76,7 @@ dir_stat_t* dir_stat(dir_stat_t* parent, const char* path) {
 	rewinddir(dp);
 	
 	uintptr_t f = dcount, d = 0;
-	while(entry = readdir(dp)) {
+	while((entry = readdir(dp)) != NULL) {
 		if((strcmp(entry->d_name, "..") == 0) || (strcmp(entry->d_name, ".") == 0))
 				continue;
 		if(_isdir(entry->d_name))
@@ -120,7 +122,7 @@ void file_stat_print(uintptr_t depth, file_stat_t* fstat) {
 	uintptr_t i;
 	for(i = 0; i < depth; i++)
 		printf("\t");
-	printf("[%s %lu %lu]\n", fstat->name, fstat->size, fstat->mtime);
+	printf("[%s %"PRIu32" %"PRIu32"]\n", fstat->name, fstat->size, fstat->mtime);
 }
 
 void dir_stat_print(uintptr_t depth, dir_stat_t* dstat) {

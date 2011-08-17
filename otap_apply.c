@@ -126,7 +126,6 @@ bool _otap_apply_cmd_file_create(FILE* stream) {
 		return false;
 	
 	uintptr_t block = 256;
-	uintptr_t i;
 	uint8_t fbuff[block];
 	for(; fsize != 0; fsize -= block) {
 		if(fsize < block)
@@ -177,7 +176,7 @@ bool _otap_apply_cmd_file_delta(FILE* stream) {
 	if(fread(&dend, 4, 1, stream) != 1)
 		return false;
 	
-	uintptr_t i, block;
+	uintptr_t block;
 	uint8_t fbuff[256];
 	for(block = 256; dstart != 0; dstart -= block) {
 		if(dstart < block)
@@ -236,7 +235,7 @@ bool __otap_apply_cmd_entity_delete(const char* name) {
 	}
 	
 	struct dirent* entry;
-	while(entry = readdir(dp)) {
+	while((entry = readdir(dp)) != NULL) {
 		if((strcmp(entry->d_name, ".") == 0) || (strcmp(entry->d_name, "..") == 0))
 			continue;
 		if(!__otap_apply_cmd_entity_delete(entry->d_name)) {

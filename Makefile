@@ -2,10 +2,10 @@
 all: otap_deploy otap_create
 
 otap_deploy:
-	gcc deploy.c otap*.c stat.c -o otap_deploy
+	gcc -Wall -Wextra -O2 deploy.c otap*.c stat.c -o otap_deploy
 
 otap_create:
-	gcc create.c otap*.c stat.c -o otap_create
+	gcc -Wall -Wextra -O2 create.c otap*.c stat.c -o otap_create
 
 .PHONY: clean
 clean:
