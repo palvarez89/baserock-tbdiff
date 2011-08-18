@@ -50,13 +50,17 @@ static int _otap_apply_cmd_dir_create(FILE* stream) {
 	if(strchr(dname, '/') != NULL)
 		otap_error(otap_error_invalid_parameter);
 	
-	// TODO - Apply metadata.
 	uint32_t mtime;
 	if(fread(&mtime, 4, 1, stream) != 1)
 		otap_error(otap_error_unable_to_read_stream);
 	
 	if(mkdir(dname, (S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)) != 0)
 		otap_error(otap_error_unable_to_create_dir);
+	
+	// Apply metadata.
+	struct utimbuf timebuff = { time(NULL), mtime };
+	utime(dname, &timebuff); // Don't care if it succeeds right now.
+	
 	return 0;
 }
 

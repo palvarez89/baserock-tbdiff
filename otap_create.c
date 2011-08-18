@@ -96,7 +96,7 @@ static int _otap_create_cmd_file_delta(FILE* stream, otap_stat_t* a, otap_stat_t
 	uintptr_t o;
 	for(o = 0; (blks[1] == blks[0]) && (blks[0] != 0); o += blks[1]) {
 		blks[0] = fread(buff[0], 1, blks[0], fpa);
-		blks[1] = fread(buff[1], 1, blks[1], fpb);
+		blks[1] = fread(buff[1], 1, blks[0], fpb);
 		if((blks[0] == 0) || (blks[1] == 0))
 			break;
 	
@@ -153,11 +153,12 @@ static int _otap_create_cmd_file_delta(FILE* stream, otap_stat_t* a, otap_stat_t
 				break;
 			}
 		}
-		if(i != 0)
+		if(i < blks[1])
 			break;
 	}
 	fclose(fpa);
 	
+	// Ensure that the start and end don't overlap for the new file.
 	if((flenb - o) < start)
 		o = (flenb - start);
 
@@ -165,7 +166,7 @@ static int _otap_create_cmd_file_delta(FILE* stream, otap_stat_t* a, otap_stat_t
 	if(end < start)
 		end = start;
 	
-	uint32_t size = (flenb - (o + start));
+	uint32_t size = flenb - ((flena - end) + start); //(flenb - (o + start));
 	
 	if((end == start) && (size == 0)) {
 		fclose(fpb);
