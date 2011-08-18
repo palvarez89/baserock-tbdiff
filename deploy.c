@@ -34,9 +34,10 @@ int main(int argc, char** argv) {
 		return EXIT_FAILURE;
 	}*/
 		
-	if(!otap_apply(patch)) {
+	int err;
+	if((err = otap_apply(patch)) != 0) {
 		fclose(patch);
-		fprintf(stderr, "Error: Error applying patch stream.\n");
+		fprintf(stderr, "Error: Error applying patch stream (err=%d).\n", err);
 		return EXIT_FAILURE;
 	}
 	

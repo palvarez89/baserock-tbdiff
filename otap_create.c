@@ -1,4 +1,5 @@
 #include "otap.h"
+#include "error.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -12,45 +13,58 @@
 
 
 
-static bool _otap_create_fwrite_cmd(FILE* stream, uint8_t cmd) {
-	return (fwrite(&cmd, 1, 1, stream) == 1);
+static int _otap_create_fwrite_cmd(FILE* stream, uint8_t cmd) {
+	if(fwrite(&cmd, 1, 1, stream) != 1)
+		otap_error(otap_error_unable_to_write_stream);
+	return 0;
 }
 
-static bool _otap_create_fwrite_string(FILE* stream, const char* string) {
+static int _otap_create_fwrite_string(FILE* stream, const char* string) {
 	uint16_t slen = strlen(string);
-	if(fwrite(&slen, 2, 1, stream) != 1)
-		return false;
-	return (fwrite(string, 1, slen, stream) == slen);
+	if((fwrite(&slen, 2, 1, stream) != 1)
+		|| (fwrite(string, 1, slen, stream) != slen))
+		otap_error(otap_error_unable_to_write_stream);	
+	return 0;
 }
 
-static bool _otap_create_fwrite_mtime(FILE* stream, uint32_t mtime) {
-	return (fwrite(&mtime, 4, 1, stream) == 1);
+static int _otap_create_fwrite_mtime(FILE* stream, uint32_t mtime) {
+	if(fwrite(&mtime, 4, 1, stream) != 1)
+		otap_error(otap_error_unable_to_write_stream);
+	return 0;
 }
 
 
 
-static bool _otap_create_cmd_ident(FILE* stream) {
-	return (_otap_create_fwrite_cmd(stream, otap_cmd_identify)
-		&& _otap_create_fwrite_string(stream, otap_ident));
+static int _otap_create_cmd_ident(FILE* stream) {
+	int err;
+	
+	if((err = _otap_create_fwrite_cmd(stream, otap_cmd_identify)) != 0)
+		return err;
+	if((err = _otap_create_fwrite_string(stream, otap_ident)) != 0)
+		return err;
+	return 0;
 }
 
-static bool _otap_create_cmd_update(FILE* stream) {
+static int _otap_create_cmd_update(FILE* stream) {
 	return _otap_create_fwrite_cmd(stream, otap_cmd_update);
 }
 
-static bool _otap_create_cmd_file_create(FILE* stream, otap_stat_t* f) {
-	if(!_otap_create_fwrite_cmd(stream, otap_cmd_file_create)
-		|| !_otap_create_fwrite_string(stream, f->name)
-		|| !_otap_create_fwrite_mtime(stream, f->mtime))
-		return false;
+static int _otap_create_cmd_file_create(FILE* stream, otap_stat_t* f) {
+	int err;
+	if((err = _otap_create_fwrite_cmd(stream, otap_cmd_file_create)) != 0)
+		return err;
+	if((err = _otap_create_fwrite_string(stream, f->name)) != 0)
+		return err;
+	if((err = _otap_create_fwrite_mtime(stream, f->mtime)) != 0)
+		return err;
 	
 	uint32_t size = f->size;
 	if(fwrite(&size, 4, 1, stream) != 1)
-		return false;
+		otap_error(otap_error_unable_to_write_stream);
 	
 	FILE* fp = otap_stat_fopen(f, "rb");
 	if(fp == NULL)
-		return false;
+		otap_error(otap_error_unable_to_open_file_for_reading);
 	
 	uint8_t buff[256];
 	uintptr_t b = 256;
@@ -58,21 +72,21 @@ static bool _otap_create_cmd_file_create(FILE* stream, otap_stat_t* f) {
 		b = fread(buff, 1, b, fp);
 		if(fwrite(buff, 1, b, stream) != b) {
 			fclose(fp);
-			return false;
+			otap_error(otap_error_unable_to_write_stream);
 		}
 	}
 	fclose(fp);
-	return true;
+	return 0;
 }
 
-static bool _otap_create_cmd_file_delta(FILE* stream, otap_stat_t* a, otap_stat_t* b) {
+static int _otap_create_cmd_file_delta(FILE* stream, otap_stat_t* a, otap_stat_t* b) {
 	FILE* fpa = otap_stat_fopen(a, "rb");
 	if(fpa == NULL)
-		return false;
+		otap_error(otap_error_unable_to_open_file_for_reading);
 	FILE* fpb = otap_stat_fopen(b, "rb");
 	if(fpb == NULL) {
 		fclose(fpa);
-		return false;
+		otap_error(otap_error_unable_to_open_file_for_reading);
 	}
 	
 	// Calculate start.
@@ -100,7 +114,7 @@ static bool _otap_create_cmd_file_delta(FILE* stream, otap_stat_t* a, otap_stat_
 	
 	if((fseek(fpa, 0, SEEK_END) != 0) || (fseek(fpb, 0, SEEK_END) != 0)) {
 		fclose(fpa); fclose(fpb);
-		return false;
+		otap_error(otap_error_unable_to_seek_through_stream);
 	}
 	
 	// Find length.
@@ -109,7 +123,7 @@ static bool _otap_create_cmd_file_delta(FILE* stream, otap_stat_t* a, otap_stat_
 	
 	if((flena < 0) || (flenb < 0)) {
 		fclose(fpa); fclose(fpb);
-		return false;
+		otap_error(otap_error_unable_to_detect_stream_position);
 	}
 	
 	// Find end.
@@ -123,13 +137,13 @@ static bool _otap_create_cmd_file_delta(FILE* stream, otap_stat_t* a, otap_stat_
 		if((fseek(fpa, flena - (o + blks[0]), SEEK_SET) != 0)
 			|| (fseek(fpb, flenb - (o + blks[1]), SEEK_SET) != 0)) {
 			fclose(fpa); fclose(fpb);
-			return false;
+			otap_error(otap_error_unable_to_seek_through_stream);
 		}
 		
 		if((fread(buff[0], 1, blks[0], fpa) != blks[0])
 			|| (fread(buff[1], 1, blks[1], fpb) != blks[1])) {
 			fclose(fpa); fclose(fpb);
-			return false;
+			otap_error(otap_error_unable_to_read_stream);
 		}
 		
 		uintptr_t i, ja, jb;
@@ -155,173 +169,194 @@ static bool _otap_create_cmd_file_delta(FILE* stream, otap_stat_t* a, otap_stat_
 	
 	if((end == start) && (size == 0)) {
 		fclose(fpb);
-		return true;
+		return 0;
 	}
 	
-	if(!_otap_create_fwrite_cmd(stream, otap_cmd_file_delta)
-		|| !_otap_create_fwrite_string(stream, b->name)
-		|| !_otap_create_fwrite_mtime(stream, b->mtime)
-		|| (fwrite(&start, 4, 1, stream) != 1)
-		|| (fwrite(&end, 4, 1, stream) != 1)
-		|| (fwrite(&size, 4, 1, stream) != 1)
-		|| (fseek(fpb, start, SEEK_SET) != 0)) {
+	int err;
+	if(((err = _otap_create_fwrite_cmd(stream, otap_cmd_file_delta)) != 0)
+		|| ((err = _otap_create_fwrite_string(stream, b->name)) != 0)
+		|| ((err = _otap_create_fwrite_mtime(stream, b->mtime)) != 0)) {
 		fclose(fpb);
-		return false;
+		return err;
+	}
+	if((fwrite(&start, 4, 1, stream) != 1)
+		|| (fwrite(&end, 4, 1, stream) != 1)
+		|| (fwrite(&size, 4, 1, stream) != 1)) {
+		fclose(fpb);
+		otap_error(otap_error_unable_to_write_stream);
+	}
+	if(fseek(fpb, start, SEEK_SET) != 0) {
+		fclose(fpb);
+		otap_error(otap_error_unable_to_seek_through_stream);
 	}
 	
 	for(o = 0; o < size; o += 256) {
 		uintptr_t csize = ((size - o) > 256 ? 256 : (size - o));
-		if((fread(buff[0], 1, csize, fpb) != csize)
-			|| (fwrite(buff[0], 1, csize, stream) != csize)) {
+		if(fread(buff[0], 1, csize, fpb) != csize) {
 			fclose(fpb);
-			return false;
+			otap_error(otap_error_unable_to_read_stream);
+		}
+		if(fwrite(buff[0], 1, csize, stream) != csize) {
+			fclose(fpb);
+			otap_error(otap_error_unable_to_write_stream);
 		}
 	}
 	
 	fclose(fpb);
-	return true;
+	return 0;
 }
 
-static bool _otap_create_cmd_dir_create(FILE* stream, otap_stat_t* d) {
-	return (_otap_create_fwrite_cmd(stream, otap_cmd_dir_create)
-		&& _otap_create_fwrite_string(stream, d->name)
-		&& _otap_create_fwrite_mtime(stream, d->mtime));
+static int _otap_create_cmd_dir_create(FILE* stream, otap_stat_t* d) {
+	int err;
+	if(((err = _otap_create_fwrite_cmd(stream, otap_cmd_dir_create)) != 0)
+		|| ((err = _otap_create_fwrite_string(stream, d->name)) != 0))
+		return err;
+	return _otap_create_fwrite_mtime(stream, d->mtime);
 }
 
-static bool _otap_create_cmd_dir_enter(FILE* stream, const char* name) {
-	return (_otap_create_fwrite_cmd(stream, otap_cmd_dir_enter)
-		&& _otap_create_fwrite_string(stream, name));
+static int _otap_create_cmd_dir_enter(FILE* stream, const char* name) {
+	int err;
+	if((err = _otap_create_fwrite_cmd(stream, otap_cmd_dir_enter)) != 0)
+		return err;
+	return _otap_create_fwrite_string(stream, name);
 }
 
-static bool _otap_create_cmd_dir_leave(FILE* stream, uintptr_t count) {
+static int _otap_create_cmd_dir_leave(FILE* stream, uintptr_t count) {
 	if(count == 0)	
-		return true;
-	if(!_otap_create_fwrite_cmd(stream, otap_cmd_dir_leave))
-		return false;
+		return 0;
+	int err;
+	if((err = _otap_create_fwrite_cmd(stream, otap_cmd_dir_leave)) != 0)
+		return err;
 	
 	uint8_t token;
 	if(count > 256) {
 		token = 255;
 		for(; count > 256; count -= 256) {
 			if(fwrite(&token, 1, 1, stream) != 1)
-				return false;
+				otap_error(otap_error_unable_to_write_stream);
 		}
 	}
 	
 	token = (count - 1);
-	return (fwrite(&token, 1, 1, stream) == 1);
+	if(fwrite(&token, 1, 1, stream) != 1)
+		otap_error(otap_error_unable_to_write_stream);
+	return 0;
 }
 
-static bool _otap_create_cmd_entity_delete(FILE* stream, const char* name) {
-	return (_otap_create_fwrite_cmd(stream, otap_cmd_entity_delete)
-		&& _otap_create_fwrite_string(stream, name));
+static int _otap_create_cmd_entity_delete(FILE* stream, const char* name) {
+	int err;
+	if((err = _otap_create_fwrite_cmd(stream, otap_cmd_entity_delete)) != 0)
+		return err;
+	return _otap_create_fwrite_string(stream, name);
 }
 
 
 
-static bool _otap_create_dir(FILE* stream, otap_stat_t* d) {
-	if((!_otap_create_cmd_dir_create(stream, d))
-		|| (!_otap_create_cmd_dir_enter(stream, d->name)))
-		return false;
+static int _otap_create_dir(FILE* stream, otap_stat_t* d) {
+	int err;
+	if(((err =_otap_create_cmd_dir_create(stream, d)) != 0)
+		|| ((err = _otap_create_cmd_dir_enter(stream, d->name)) != 0))
+		return err;
 
 	uintptr_t i;
 	for(i = 0; i < d->size; i++) {
 		otap_stat_t* f = otap_stat_entry(d, i);
 		if(f == NULL)
-			return false;
-		bool ret = false;
+			otap_error(otap_error_unable_to_stat_file);
 		switch(f->type) {
 			case otap_stat_type_file:
-				ret = _otap_create_cmd_file_create(stream, f);
+				err = _otap_create_cmd_file_create(stream, f);
 				break;
 			case otap_stat_type_dir:
-				ret = _otap_create_dir(stream, f);
+				err = _otap_create_dir(stream, f);
 				break;
 			default:
+				otap_stat_free(f);
+				otap_error(otap_error_feature_not_implemented);
 				break;
 		}
 		otap_stat_free(f);
-		if(!ret)
-			return false;
+		if(err != 0)
+			return err;
 	}
 	
 	return _otap_create_cmd_dir_leave(stream, 1);
 }
 
-static bool _otap_create(FILE* stream, otap_stat_t* a, otap_stat_t* b, bool top) {
+static int _otap_create(FILE* stream, otap_stat_t* a, otap_stat_t* b, bool top) {
 	if((a == NULL) && (b == NULL))
-		return false;
+		otap_error(otap_error_null_pointer);
 
+	int err;
 	if(((b == NULL) || ((a != NULL) && (a->type != b->type)))
-		&& !_otap_create_cmd_entity_delete(stream, a->name))
-		return false;
+		&& ((err = _otap_create_cmd_entity_delete(stream, a->name)) != 0))
+		return err;
 		
 	if((a == NULL) || ((b != NULL) && (a->type != b->type))) {
 		switch(b->type) {
 			case otap_stat_type_file:
-				if(_otap_create_cmd_file_create(stream, b))
-					return true;
-				break;
+				return _otap_create_cmd_file_create(stream, b);
 			case otap_stat_type_dir:
-				if(_otap_create_dir(stream, b))
-					return true;
-				break;
+				return _otap_create_dir(stream, b);
 			default:
 				break;
 		}
-		return false;
+		otap_error(otap_error_feature_not_implemented);
 	}
 
 	if(a->type == otap_stat_type_file)
 		return _otap_create_cmd_file_delta(stream, a, b);
 	
 	if(a->type != otap_stat_type_dir)
-		return false; // TODO - Handle other types of files (incl. symlink);
+		otap_error(otap_error_feature_not_implemented); // TODO - Handle other types of files (incl. symlink);
 	
-	if(!top && !_otap_create_cmd_dir_enter(stream, b->name))
-		return false;
+	if(!top && ((err = _otap_create_cmd_dir_enter(stream, b->name)) != 0))
+		return err;
 	
 	// Handle changes/additions.
 	uintptr_t i;
 	for(i = 0; i < b->size; i++) {
 		otap_stat_t* _b = otap_stat_entry(b, i);
 		if(_b == NULL)
-			return false;
+			otap_error(otap_error_unable_to_stat_file);
 		otap_stat_t* _a = otap_stat_entry_find(a, _b->name);
-		bool ret = _otap_create(stream, _a, _b, false);
+		err = _otap_create(stream, _a, _b, false);
 		otap_stat_free(_a);
 		otap_stat_free(_b);
-		if(!ret)
-			return false;
+		if(err != 0)
+			return err;
 	}
 	
 	// Handle deletions.
 	for(i = 0; i < a->size; i++) {
 		otap_stat_t* _a = otap_stat_entry(a, i);
 		if(_a == NULL)
-			return false;
+			otap_error(otap_error_unable_to_stat_file);
 		otap_stat_t* _b = otap_stat_entry_find(b, _a->name);
-		bool ret = ((_b != NULL) || _otap_create_cmd_entity_delete(stream, _a->name));
+		err = (_b != NULL ? 0 : _otap_create_cmd_entity_delete(stream, _a->name));
 		otap_stat_free(_b);
 		otap_stat_free(_a);
-		if(!ret)
-			return false;
+		if(err != 0)
+			return err;
 	}
 	
-	return (top || _otap_create_cmd_dir_leave(stream, 1));
+	if(!top && ((err = _otap_create_cmd_dir_leave(stream, 1)) != 0))
+		return err;
+	return 0;
 }
 
 
 
-bool otap_create(FILE* stream, otap_stat_t* a, otap_stat_t* b) {
+int otap_create(FILE* stream, otap_stat_t* a, otap_stat_t* b) {
 	if((stream == NULL) || (a == NULL) || (b == NULL))
-		return false;
+		otap_error(otap_error_null_pointer);
 	
-	if(!_otap_create_cmd_ident(stream))
-		return false;
+	int err;
+	if((err = _otap_create_cmd_ident(stream)) != 0)
+		return err;
 		
-	if(!_otap_create(stream, a, b, true))
-		return false;
+	if((err = _otap_create(stream, a, b, true)) != 0)
+		return err;
 	
 	return _otap_create_cmd_update(stream);
 }

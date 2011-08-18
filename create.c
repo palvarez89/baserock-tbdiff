@@ -41,10 +41,11 @@ int main(int argc, char** argv) {
 		return EXIT_FAILURE;
 	}
 	
-	if(!otap_create(fp, tstat[0], tstat[1])) {
+	int err;
+	if((err = otap_create(fp, tstat[0], tstat[1])) != 0) {
 		fclose(fp);
 		remove("patch.otap");
-		fprintf(stderr, "Error: Failed to create otap.\n");
+		fprintf(stderr, "Error: Failed to create otap (err=%d).\n", err);
 		return EXIT_FAILURE;
 	}
 	

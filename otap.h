@@ -1,8 +1,8 @@
 #ifndef __otap_h__
 #define __otap_h__
 
-#include <stdbool.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #include "stat.h"
 
@@ -39,7 +39,7 @@ extern const char* otap_ident;
 
 
 
-extern bool otap_apply(FILE* stream);
-extern bool otap_create(FILE* stream, otap_stat_t* a, otap_stat_t* b);
+extern int otap_apply(FILE* stream);
+extern int otap_create(FILE* stream, otap_stat_t* a, otap_stat_t* b);
 
 #endif
