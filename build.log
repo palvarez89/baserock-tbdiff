@@ -1,3 +1,0 @@
-gcc -Wall -Wextra -O2 create.c otap*.c stat.c -o otap_create
-stat.c: In function ‘otap_stat_print’:
-stat.c:78:35: warning: unused parameter ‘file’

@@ -6,10 +6,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <inttypes.h>
+#include <time.h>
 
 #include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <utime.h>
+
 
 
 
@@ -103,7 +106,6 @@ static bool _otap_apply_cmd_file_create(FILE* stream) {
 	uint32_t mtime;
 	if(fread(&mtime, 4, 1, stream) != 1)
 		return false;
-	// TODO - Apply metadata (mtime, etc.)
 	
 	uint32_t fsize;
 	if(fread(&fsize, 4, 1, stream) != 1)
@@ -133,6 +135,10 @@ static bool _otap_apply_cmd_file_create(FILE* stream) {
 	}
 	fclose(fp);
 	
+	// Apply metadata.
+	struct utimbuf timebuff = { time(NULL), mtime };
+	utime(fname, &timebuff); // Don't care if it succeeds right now.
+	
 	return true;
 }
 
@@ -151,7 +157,6 @@ static bool _otap_apply_cmd_file_delta(FILE* stream) {
 	uint32_t mtime;
 	if(fread(&mtime, 4, 1, stream) != 1)
 		return false;
-	// TODO - Apply metadata (mtime, etc.)
 	
 	FILE* op = fopen(fname, "rb");
 	if(op == NULL)
@@ -210,6 +215,11 @@ static bool _otap_apply_cmd_file_delta(FILE* stream) {
 	
 	fclose(np);
 	fclose(op);
+	
+	// Apply metadata.
+	struct utimbuf timebuff = { time(NULL), mtime };
+	utime(fname, &timebuff); // Don't care if it succeeds right now.
+	
 	return true;
 }
 
