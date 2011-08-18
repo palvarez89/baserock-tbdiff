@@ -19,19 +19,21 @@ int main(int argc, char** argv) {
 	if(getcwd(cwd_buff, cwd_size) == NULL)
 		return EXIT_FAILURE;
 
-	dir_stat_t* dstat[2];
+	otap_stat_t* tstat[2];
 	
-	dstat[0] = dir_stat(NULL, argv[1]);
-	if(dstat[0] == NULL) {
-		fprintf(stderr, "Error: Unable to stat directory '%s'.\n", argv[1]);
+	tstat[0] = otap_stat(argv[1]);
+	if(tstat[0] == NULL) {
+		fprintf(stderr, "Error: Unable to stat '%s'.\n", argv[1]);
 		return EXIT_FAILURE;
 	}
+	chdir(cwd_buff);
 	
-	dstat[1] = dir_stat(NULL, argv[2]);
-	if(dstat[1] == NULL) {
-		fprintf(stderr, "Error: Unable to stat directory '%s'.\n", argv[2]);
+	tstat[1] = otap_stat(argv[2]);
+	if(tstat[1] == NULL) {
+		fprintf(stderr, "Error: Unable to stat '%s'.\n", argv[2]);
 		return EXIT_FAILURE;
 	}
+	chdir(cwd_buff);
 	
 	FILE* fp = fopen("patch.otap", "wb");
 	if(fp == NULL) {
@@ -39,7 +41,7 @@ int main(int argc, char** argv) {
 		return EXIT_FAILURE;
 	}
 	
-	if(!otap_create(fp, dstat[0], dstat[1])) {
+	if(!otap_create(fp, tstat[0], tstat[1])) {
 		fclose(fp);
 		remove("patch.otap");
 		fprintf(stderr, "Error: Failed to create otap.\n");
@@ -47,6 +49,8 @@ int main(int argc, char** argv) {
 	}
 	
 	fclose(fp);
+	otap_stat_free(tstat[0]);
+	otap_stat_free(tstat[1]);
 	
 	return EXIT_SUCCESS;
 }

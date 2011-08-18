@@ -38,7 +38,7 @@ static bool _otap_create_cmd_update(FILE* stream) {
 	return _otap_create_fwrite_cmd(stream, otap_cmd_update);
 }
 
-static bool _otap_create_cmd_file_create(FILE* stream, file_stat_t* f) {
+static bool _otap_create_cmd_file_create(FILE* stream, otap_stat_t* f) {
 	if(!_otap_create_fwrite_cmd(stream, otap_cmd_file_create)
 		|| !_otap_create_fwrite_string(stream, f->name)
 		|| !_otap_create_fwrite_mtime(stream, f->mtime))
@@ -48,7 +48,7 @@ static bool _otap_create_cmd_file_create(FILE* stream, file_stat_t* f) {
 	if(fwrite(&size, 4, 1, stream) != 1)
 		return false;
 	
-	FILE* fp = file_stat_fopen(f, "rb");
+	FILE* fp = otap_stat_fopen(f, "rb");
 	if(fp == NULL)
 		return false;
 	
@@ -61,15 +61,15 @@ static bool _otap_create_cmd_file_create(FILE* stream, file_stat_t* f) {
 			return false;
 		}
 	}
-	
+	fclose(fp);
 	return true;
 }
 
-static bool _otap_create_cmd_file_delta(FILE* stream, file_stat_t* a, file_stat_t* b) {
-	FILE* fpa = file_stat_fopen(a, "rb");
+static bool _otap_create_cmd_file_delta(FILE* stream, otap_stat_t* a, otap_stat_t* b) {
+	FILE* fpa = otap_stat_fopen(a, "rb");
 	if(fpa == NULL)
 		return false;
-	FILE* fpb = file_stat_fopen(b, "rb");
+	FILE* fpb = otap_stat_fopen(b, "rb");
 	if(fpb == NULL) {
 		fclose(fpa);
 		return false;
@@ -182,7 +182,7 @@ static bool _otap_create_cmd_file_delta(FILE* stream, file_stat_t* a, file_stat_
 	return true;
 }
 
-static bool _otap_create_cmd_dir_create(FILE* stream, dir_stat_t* d) {
+static bool _otap_create_cmd_dir_create(FILE* stream, otap_stat_t* d) {
 	return (_otap_create_fwrite_cmd(stream, otap_cmd_dir_create)
 		&& _otap_create_fwrite_string(stream, d->name)
 		&& _otap_create_fwrite_mtime(stream, d->mtime));
@@ -219,82 +219,106 @@ static bool _otap_create_cmd_entity_delete(FILE* stream, const char* name) {
 
 
 
-static bool _otap_create_dir(FILE* stream, dir_stat_t* d) {
-	if(!_otap_create_cmd_dir_create(stream, d))
-		return false;
-	if(!_otap_create_cmd_dir_enter(stream, d->name))
+static bool _otap_create_dir(FILE* stream, otap_stat_t* d) {
+	if((!_otap_create_cmd_dir_create(stream, d))
+		|| (!_otap_create_cmd_dir_enter(stream, d->name)))
 		return false;
 
 	uintptr_t i;
-	for(i = 0; i < d->dcount; i++) {
-		if(!_otap_create_dir(stream, ((dir_stat_t**)d->entries)[i]))
+	for(i = 0; i < d->size; i++) {
+		otap_stat_t* f = otap_stat_entry(d, i);
+		if(f == NULL)
 			return false;
-	}
-	for(; i < (d->dcount + d->fcount); i++) {
-		if(!_otap_create_cmd_file_create(stream, ((file_stat_t**)d->entries)[i]))
+		bool ret = false;
+		switch(f->type) {
+			case otap_stat_type_file:
+				ret = _otap_create_cmd_file_create(stream, f);
+				break;
+			case otap_stat_type_dir:
+				ret = _otap_create_dir(stream, f);
+				break;
+			default:
+				break;
+		}
+		otap_stat_free(f);
+		if(!ret)
 			return false;
 	}
 	
-	if(!_otap_create_cmd_dir_leave(stream, 1))
-		return false;
-	return true;
+	return _otap_create_cmd_dir_leave(stream, 1);
 }
 
-static bool _otap_create(FILE* stream, dir_stat_t* a, dir_stat_t* b) {
-	uintptr_t i;
-	for(i = 0; i < b->dcount; i++) {
-		dir_stat_t* _b = ((dir_stat_t**)b->entries)[i];
-		dir_stat_t* _a = dir_stat_find_dir(a, _b->name);
-		if(_a == NULL) {
-			if(!_otap_create_dir(stream, _b))
-				return false;
-		} else {
-			if(!_otap_create_cmd_dir_enter(stream, _b->name))
-				return false;
-			if(!_otap_create(stream, _a, _b))
-				return false;
-			if(!_otap_create_cmd_dir_leave(stream, 1))
-				return false;
+static bool _otap_create(FILE* stream, otap_stat_t* a, otap_stat_t* b, bool top) {
+	if((a == NULL) && (b == NULL))
+		return false;
+
+	if(((b == NULL) || ((a != NULL) && (a->type != b->type)))
+		&& !_otap_create_cmd_entity_delete(stream, a->name))
+		return false;
+		
+	if((a == NULL) || ((b != NULL) && (a->type != b->type))) {
+		switch(b->type) {
+			case otap_stat_type_file:
+				if(_otap_create_cmd_file_create(stream, b))
+					return true;
+				break;
+			case otap_stat_type_dir:
+				if(_otap_create_dir(stream, b))
+					return true;
+				break;
+			default:
+				break;
 		}
+		return false;
 	}
-	for(; i < (b->dcount + b->fcount); i++) {
-		file_stat_t* _b = ((file_stat_t**)b->entries)[i];
-		file_stat_t* _a = dir_stat_find_file(a, _b->name);
-		if(_a == NULL) {
-			if(!_otap_create_cmd_file_create(stream, _b))
-				return false;
-		} else {
-			if(!_otap_create_cmd_file_delta(stream, _a, _b))
-				return false;
-		}
+
+	if(a->type == otap_stat_type_file)
+		return _otap_create_cmd_file_delta(stream, a, b);
+	
+	if(a->type != otap_stat_type_dir)
+		return false; // TODO - Handle other types of files (incl. symlink);
+	
+	if(!top && !_otap_create_cmd_dir_enter(stream, b->name))
+		return false;
+	
+	// Handle changes/additions.
+	uintptr_t i;
+	for(i = 0; i < b->size; i++) {
+		otap_stat_t* _b = otap_stat_entry(b, i);
+		if(_b == NULL)
+			return false;
+		otap_stat_t* _a = otap_stat_entry_find(a, _b->name);
+		bool ret = _otap_create(stream, _a, _b, false);
+		otap_stat_free(_a);
+		otap_stat_free(_b);
+		if(!ret)
+			return false;
 	}
 	
 	// Handle deletions.
-	for(i = 0; i < a->dcount; i++) {
-		dir_stat_t* _a = ((dir_stat_t**)a->entries)[i];
-		dir_stat_t* _b = dir_stat_find_dir(b, _a->name);
-		if((_b == NULL) && !_otap_create_cmd_entity_delete(stream, _a->name))
+	for(i = 0; i < a->size; i++) {
+		otap_stat_t* _a = otap_stat_entry(a, i);
+		otap_stat_t* _b = otap_stat_entry_find(b, _a->name);
+		bool ret = ((_b != NULL) || _otap_create_cmd_entity_delete(stream, _a->name));
+		otap_stat_free(_b);
+		otap_stat_free(_a);
+		if(!ret)
 			return false;
 	}
-	for(; i < (a->dcount + a->fcount); i++) {
-		file_stat_t* _a = ((file_stat_t**)a->entries)[i];
-		file_stat_t* _b = dir_stat_find_file(b, _a->name);
-		if((_b == NULL) && !_otap_create_cmd_entity_delete(stream, _a->name))
-			return false;
-	}
-	return true;
+	
+	return (top || _otap_create_cmd_dir_leave(stream, 1));
 }
 
 
 
-bool otap_create(FILE* stream, dir_stat_t* a, dir_stat_t* b) {
+bool otap_create(FILE* stream, otap_stat_t* a, otap_stat_t* b) {
 	if((stream == NULL) || (a == NULL) || (b == NULL))
 		return false;
 	
 	if(!_otap_create_cmd_ident(stream))
 		return false;
 		
-	if(!_otap_create(stream, a, b))
+	if(!_otap_create(stream, a, b, true))
 		return false;
 	
 	return _otap_create_cmd_update(stream);

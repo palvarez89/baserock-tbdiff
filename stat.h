@@ -5,35 +5,33 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-
+typedef enum {
+	otap_stat_type_file    = 'f',
+	otap_stat_type_dir     = 'd',
+	otap_stat_type_symlink = 'l',
+	otap_stat_type_chrdev  = 'c',
+	otap_stat_type_blkdev  = 'b',
+	otap_stat_type_fifo    = 'f',
+	otap_stat_type_socket  = 's'
+} otap_stat_type_e;
 
 typedef struct {
-	void*    parent;
-	char*    name;
-	uint32_t mtime;
-	uint32_t dcount, fcount;
-	void*    entries;
-} dir_stat_t;
-
-typedef struct {
-	dir_stat_t* parent;
-	char*       name;
-	uint32_t    mtime;
-	uint32_t    size;
-} file_stat_t;
+	void*            parent;
+	char*            name;
+	otap_stat_type_e type;
+	uint32_t         mtime;
+	uint32_t         size; // Count for directory.
+} otap_stat_t;
 
 
-
-extern dir_stat_t*  dir_stat(dir_stat_t* parent, const char* path);
-extern void         dir_stat_free(dir_stat_t* dstat);
-extern void         dir_stat_print(uintptr_t depth, dir_stat_t* dstat);
-extern char*        dir_stat_path(dir_stat_t* dstat);
-extern dir_stat_t*  dir_stat_find_dir(dir_stat_t* dstat, const char* name);
-extern file_stat_t* dir_stat_find_file(dir_stat_t* dstat, const char* name);
-
-extern file_stat_t* file_stat(dir_stat_t* parent, const char* path);
-extern void         file_stat_print(uintptr_t depth, file_stat_t* fstat);
-extern char*        file_stat_path(file_stat_t* fstat);
-extern FILE*        file_stat_fopen(file_stat_t* fstat, const char* mode);
+extern otap_stat_t* otap_stat(const char* path);
+extern void         otap_stat_free(otap_stat_t* file);
+extern void         otap_stat_print(otap_stat_t* file);
+extern otap_stat_t* otap_stat_entry(otap_stat_t* file, uint32_t entry);
+extern otap_stat_t* otap_stat_entry_find(otap_stat_t* file, const char* name);
+extern char*        otap_stat_subpath(otap_stat_t* file, const char* entry);
+extern char*        otap_stat_path(otap_stat_t* file);
+extern int          otap_stat_open(otap_stat_t* file, int flags);
+extern FILE*        otap_stat_fopen(otap_stat_t* file, const char* mode);
 
 #endif
