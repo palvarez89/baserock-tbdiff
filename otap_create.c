@@ -298,6 +298,8 @@ static bool _otap_create(FILE* stream, otap_stat_t* a, otap_stat_t* b, bool top)
 	// Handle deletions.
 	for(i = 0; i < a->size; i++) {
 		otap_stat_t* _a = otap_stat_entry(a, i);
+		if(_a == NULL)
+			return false;
 		otap_stat_t* _b = otap_stat_entry_find(b, _a->name);
 		bool ret = ((_b != NULL) || _otap_create_cmd_entity_delete(stream, _a->name));
 		otap_stat_free(_b);
