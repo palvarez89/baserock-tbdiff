@@ -124,7 +124,7 @@ static int _otap_apply_cmd_file_create(FILE* stream) {
 	if(fread(&fsize, 4, 1, stream) != 1)
 		otap_error(otap_error_unable_to_read_stream);
 		
-	printf("cmd_file_create %s:%"PRIuPTR"\n", fname, fsize);
+	printf("cmd_file_create %s:%"PRId32"\n", fname, fsize);
 	
 	FILE* fp = fopen(fname, "rb");
 	if(fp != NULL) {
@@ -262,13 +262,15 @@ static int __otap_apply_cmd_entity_delete(const char* name) {
 		int err;
 		if((err = __otap_apply_cmd_entity_delete(entry->d_name)) != 0) {
 			closedir(dp);
-			chdir("..");
+			if (chdir("..") != 0)
+                                otap_error(otap_error_unable_to_change_dir);
 			return err;
 		}
 	}
 	
 	closedir(dp);
-	chdir("..");
+        if (chdir("..") != 0)
+                otap_error(otap_error_unable_to_change_dir);
 	if(remove(name) != 0)
 		otap_error(otap_error_unable_to_remove_file);
 	return 0;

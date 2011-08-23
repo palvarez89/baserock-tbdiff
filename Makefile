@@ -6,7 +6,7 @@ CC := gcc
 OPT ?= -O2
 
 CFLAGS ?=
-CFLAGS += -Wall -Wextra $(OPT)
+CFLAGS += -Wall -Wextra -Werror $(OPT)
 
 SHARED_SRC := otap.c stat.c
 DEPLOY_SRC := deploy.c otap_apply.c

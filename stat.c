@@ -84,7 +84,7 @@ void otap_stat_free(otap_stat_t* file) {
 }
 
 void otap_stat_print(otap_stat_t* file) {
-
+        (void)file;
 }
 
 otap_stat_t* otap_stat_entry(otap_stat_t* file, uint32_t entry) {

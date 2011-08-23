@@ -26,14 +26,22 @@ int main(int argc, char** argv) {
 		fprintf(stderr, "Error: Unable to stat '%s'.\n", argv[1]);
 		return EXIT_FAILURE;
 	}
-	chdir(cwd_buff);
+        
+	if (chdir(cwd_buff) != 0) {
+                fprintf(stderr, "Error: Unable to return to '%s'.\n", cwd_buff);
+                return EXIT_FAILURE;
+        }
 	
 	tstat[1] = otap_stat(argv[2]);
 	if(tstat[1] == NULL) {
 		fprintf(stderr, "Error: Unable to stat '%s'.\n", argv[2]);
 		return EXIT_FAILURE;
 	}
-	chdir(cwd_buff);
+	
+	if (chdir(cwd_buff) != 0) {
+                fprintf(stderr, "Error: Unable to return to '%s'.\n", cwd_buff);
+                return EXIT_FAILURE;
+        }
 	
 	FILE* fp = fopen("patch.otap", "wb");
 	if(fp == NULL) {
