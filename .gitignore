@@ -2,3 +2,4 @@ otap_create
 otap_deploy
 *.o
 *.log
+*.d
