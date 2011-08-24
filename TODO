@@ -1,0 +1,24 @@
+General
+-------
+
+ + Make the code nicer and fit with coding style
+ + Fix endian issues in case we run the generator on a different
+   endianness to the deployer.
+
+Features
+--------
+
+ + Need to be able to embed metadata into the top of an update 
+   stream e.g. arbitrary key/value pairs would be nice.
+ + Need to be able to retrieve that metadata separately from deploying
+   a stream, so that metadata files can be prepared on the server.
+ + Ideally deploy should be able to take any stream URI (or perhaps
+   stdin, allowing for curl externally?)
+ + Need to support:
+   - Symbolic links
+   - Device nodes
+   - Named pipes
+   - (Ignore?) Sockets
+ + Support a given pathname changing kind.
+   - That can be done by embedding a delete and then a create
+
