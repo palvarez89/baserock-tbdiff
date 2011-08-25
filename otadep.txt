@@ -1,0 +1,4 @@
+otadep resolves dependencies and finds the shortest route to a target state.
+otadep.txt follows this format
+
+<name> <base> <size>
