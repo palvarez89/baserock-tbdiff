@@ -28,7 +28,14 @@ ifeq (,$(findstring clean,$(MAKECMDGOALS)))
 -include $(patsubst %.c,%.d,$(SHARED_SRC) $(DEPLOY_SRC) $(CREATE_SRC))
 endif
 
+install: otap_create otap_deploy
+	install otap_create /usr/local/bin
+	install otap_deploy /usr/local/bin
+
+uninstall:
+	rm -rf /usr/local/bin/otap_create
+	rm -rf /usr/local/bin/otap_crate
+
 .PHONY: clean
 clean:
 	rm  -f otap_deploy otap_create *.o *.d
-

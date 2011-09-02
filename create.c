@@ -9,8 +9,8 @@
 
 
 int main(int argc, char** argv) {
-	if(argc < 3) {
-		fprintf(stderr, "Error: Need to designate 2 trees to difference.\n");
+	if(argc < 4) {
+		fprintf(stderr, "Usage: %s OUTPUT SOURCE_DIR TARGET_DIR.\n", argv[0]);
 		return EXIT_FAILURE;
 	}
 	
@@ -21,31 +21,31 @@ int main(int argc, char** argv) {
 
 	otap_stat_t* tstat[2];
 	
-	tstat[0] = otap_stat(argv[1]);
+	tstat[0] = otap_stat(argv[2]);
 	if(tstat[0] == NULL) {
-		fprintf(stderr, "Error: Unable to stat '%s'.\n", argv[1]);
+		fprintf(stderr, "Error: Unable to stat '%s'.\n", argv[2]);
 		return EXIT_FAILURE;
 	}
         
 	if (chdir(cwd_buff) != 0) {
                 fprintf(stderr, "Error: Unable to return to '%s'.\n", cwd_buff);
                 return EXIT_FAILURE;
-        }
+  }
 	
-	tstat[1] = otap_stat(argv[2]);
+	tstat[1] = otap_stat(argv[3]);
 	if(tstat[1] == NULL) {
-		fprintf(stderr, "Error: Unable to stat '%s'.\n", argv[2]);
+		fprintf(stderr, "Error: Unable to stat '%s'.\n", argv[3]);
 		return EXIT_FAILURE;
 	}
 	
 	if (chdir(cwd_buff) != 0) {
                 fprintf(stderr, "Error: Unable to return to '%s'.\n", cwd_buff);
                 return EXIT_FAILURE;
-        }
+  }
 	
-	FILE* fp = fopen("patch.otap", "wb");
+	FILE* fp = fopen(argv[1], "wb");
 	if(fp == NULL) {
-		fprintf(stderr, "Error: Unable to open patch for writing.\n");
+		fprintf(stderr, "ERROR: Unable to open patch for writing.\n");
 		return EXIT_FAILURE;
 	}
 	
