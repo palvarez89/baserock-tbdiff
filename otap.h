@@ -6,8 +6,6 @@
 
 #include "stat.h"
 
-
-
 typedef enum {
 	otap_cmd_identify      = 0x00,
 	otap_cmd_update        = 0x01,
@@ -21,8 +19,18 @@ typedef enum {
 	otap_cmd_entity_delete = 0x32
 } otap_cmd_e;
 
+typedef enum {
+	OTAP_METADATA_MTIME,
+	OTAP_METADATA_PERMISSION,
+	OTAP_METADATA_UID,
+	OTAP_METADATA_GID,
+} otap_metadata_type_e;
+
 typedef struct {
+  uint32_t metadata_mask;
 	uint32_t mtime;
+	uint32_t uid;
+	uint32_t gid;
 	union __attribute__((__packed__)) {
 		struct __attribute__((__packed__)) {
 			unsigned or:1, ow:1, ox:1;
@@ -36,8 +44,6 @@ typedef struct {
 } __attribute__((__packed__)) otap_metadata_t;
 
 extern const char* otap_ident;
-
-
 
 extern int otap_apply(FILE* stream);
 extern int otap_create(FILE* stream, otap_stat_t* a, otap_stat_t* b);

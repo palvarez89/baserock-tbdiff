@@ -346,8 +346,6 @@ static int _otap_create(FILE* stream, otap_stat_t* a, otap_stat_t* b, bool top) 
 	return 0;
 }
 
-
-
 int otap_create(FILE* stream, otap_stat_t* a, otap_stat_t* b) {
 	if((stream == NULL) || (a == NULL) || (b == NULL))
 		otap_error(otap_error_null_pointer);
