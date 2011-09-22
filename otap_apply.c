@@ -276,7 +276,9 @@ static int __otap_apply_cmd_entity_delete(const char* name) {
 	return 0;
 }
 	
-static int _otap_apply_cmd_entity_delete(FILE* stream) {
+static int
+_otap_apply_cmd_entity_delete(FILE* stream)
+{
 	uint16_t elen;
 	if(fread(&elen, 2, 1, stream) != 1)
 		otap_error(otap_error_unable_to_read_stream);
@@ -284,13 +286,39 @@ static int _otap_apply_cmd_entity_delete(FILE* stream) {
 	if(fread(ename, 1, elen, stream) != elen)
 		otap_error(otap_error_unable_to_read_stream);
 	ename[elen] = '\0';
+
 	printf("cmd_entity_delete %s\n", ename);
+
 	if((strchr(ename, '/') != NULL) || (strcmp(ename, "..") == 0))
 		otap_error(otap_error_invalid_parameter);
 	return __otap_apply_cmd_entity_delete(ename);
 }
 
+static int
+_otap_apply_cmd_symlink_create (FILE *stream)
+{
+	uint16_t len;
 
+	if(fread(&len, sizeof(uint16_t), 1, stream) != 1)
+		otap_error(otap_error_unable_to_read_stream);
+	char linkname[len + 1];
+	linkname[len] = '\0';
+		
+	if(fread(linkname, sizeof(char), len, stream) != len)
+		otap_error(otap_error_unable_to_read_stream);
+	
+  if(fread(&len, sizeof(uint16_t), 1, stream) != 1)
+		otap_error(otap_error_unable_to_read_stream);
+  char linkpath[len+1];
+  linkpath[len] = '\0';
+
+ 	if(fread(linkpath, sizeof(char), len, stream) != len)
+		otap_error(otap_error_unable_to_read_stream);
+  
+  fprintf (stderr, "cmd_symlink_create %s -> %s\n", linkname, linkpath);
+
+  return otap_error_success;
+}
 
 int otap_apply(FILE* stream) {
 	if(stream == NULL)
@@ -327,6 +355,10 @@ int otap_apply(FILE* stream) {
 				if((err = _otap_apply_cmd_file_delta(stream)) != 0)
 					return err;
 				break;
+		  case otap_cmd_symlink_create:
+		    if ((err = _otap_apply_cmd_symlink_create(stream)) != 0)
+		      return err;
+		    break;
 			case otap_cmd_entity_move:
 			case otap_cmd_entity_copy:
 				otap_error(otap_error_feature_not_implemented); // TODO - Implement.

@@ -20,6 +20,7 @@ typedef enum {
 	otap_error_file_does_not_exist = -15,
 	otap_error_unable_to_detect_stream_position = -16,
 	otap_error_unable_to_stat_file = -17,
+	otap_error_unable_to_read_symlink = -18,
 } otap_error_e;
 
 #ifdef NDEBUG

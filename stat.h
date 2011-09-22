@@ -11,7 +11,7 @@ typedef enum {
 	otap_stat_type_symlink = 'l',
 	otap_stat_type_chrdev  = 'c',
 	otap_stat_type_blkdev  = 'b',
-	otap_stat_type_fifo    = 'f',
+	otap_stat_type_fifo    = 'o',
 	otap_stat_type_socket  = 's'
 } otap_stat_type_e;
 

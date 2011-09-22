@@ -244,27 +244,34 @@ static int _otap_create_cmd_dir_leave(FILE* stream, uintptr_t count) {
 	return 0;
 }
 
-static int _otap_create_cmd_entity_delete(FILE* stream, const char* name) {
+static int
+_otap_create_cmd_entity_delete (FILE       *stream,
+                                const char *name)
+{
 	int err;
 	if((err = _otap_create_fwrite_cmd(stream, otap_cmd_entity_delete)) != 0)
 		return err;
 	return _otap_create_fwrite_string(stream, name);
 }
 
-
-
-static int _otap_create_dir(FILE* stream, otap_stat_t* d) {
+static int
+_otap_create_dir(FILE* stream, otap_stat_t* d)
+{
 	int err;
 	if(((err =_otap_create_cmd_dir_create(stream, d)) != 0)
 		|| ((err = _otap_create_cmd_dir_enter(stream, d->name)) != 0))
 		return err;
 
 	uintptr_t i;
-	for(i = 0; i < d->size; i++) {
+	for(i = 0; i < d->size; i++)
+	{
 		otap_stat_t* f = otap_stat_entry(d, i);
+
 		if(f == NULL)
 			otap_error(otap_error_unable_to_stat_file);
-		switch(f->type) {
+
+		switch(f->type)
+		{
 			case otap_stat_type_file:
 				err = _otap_create_cmd_file_create(stream, f);
 				break;
@@ -284,7 +291,35 @@ static int _otap_create_dir(FILE* stream, otap_stat_t* d) {
 	return _otap_create_cmd_dir_leave(stream, 1);
 }
 
-static int _otap_create(FILE* stream, otap_stat_t* a, otap_stat_t* b, bool top) {
+static int
+_otap_create_cmd_symlink_create (FILE        *stream,
+                                otap_stat_t *symlink)
+{
+	int err;
+	char path[2048];
+	
+	size_t len;
+	
+	if ((len = readlink (symlink->name, path, sizeof(path)-1)) != 0)
+		return otap_error_unable_to_read_symlink;
+
+	path[len] = '\0';
+	
+	if((err = _otap_create_fwrite_cmd(stream, otap_cmd_symlink_create)) != 0)
+		return err;
+	/* Verify this is a valid path */
+	
+  if((err = _otap_create_fwrite_string(stream, symlink->name)) != 0)
+		return err;
+	return _otap_create_fwrite_string(stream, path);
+}
+
+static int
+_otap_create (FILE        *stream,
+              otap_stat_t *a,
+              otap_stat_t *b,
+              bool         top)
+{
 	if((a == NULL) && (b == NULL))
 		otap_error(otap_error_null_pointer);
 
@@ -293,16 +328,24 @@ static int _otap_create(FILE* stream, otap_stat_t* a, otap_stat_t* b, bool top) 
 		&& ((err = _otap_create_cmd_entity_delete(stream, a->name)) != 0))
 		return err;
 		
-	if((a == NULL) || ((b != NULL) && (a->type != b->type))) {
-		switch(b->type) {
+	if((a == NULL) || ((b != NULL) && (a->type != b->type)))
+	{
+		switch(b->type)
+		{
 			case otap_stat_type_file:
 				return _otap_create_cmd_file_create(stream, b);
 			case otap_stat_type_dir:
 				return _otap_create_dir(stream, b);
+			case otap_stat_type_symlink:
+				return _otap_create_cmd_symlink_create (stream, b);
+			case otap_stat_type_chrdev:
+			case otap_stat_type_blkdev:
+			case otap_stat_type_fifo:
+			case otap_stat_type_socket:
 			default:
+				otap_error(otap_error_feature_not_implemented);
 				break;
 		}
-		otap_error(otap_error_feature_not_implemented);
 	}
 
 	if(a->type == otap_stat_type_file)
@@ -316,7 +359,8 @@ static int _otap_create(FILE* stream, otap_stat_t* a, otap_stat_t* b, bool top) 
 	
 	// Handle changes/additions.
 	uintptr_t i;
-	for(i = 0; i < b->size; i++) {
+	for(i = 0; i < b->size; i++)
+	{
 		otap_stat_t* _b = otap_stat_entry(b, i);
 		if(_b == NULL)
 			otap_error(otap_error_unable_to_stat_file);
@@ -329,7 +373,8 @@ static int _otap_create(FILE* stream, otap_stat_t* a, otap_stat_t* b, bool top) 
 	}
 	
 	// Handle deletions.
-	for(i = 0; i < a->size; i++) {
+	for(i = 0; i < a->size; i++)
+	{
 		otap_stat_t* _a = otap_stat_entry(a, i);
 		if(_a == NULL)
 			otap_error(otap_error_unable_to_stat_file);
@@ -346,7 +391,11 @@ static int _otap_create(FILE* stream, otap_stat_t* a, otap_stat_t* b, bool top) 
 	return 0;
 }
 
-int otap_create(FILE* stream, otap_stat_t* a, otap_stat_t* b) {
+int
+otap_create (FILE        *stream,
+             otap_stat_t *a,
+             otap_stat_t *b)
+{
 	if((stream == NULL) || (a == NULL) || (b == NULL))
 		otap_error(otap_error_null_pointer);
 	
