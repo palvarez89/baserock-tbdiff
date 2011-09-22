@@ -46,8 +46,12 @@ static otap_stat_t* __otap_stat_fd(const char* name, int fd) {
 			ret->size++;
 		}
 	} else if(S_ISLNK(info.st_mode)) {
+		struct stat linfo;
+		lstat (ret->name, &linfo);
+
 		ret->type = otap_stat_type_symlink;
-		ret->size = info.st_size;
+		ret->size = 0;
+		info.st_mtime = linfo.st_mtime;
 	} else if(S_ISCHR(info.st_mode)) {
 		ret->type = otap_stat_type_chrdev;
 		ret->size = 0;
