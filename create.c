@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
 	int err;
 	if((err = otap_create(fp, tstat[0], tstat[1])) != 0) {
 		fclose(fp);
-		remove("patch.otap");
+		remove(argv[1]);
 		fprintf(stderr, "Error: Failed to create otap (err=%d).\n", err);
 		return EXIT_FAILURE;
 	}
