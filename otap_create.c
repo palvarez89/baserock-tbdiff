@@ -298,19 +298,19 @@ _otap_create_cmd_symlink_create (FILE        *stream,
 	int err;
 	char path[2048];
 	
-	size_t len;
-	
-	if ((len = readlink (symlink->name, path, sizeof(path)-1)) != 0)
+	ssize_t len = readlink (symlink->name, path, sizeof(path)-1);
+
+	if (len < 0)
 		return otap_error_unable_to_read_symlink;
 
 	path[len] = '\0';
 	
 	if((err = _otap_create_fwrite_cmd(stream, otap_cmd_symlink_create)) != 0)
 		return err;
-	/* Verify this is a valid path */
-	
+		
   if((err = _otap_create_fwrite_string(stream, symlink->name)) != 0)
 		return err;
+
 	return _otap_create_fwrite_string(stream, path);
 }
 

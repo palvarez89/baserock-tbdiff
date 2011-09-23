@@ -21,10 +21,7 @@ __otap_stat_fd(const char *name,
 	struct stat info;
 
 	if(lstat(path, &info) != 0)
-	{
-		fprintf (stderr, "an error ocurred you idiot: %d\n", errno);
 		return NULL;
-	}
 	
 	size_t nlen = strlen(name);
 	otap_stat_t* ret = (otap_stat_t*)malloc(sizeof(otap_stat_t) + (nlen + 1));
