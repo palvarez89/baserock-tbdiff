@@ -14,7 +14,7 @@
 
 static otap_stat_t* __otap_stat_fd(const char* name, int fd) {
 	struct stat info;
-	if(fstat(fd, &info) < 0)
+	if(lstat(name, &info) < 0)
 		return NULL;
 	
 	size_t nlen = strlen(name);
@@ -130,6 +130,10 @@ otap_stat_t* otap_stat_entry(otap_stat_t* file, uint32_t entry) {
 		return NULL;
 	otap_stat_t* ret = __otap_stat_fd(ds->d_name, fd);
 	close(fd);
+	
+	if (ret == NULL)
+		return NULL;
+
 	ret->parent = file;
 	return ret;
 }

@@ -317,6 +317,9 @@ _otap_apply_cmd_symlink_create (FILE *stream)
   
   fprintf (stderr, "cmd_symlink_create %s -> %s\n", linkname, linkpath);
 
+  if (symlink (linkname, linkpath))
+    return otap_error_unable_to_create_symlink;
+
   return otap_error_success;
 }
 
