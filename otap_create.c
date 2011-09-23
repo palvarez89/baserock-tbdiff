@@ -293,12 +293,15 @@ _otap_create_dir(FILE* stream, otap_stat_t* d)
 
 static int
 _otap_create_cmd_symlink_create (FILE        *stream,
-                                otap_stat_t *symlink)
+                                 otap_stat_t *symlink)
 {
 	int err;
 	char path[2048];
-	
-	ssize_t len = readlink (symlink->name, path, sizeof(path)-1);
+	char *slpath = otap_stat_path (symlink);
+	ssize_t len = readlink (slpath, path, sizeof(path)-1);
+	free (slpath);
+
+
 
 	if (len < 0)
 		return otap_error_unable_to_read_symlink;

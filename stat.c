@@ -39,6 +39,8 @@ __otap_stat_fd(const char *name,
 	}
 	else if(S_ISDIR(info.st_mode))
 	{
+		if (fd < 0)
+			return NULL;
 		
 		ret->type = otap_stat_type_dir;
 		DIR* dp = fdopendir(fd);
@@ -151,9 +153,6 @@ otap_stat_entry(otap_stat_t* file, uint32_t entry)
 	if(spath == NULL)
 		return NULL;
 	fd = open(spath, O_RDONLY);
-
-	if(fd < 0)
-		return NULL;
 
 	otap_stat_t* ret = __otap_stat_fd(ds->d_name, (const char*)spath, fd);
 
