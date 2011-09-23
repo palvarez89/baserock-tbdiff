@@ -8,14 +8,23 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <errno.h>
 #include <fcntl.h>
 
 
 
-static otap_stat_t* __otap_stat_fd(const char* name, int fd) {
+static otap_stat_t*
+__otap_stat_fd(const char *name,
+               const char *path,
+               int         fd)
+{
 	struct stat info;
-	if(lstat(name, &info) < 0)
+
+	if(lstat(path, &info) != 0)
+	{
+		fprintf (stderr, "an error ocurred you idiot: %d\n", errno);
 		return NULL;
+	}
 	
 	size_t nlen = strlen(name);
 	otap_stat_t* ret = (otap_stat_t*)malloc(sizeof(otap_stat_t) + (nlen + 1));
@@ -26,45 +35,60 @@ static otap_stat_t* __otap_stat_fd(const char* name, int fd) {
 	ret->name   = (char*)((uintptr_t)ret + sizeof(otap_stat_t));
 	memcpy(ret->name, name, (nlen + 1));
 	
-	if(S_ISREG(info.st_mode)) {
+	if(S_ISREG(info.st_mode))
+	{
 		ret->type = otap_stat_type_file;
 		ret->size = info.st_size;
-	} else if(S_ISDIR(info.st_mode)) {
+	}
+	else if(S_ISDIR(info.st_mode))
+	{
+		
 		ret->type = otap_stat_type_dir;
 		DIR* dp = fdopendir(fd);
-		if(dp == NULL) {
+		if(dp == NULL)
+		{
 			free(ret);
 			return NULL;
 		}
 		
 		ret->size = 0;
 		struct dirent* ds;
-		for(ds = readdir(dp); ds != NULL; ds = readdir(dp)) {
+		for(ds = readdir(dp); ds != NULL; ds = readdir(dp))
+		{
 			if((strcmp(ds->d_name, ".") == 0)
 				|| (strcmp(ds->d_name, "..") == 0))
 				continue;
+
 			ret->size++;
 		}
-	} else if(S_ISLNK(info.st_mode)) {
-		struct stat linfo;
-		lstat (ret->name, &linfo);
-
+	}
+	else if(S_ISLNK(info.st_mode))
+	{
 		ret->type = otap_stat_type_symlink;
 		ret->size = 0;
-		info.st_mtime = linfo.st_mtime;
-	} else if(S_ISCHR(info.st_mode)) {
+	}
+	else if(S_ISCHR(info.st_mode))
+	{
 		ret->type = otap_stat_type_chrdev;
 		ret->size = 0;
-	} else if(S_ISBLK(info.st_mode)) {
+	}
+	else if(S_ISBLK(info.st_mode))
+	{
 		ret->type = otap_stat_type_blkdev;
 		ret->size = 0;
-	} else if(S_ISFIFO(info.st_mode)) {
+	}
+	else if(S_ISFIFO(info.st_mode))
+	{
 		ret->type = otap_stat_type_fifo;
 		ret->size = 0;
-	} else if(S_ISSOCK(info.st_mode)) {
+	}
+	else if(S_ISSOCK(info.st_mode))
+	{
 		ret->type = otap_stat_type_socket;
 		ret->size = 0;
-	} else {
+	}
+	else
+	{
 		free(ret);
 		return NULL;
 	}
@@ -78,7 +102,7 @@ otap_stat_t* otap_stat(const char* path) {
 	int fd = open(path, O_RDONLY);
 	if(fd < 0)
 		return NULL;
-	otap_stat_t* ret = __otap_stat_fd(path, fd);
+	otap_stat_t* ret = __otap_stat_fd(path, path, fd);
 	close(fd);
 	return ret;
 }
@@ -91,7 +115,9 @@ void otap_stat_print(otap_stat_t* file) {
         (void)file;
 }
 
-otap_stat_t* otap_stat_entry(otap_stat_t* file, uint32_t entry) {
+otap_stat_t*
+otap_stat_entry(otap_stat_t* file, uint32_t entry)
+{
 	if((file == NULL)
 		|| (file->type != otap_stat_type_dir)
 		|| (entry >= file->size))
@@ -102,16 +128,19 @@ otap_stat_t* otap_stat_entry(otap_stat_t* file, uint32_t entry) {
 		return NULL;
 	
 	DIR* dp = fdopendir(fd);
-	if(dp == NULL) {
+	if(dp == NULL)
+	{
 		close(fd);
 		return NULL;
 	}
 	
 	uintptr_t i;
 	struct dirent* ds;
-	for(i = 0; i <= entry; i++) {
+	for(i = 0; i <= entry; i++)
+	{
 		ds = readdir(dp);
-		if(ds == NULL) {
+		if(ds == NULL)
+		{
 			close(fd);
 			return NULL;
 		}
@@ -125,10 +154,13 @@ otap_stat_t* otap_stat_entry(otap_stat_t* file, uint32_t entry) {
 	if(spath == NULL)
 		return NULL;
 	fd = open(spath, O_RDONLY);
-	free(spath);
+
 	if(fd < 0)
 		return NULL;
-	otap_stat_t* ret = __otap_stat_fd(ds->d_name, fd);
+
+	otap_stat_t* ret = __otap_stat_fd(ds->d_name, (const char*)spath, fd);
+
+  free(spath);
 	close(fd);
 	
 	if (ret == NULL)
@@ -161,10 +193,12 @@ otap_stat_t* otap_stat_entry_find(otap_stat_t* file, const char* name) {
 			if(spath == NULL)
 				return NULL;
 			fd = open(spath, O_RDONLY);
-			free(spath);
+
 			if(fd < 0)
 				return NULL;
-			otap_stat_t* ret = __otap_stat_fd(ds->d_name, fd);
+			otap_stat_t* ret = __otap_stat_fd(ds->d_name, (const char *)spath, fd);
+
+			free(spath);
 			close(fd);
 			ret->parent = file;
 			return ret;
