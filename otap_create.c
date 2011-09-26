@@ -13,13 +13,19 @@
 
 #define PATH_BUFFER_LENGTH 4096
 
-static int _otap_create_fwrite_cmd(FILE* stream, uint8_t cmd) {
+static int
+_otap_create_fwrite_cmd (FILE    *stream,
+                         uint8_t  cmd)
+{
 	if(fwrite(&cmd, 1, 1, stream) != 1)
 		otap_error(otap_error_unable_to_write_stream);
 	return 0;
 }
 
-static int _otap_create_fwrite_string(FILE* stream, const char* string) {
+static int
+_otap_create_fwrite_string(FILE       *stream,
+                           const char *string)
+{
 	uint16_t slen = strlen(string);
 	if((fwrite(&slen, 2, 1, stream) != 1)
 		|| (fwrite(string, 1, slen, stream) != slen))
@@ -27,15 +33,36 @@ static int _otap_create_fwrite_string(FILE* stream, const char* string) {
 	return 0;
 }
 
-static int _otap_create_fwrite_mtime(FILE* stream, uint32_t mtime) {
-	if(fwrite(&mtime, 4, 1, stream) != 1)
+static int
+_otap_create_fwrite_mtime (FILE    *stream,
+                           uint32_t  mtime)
+{
+	if(fwrite(&mtime, sizeof(uint32_t), 1, stream) != 1)
 		otap_error(otap_error_unable_to_write_stream);
 	return 0;
 }
 
+static int
+_otap_create_fwrite_mode (FILE     *stream,
+                          mode_t    mode)
+{
+	if(fwrite(&mode, sizeof(mode_t), 1, stream) != 1)
+		otap_error(otap_error_unable_to_write_stream);
+	return 0;
+}
 
+static int
+_otap_create_fwrite_dev (FILE     *stream,
+                         dev_t     dev)
+{
+	if(fwrite(&dev, sizeof(dev_t), 1, stream) != 1)
+		otap_error(otap_error_unable_to_write_stream);
+	return 0;
+}
 
-static int _otap_create_cmd_ident(FILE* stream) {
+static int
+_otap_create_cmd_ident (FILE* stream)
+{
 	int err;
 	
 	if((err = _otap_create_fwrite_cmd(stream, otap_cmd_identify)) != 0)
@@ -59,18 +86,20 @@ static int _otap_create_cmd_file_create(FILE* stream, otap_stat_t* f) {
 		return err;
 	
 	uint32_t size = f->size;
-	if(fwrite(&size, 4, 1, stream) != 1)
+	if(fwrite(&size, sizeof(uint32_t), 1, stream) != 1)
 		otap_error(otap_error_unable_to_write_stream);
-	
+
 	FILE* fp = otap_stat_fopen(f, "rb");
 	if(fp == NULL)
 		otap_error(otap_error_unable_to_open_file_for_reading);
-	
+
 	uint8_t buff[256];
 	uintptr_t b = 256;
-	for(b = 256; b == 256; ) {
+	for(b = 256; b == 256; )
+	{
 		b = fread(buff, 1, b, fp);
-		if(fwrite(buff, 1, b, stream) != b) {
+		if(fwrite(buff, 1, b, stream) != b)
+		{
 			fclose(fp);
 			otap_error(otap_error_unable_to_write_stream);
 		}
@@ -359,6 +388,35 @@ _otap_create_cmd_symlink_delta (FILE        *stream,
 }
 
 static int
+_otap_create_cmd_special_create (FILE  *stream,
+                             otap_stat_t *nod)
+{
+	struct stat info;
+	char *nodpath = otap_stat_path (nod);
+	if(lstat(nodpath, &info) != 0)
+		return otap_error_unable_to_read_special_file;
+	free (nodpath);
+	
+	int err = _otap_create_fwrite_cmd(stream, otap_cmd_special_create);
+	if (err != 0)
+		return err;
+
+	err = _otap_create_fwrite_string(stream, nod->name);
+	if (err != 0)
+		return err;
+
+	err = _otap_create_fwrite_mtime (stream, nod->mtime);
+	if (err != 0)
+		return err;
+
+	err = _otap_create_fwrite_mode (stream, info.st_mode);
+	if (err != 0)
+		return err;
+
+	return _otap_create_fwrite_dev (stream, info.st_dev);
+}
+
+static int
 _otap_create (FILE        *stream,
               otap_stat_t *a,
               otap_stat_t *b,
@@ -386,6 +444,7 @@ _otap_create (FILE        *stream,
 			case otap_stat_type_blkdev:
 			case otap_stat_type_fifo:
 			case otap_stat_type_socket:
+				return _otap_create_cmd_special_create (stream, b);
 			default:
 				otap_error(otap_error_feature_not_implemented);
 				break;

@@ -17,9 +17,23 @@
 #include <utime.h>
 
 
+char*
+_otap_apply_fread_string (FILE *stream)
+{
+	uint16_t dlen;
+	if(fread(&dlen, sizeof(uint16_t), 1, stream) != 1)
+		return NULL;
+	char dname[dlen + 1];
+	if(fread(dname, 1, dlen, stream) != dlen)
+		return NULL;
+	dname[dlen] = '\0';
+	
+	return strdup (dname);
+}
 
-
-static int _otap_apply_identify(FILE* stream) {
+static int
+_otap_apply_identify (FILE* stream)
+{
 	uint8_t cmd;
 	if(fread(&cmd, 1, 1, stream) != 1)
 		otap_error(otap_error_unable_to_read_stream);
@@ -38,9 +52,11 @@ static int _otap_apply_identify(FILE* stream) {
 	return 0;
 }
 
-static int _otap_apply_cmd_dir_create(FILE* stream) {
+static int
+_otap_apply_cmd_dir_create(FILE* stream)
+{
 	uint16_t dlen;
-	if(fread(&dlen, 2, 1, stream) != 1)
+	if(fread(&dlen, sizeof(uint16_t), 1, stream) != 1)
 		otap_error(otap_error_unable_to_read_stream);
 	char dname[dlen + 1];
 	if(fread(dname, 1, dlen, stream) != dlen)
@@ -236,8 +252,6 @@ static int _otap_apply_cmd_file_delta(FILE* stream) {
 	return 0;
 }
 
-
-
 static int
 __otap_apply_cmd_entity_delete (const char* name)
 {	
@@ -338,6 +352,45 @@ _otap_apply_cmd_symlink_create (FILE *stream)
   return otap_error_success;
 }
 
+static int
+_otap_apply_cmd_special_create (FILE *stream)
+{
+	char *name = _otap_apply_fread_string (stream);
+	uint32_t mtime;
+	mode_t   mode;
+	dev_t    dev;
+
+	if (name == NULL)
+		return otap_error_unable_to_read_stream;
+
+  if(fread(&mtime, sizeof(uint32_t), 1, stream) != 1)
+  {
+  	free (name);
+		otap_error(otap_error_unable_to_read_stream);
+	}
+	if (fread(&mode, sizeof(mode_t), 1, stream) != 1)
+  {
+  	free (name);
+		otap_error(otap_error_unable_to_read_stream);
+	}
+	if (fread(&dev, sizeof(dev_t), 1, stream) != 1)
+  {
+  	free (name);
+  	otap_error(otap_error_unable_to_read_stream);
+  }
+	
+  fprintf (stderr, "cmd_special_create %s\n", name);
+
+	if (mknod (name, mode, dev) != 0)
+	{
+  	free (name);
+  	return otap_error_unable_to_create_special_file;
+	}
+
+	free (name);
+  return otap_error_success;
+}
+
 int otap_apply(FILE* stream) {
 	if(stream == NULL)
 		otap_error(otap_error_null_pointer);
@@ -377,6 +430,10 @@ int otap_apply(FILE* stream) {
 		    if ((err = _otap_apply_cmd_symlink_create(stream)) != 0)
 		      return err;
 		    break;
+		  case otap_cmd_special_create:
+		    if ((err = _otap_apply_cmd_special_create(stream)) != 0)
+		      return err;
+		    break;		  	
 			case otap_cmd_entity_move:
 			case otap_cmd_entity_copy:
 				otap_error(otap_error_feature_not_implemented); // TODO - Implement.

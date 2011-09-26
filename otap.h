@@ -17,7 +17,8 @@ typedef enum {
 	otap_cmd_entity_move    = 0x30,
 	otap_cmd_entity_copy    = 0x31,
 	otap_cmd_entity_delete  = 0x32,
-	otap_cmd_symlink_create = 0x40
+	otap_cmd_symlink_create = 0x40,
+	otap_cmd_special_create = 0x50
 } otap_cmd_e;
 
 typedef enum {

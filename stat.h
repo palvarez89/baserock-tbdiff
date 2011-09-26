@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <sys/types.h>
 
 typedef enum {
 	otap_stat_type_file    = 'f',
@@ -21,6 +22,10 @@ typedef struct {
 	otap_stat_type_e type;
 	uint32_t         mtime;
 	uint32_t         size; // Count for directory.
+	uid_t            user;
+	uid_t            group;
+	mode_t           mode;
+	dev_t            dev;
 } otap_stat_t;
 
 

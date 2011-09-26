@@ -22,6 +22,8 @@ typedef enum {
 	otap_error_unable_to_stat_file = -17,
 	otap_error_unable_to_read_symlink = -18,
 	otap_error_unable_to_create_symlink = -19,
+	otap_error_unable_to_read_special_file = -20,
+	otap_error_unable_to_create_special_file = - 21,
 } otap_error_e;
 
 #ifdef NDEBUG
