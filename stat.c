@@ -99,8 +99,7 @@ __otap_stat_fd(const char *name,
 
 otap_stat_t* otap_stat(const char* path) {
 	int fd = open(path, O_RDONLY);
-	if(fd < 0)
-		return NULL;
+
 	otap_stat_t* ret = __otap_stat_fd(path, path, fd);
 	close(fd);
 	return ret;
@@ -190,8 +189,6 @@ otap_stat_t* otap_stat_entry_find(otap_stat_t* file, const char* name) {
 				return NULL;
 			fd = open(spath, O_RDONLY);
 
-			if(fd < 0)
-				return NULL;
 			otap_stat_t* ret = __otap_stat_fd(ds->d_name, (const char *)spath, fd);
 
 			free(spath);

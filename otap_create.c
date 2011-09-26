@@ -11,7 +11,7 @@
 #include <dirent.h>
 #include <unistd.h>
 
-
+#define PATH_BUFFER_LENGTH 4096
 
 static int _otap_create_fwrite_cmd(FILE* stream, uint8_t cmd) {
 	if(fwrite(&cmd, 1, 1, stream) != 1)
@@ -296,7 +296,7 @@ _otap_create_cmd_symlink_create (FILE        *stream,
                                  otap_stat_t *symlink)
 {
 	int err;
-	char path[2048];
+	char path[PATH_BUFFER_LENGTH];
 	char *slpath = otap_stat_path (symlink);
 	ssize_t len = readlink (slpath, path, sizeof(path)-1);
 	free (slpath);
@@ -319,6 +319,43 @@ _otap_create_cmd_symlink_create (FILE        *stream,
 		return err;
 
 	return _otap_create_fwrite_string(stream, path);
+}
+
+static int
+_otap_create_cmd_symlink_delta (FILE        *stream,
+                                otap_stat_t *a,
+                                otap_stat_t *b)
+{
+	int err;
+	char path_a[PATH_BUFFER_LENGTH];
+	char path_b[PATH_BUFFER_LENGTH];
+
+	char *spath_a = otap_stat_path (a);
+	char *spath_b = otap_stat_path (b);
+	
+	ssize_t len_a = readlink (spath_a, path_a, sizeof(path_a)-1);
+	ssize_t len_b = readlink (spath_b, path_b, sizeof(path_b)-1);
+
+	free (spath_a);
+	free (spath_b);
+	
+	if (len_a < 0 || len_b < 0)
+		return otap_error_unable_to_read_symlink;
+	
+	path_a[len_a] = path_b[len_b] = '\0';
+	
+	int pathcmp = strcmp (path_a, path_b);
+	
+	/* If both symlinks are equal, we quit */
+	if ((b->mtime == a->mtime) && (pathcmp != 0))
+		return 0;
+
+	/* TODO: If only mtime changes, use a mtime update cmd */
+	err = _otap_create_cmd_entity_delete(stream, a->name);
+	if (err != 0)
+		return err;
+
+	return _otap_create_cmd_symlink_create (stream, b);
 }
 
 static int
@@ -355,15 +392,25 @@ _otap_create (FILE        *stream,
 		}
 	}
 
-	if(a->type == otap_stat_type_file)
-		return _otap_create_cmd_file_delta(stream, a, b);
-	
-	if(a->type != otap_stat_type_dir)
-		otap_error(otap_error_feature_not_implemented); // TODO - Handle other types of files (incl. symlink);
-	
+	switch (a->type)
+	{
+		case otap_stat_type_file:
+			return _otap_create_cmd_file_delta(stream, a, b);
+		case otap_stat_type_symlink:
+			return _otap_create_cmd_symlink_delta(stream, a, b);
+		case otap_stat_type_chrdev:
+		case otap_stat_type_blkdev:
+		case otap_stat_type_fifo:
+		case otap_stat_type_socket:
+			otap_error(otap_error_feature_not_implemented);
+		case otap_stat_type_dir:
+		default:
+			break;
+	}
+
 	if(!top && ((err = _otap_create_cmd_dir_enter(stream, b->name)) != 0))
 		return err;
-	
+
 	// Handle changes/additions.
 	uintptr_t i;
 	for(i = 0; i < b->size; i++)

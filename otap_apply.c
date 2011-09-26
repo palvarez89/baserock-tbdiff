@@ -238,32 +238,38 @@ static int _otap_apply_cmd_file_delta(FILE* stream) {
 
 
 
-static int __otap_apply_cmd_entity_delete(const char* name) {
+static int
+__otap_apply_cmd_entity_delete (const char* name)
+{	
 	DIR* dp = opendir(name);
-	if(dp == NULL) {
-		FILE* fp = fopen(name, "rb");
-		if(fp != NULL) {
-			fclose(fp);
-			if(remove(name) != 0)
-				otap_error(otap_error_unable_to_remove_file);
-			return 0;
-		}
-		otap_error(otap_error_file_does_not_exist);
+	if (dp == NULL)
+	{
+		if(remove(name) != 0)
+			otap_error(otap_error_unable_to_remove_file);
+
+		return 0;
 	}
-	if(chdir(name) != 0) {
-		closedir(dp);
-		otap_error(otap_error_unable_to_change_dir);
+	
+	if (chdir(name) != 0) {
+		closedir (dp);
+		otap_error (otap_error_unable_to_change_dir);
 	}
 	
 	struct dirent* entry;
-	while((entry = readdir(dp)) != NULL) {
+	
+	while((entry = readdir(dp)) != NULL)
+	{
 		if((strcmp(entry->d_name, ".") == 0) || (strcmp(entry->d_name, "..") == 0))
 			continue;
+			
 		int err;
-		if((err = __otap_apply_cmd_entity_delete(entry->d_name)) != 0) {
+		if((err = __otap_apply_cmd_entity_delete(entry->d_name)) != 0)
+		{
 			closedir(dp);
+
 			if (chdir("..") != 0)
-                                otap_error(otap_error_unable_to_change_dir);
+				otap_error(otap_error_unable_to_change_dir);
+
 			return err;
 		}
 	}
@@ -277,7 +283,7 @@ static int __otap_apply_cmd_entity_delete(const char* name) {
 }
 	
 static int
-_otap_apply_cmd_entity_delete(FILE* stream)
+_otap_apply_cmd_entity_delete (FILE* stream)
 {
 	uint16_t elen;
 	if(fread(&elen, 2, 1, stream) != 1)
