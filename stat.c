@@ -15,8 +15,7 @@
 
 static otap_stat_t*
 __otap_stat_fd(const char *name,
-               const char *path,
-               int         fda)
+               const char *path)
 {
 	struct stat info;
 
@@ -99,10 +98,7 @@ __otap_stat_fd(const char *name,
 }
 
 otap_stat_t* otap_stat(const char* path) {
-	int fd = open(path, O_RDONLY);
-
-	otap_stat_t* ret = __otap_stat_fd(path, path, fd);
-	close(fd);
+	otap_stat_t* ret = __otap_stat_fd(path, path);
 	return ret;
 }
 
@@ -154,7 +150,7 @@ otap_stat_entry(otap_stat_t* file, uint32_t entry)
 	if(spath == NULL)
 		return NULL;
 
-	otap_stat_t* ret = __otap_stat_fd(ds->d_name, (const char*)spath, fd);
+	otap_stat_t* ret = __otap_stat_fd(ds->d_name, (const char*)spath);
 
   free(spath);
 	
@@ -175,30 +171,27 @@ otap_stat_t* otap_stat_entry_find(otap_stat_t* file, const char* name) {
 		return NULL;
 	
 	DIR* dp = fdopendir(fd);
-	if(dp == NULL) {
-		close(fd);
+	close(fd);
+	if(dp == NULL)
 		return NULL;
-	}
 	
 	struct dirent* ds;
-	for(ds = readdir(dp); ds != NULL; ds = readdir(dp)) {
-		if(strcmp(ds->d_name, name) == 0) {
-			close(fd);
+	for(ds = readdir(dp); ds != NULL; ds = readdir(dp))
+	{
+		if(strcmp(ds->d_name, name) == 0)
+		{
 			char* spath = otap_stat_subpath(file, ds->d_name);
 			if(spath == NULL)
 				return NULL;
-			fd = open(spath, O_RDONLY);
 
-			otap_stat_t* ret = __otap_stat_fd(ds->d_name, (const char *)spath, fd);
+			otap_stat_t* ret = __otap_stat_fd(ds->d_name, (const char *)spath);
 
 			free(spath);
-			close(fd);
 			ret->parent = file;
 			return ret;
 		}
 	}
-	
-	close(fd);
+
 	return NULL;
 }
 
