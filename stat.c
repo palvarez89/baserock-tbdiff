@@ -16,7 +16,7 @@
 static otap_stat_t*
 __otap_stat_fd(const char *name,
                const char *path,
-               int         fd)
+               int         fda)
 {
 	struct stat info;
 
@@ -39,6 +39,7 @@ __otap_stat_fd(const char *name,
 	}
 	else if(S_ISDIR(info.st_mode))
 	{
+		int fd = open(path, O_RDONLY);
 		if (fd < 0)
 			return NULL;
 		
@@ -147,16 +148,15 @@ otap_stat_entry(otap_stat_t* file, uint32_t entry)
 			i--;
 	}
 	close(fd);
-	
+	fd = -1;
+		
 	char* spath = otap_stat_subpath(file, ds->d_name);
 	if(spath == NULL)
 		return NULL;
-	fd = open(spath, O_RDONLY);
 
 	otap_stat_t* ret = __otap_stat_fd(ds->d_name, (const char*)spath, fd);
 
   free(spath);
-	close(fd);
 	
 	if (ret == NULL)
 		return NULL;
