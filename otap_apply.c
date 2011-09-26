@@ -363,7 +363,7 @@ _otap_apply_cmd_special_create (FILE *stream)
 	if (name == NULL)
 		return otap_error_unable_to_read_stream;
 
-  if(fread(&mtime, sizeof(uint32_t), 1, stream) != 1)
+  if (fread(&mtime, sizeof(uint32_t), 1, stream) != 1)
   {
   	free (name);
 		otap_error(otap_error_unable_to_read_stream);
@@ -375,23 +375,34 @@ _otap_apply_cmd_special_create (FILE *stream)
 	}
 	if (fread(&dev, sizeof(dev_t), 1, stream) != 1)
   {
-  	free (name);
+  	free(name);
   	otap_error(otap_error_unable_to_read_stream);
   }
-	
-  fprintf (stderr, "cmd_special_create %s\n", name);
+
+  fprintf(stderr, "cmd_special_create %s\n", name);
 
 	if (mknod (name, mode, dev) != 0)
 	{
   	free (name);
   	return otap_error_unable_to_create_special_file;
 	}
+	/* We can't override umask during mknod hence the chmod */
+	if (chmod (name, mode) != 0)
+	{
+  	free (name);
+  	return otap_error_unable_to_create_special_file;
+	}
+	
+	struct utimbuf timebuff = { time(NULL), mtime };
+	utime(name, &timebuff); // Don't care if it succeeds right now.      
 
 	free (name);
   return otap_error_success;
 }
 
-int otap_apply(FILE* stream) {
+int
+otap_apply (FILE* stream)
+{
 	if(stream == NULL)
 		otap_error(otap_error_null_pointer);
 	

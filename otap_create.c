@@ -388,8 +388,8 @@ _otap_create_cmd_symlink_delta (FILE        *stream,
 }
 
 static int
-_otap_create_cmd_special_create (FILE  *stream,
-                             otap_stat_t *nod)
+_otap_create_cmd_special_create (FILE        *stream,
+                                 otap_stat_t *nod)
 {
 	struct stat info;
 	char *nodpath = otap_stat_path (nod);
@@ -413,7 +413,7 @@ _otap_create_cmd_special_create (FILE  *stream,
 	if (err != 0)
 		return err;
 
-	return _otap_create_fwrite_dev (stream, info.st_dev);
+	return _otap_create_fwrite_dev (stream, info.st_rdev);
 }
 
 static int
