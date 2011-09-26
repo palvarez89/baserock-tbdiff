@@ -298,15 +298,21 @@ static int
 _otap_apply_cmd_symlink_create (FILE *stream)
 {
 	uint16_t len;
+	uint32_t mtime;
 
+	if(fread(&mtime, sizeof(uint32_t), 1, stream) != 1)
+		otap_error(otap_error_unable_to_read_stream);
+
+  /* Reading link file name */
 	if(fread(&len, sizeof(uint16_t), 1, stream) != 1)
 		otap_error(otap_error_unable_to_read_stream);
+
 	char linkname[len + 1];
-	linkname[len] = '\0';
-		
+	linkname[len] = '\0';		
 	if(fread(linkname, sizeof(char), len, stream) != len)
 		otap_error(otap_error_unable_to_read_stream);
-	
+
+  /* Reading target path */
   if(fread(&len, sizeof(uint16_t), 1, stream) != 1)
 		otap_error(otap_error_unable_to_read_stream);
   char linkpath[len+1];
@@ -317,8 +323,11 @@ _otap_apply_cmd_symlink_create (FILE *stream)
   
   fprintf (stderr, "cmd_symlink_create %s -> %s\n", linkname, linkpath);
 
-  if (symlink (linkname, linkpath))
+  if (symlink (linkpath, linkname))
     return otap_error_unable_to_create_symlink;
+
+	struct utimbuf timebuff = { time(NULL), mtime };
+	utime(linkname, &timebuff); // Don't care if it succeeds right now.      
 
   return otap_error_success;
 }

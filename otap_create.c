@@ -301,17 +301,21 @@ _otap_create_cmd_symlink_create (FILE        *stream,
 	ssize_t len = readlink (slpath, path, sizeof(path)-1);
 	free (slpath);
 
-
-
 	if (len < 0)
 		return otap_error_unable_to_read_symlink;
 
 	path[len] = '\0';
-	
-	if((err = _otap_create_fwrite_cmd(stream, otap_cmd_symlink_create)) != 0)
+
+	err = _otap_create_fwrite_cmd(stream, otap_cmd_symlink_create);
+	if (err != 0)
 		return err;
-		
-  if((err = _otap_create_fwrite_string(stream, symlink->name)) != 0)
+
+	err = _otap_create_fwrite_mtime (stream, symlink->mtime);
+	if (err != 0)
+		return err;
+
+  err = _otap_create_fwrite_string(stream, symlink->name);
+	if (err != 0)
 		return err;
 
 	return _otap_create_fwrite_string(stream, path);
