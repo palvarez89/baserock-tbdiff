@@ -97,7 +97,7 @@ __otap_stat_fd(const char *name,
 
     ret->rdev  = (uint32_t)info.st_rdev;
     ret->uid   = (uint32_t)info.st_uid;
-    ret->gid   = info.st_gid;
+    ret->gid   = (uint32_t)info.st_gid;
     ret->mode  = (uint32_t)info.st_mode;
     ret->mtime = (uint32_t)info.st_mtime;
 

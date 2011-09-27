@@ -459,12 +459,6 @@ static int
 _otap_create_cmd_special_create (FILE        *stream,
                                  otap_stat_t *nod)
 {
-    struct stat info;
-    char *nodpath = otap_stat_path (nod);
-    if(lstat(nodpath, &info) != 0)
-        return OTAP_ERROR_UNABLE_TO_READ_SPECIAL_FILE;
-    free (nodpath);
-
     int err = _otap_create_fwrite_cmd(stream, OTAP_CMD_SPECIAL_CREATE);
     if (err != 0)
         return err;

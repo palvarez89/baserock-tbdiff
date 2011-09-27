@@ -187,13 +187,13 @@ _otap_apply_cmd_file_create(FILE* stream)
 
     // Apply metadata.
     struct utimbuf timebuff = { time(NULL), mtime };
-    
-    fprintf (stderr, "%d - %d\n", uid, gid);
 
     // Don't care if it succeeds right now.
     utime(fname, &timebuff); 
-    int err = chmod(fname, (mode_t)mode);
+    /* Chown ALWAYS have to be done before chmod */
+    int err;
     err = chown(fname, (uid_t)uid, (gid_t)gid);
+    err = chmod(fname, mode);
 
     return 0;
 }
@@ -439,8 +439,8 @@ _otap_apply_cmd_special_create(FILE *stream)
     utime(name, &timebuff); // Don't care if it succeeds right now.
 
     int ret;
+    ret = chown(name, (uid_t)uid, (gid_t)gid);
     ret = chmod(name, mode);
-    ret = chown(name, (uid_t)uid, (gid_t));
 
     free(name);
     return OTAP_ERROR_SUCCESS;
