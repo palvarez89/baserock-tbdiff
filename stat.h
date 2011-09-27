@@ -6,26 +6,28 @@
 #include <stdbool.h>
 #include <sys/types.h>
 
-typedef enum {
-	otap_stat_type_file    = 'f',
-	otap_stat_type_dir     = 'd',
-	otap_stat_type_symlink = 'l',
-	otap_stat_type_chrdev  = 'c',
-	otap_stat_type_blkdev  = 'b',
-	otap_stat_type_fifo    = 'p',
-	otap_stat_type_socket  = 's'
+typedef enum
+{
+    OTAP_STAT_TYPE_FILE    = 'f',
+    OTAP_STAT_TYPE_DIR     = 'd',
+    OTAP_STAT_TYPE_SYMLINK = 'l',
+    OTAP_STAT_TYPE_CHRDEV  = 'c',
+    OTAP_STAT_TYPE_BLKDEV  = 'b',
+    OTAP_STAT_TYPE_FIFO    = 'p',
+    OTAP_STAT_TYPE_SOCKET  = 's'
 } otap_stat_type_e;
 
-typedef struct {
-	void*            parent;
-	char*            name;
-	otap_stat_type_e type;
-	uint32_t         mtime;
-	uint32_t         size; // Count for directory.
-	uid_t            user;
-	uid_t            group;
-	mode_t           mode;
-	dev_t            dev;
+typedef struct
+{
+    void*            parent;
+    char*            name;
+    otap_stat_type_e type;
+    uint32_t         mtime;
+    uint32_t         size; // Count for directory.
+    uid_t            user;
+    uid_t            group;
+    mode_t           mode;
+    dev_t            dev;
 } otap_stat_t;
 
 

@@ -1,29 +1,30 @@
 #ifndef __otap_error_h__
 #define __otap_error_h__
 
-typedef enum {
-	otap_error_success =  0,
-	otap_error_failure = -1,
-	otap_error_out_of_memory = -2,
-	otap_error_null_pointer = -3,
-	otap_error_invalid_parameter = -4,
-	otap_error_unable_to_read_stream  = -5,
-	otap_error_unable_to_write_stream = -6,
-	otap_error_unable_to_create_dir = -7,
-	otap_error_unable_to_change_dir = -8,
-	otap_error_unable_to_open_file_for_reading = -9,
-	otap_error_unable_to_open_file_for_writing = -10,
-	otap_error_file_already_exists = -11,
-	otap_error_unable_to_remove_file = -12,
-	otap_error_unable_to_seek_through_stream = -13,
-	otap_error_feature_not_implemented = -14,
-	otap_error_file_does_not_exist = -15,
-	otap_error_unable_to_detect_stream_position = -16,
-	otap_error_unable_to_stat_file = -17,
-	otap_error_unable_to_read_symlink = -18,
-	otap_error_unable_to_create_symlink = -19,
-	otap_error_unable_to_read_special_file = -20,
-	otap_error_unable_to_create_special_file = - 21,
+typedef enum
+{
+    OTAP_ERROR_SUCCESS =  0,
+    OTAP_ERROR_FAILURE = -1,
+    OTAP_ERROR_OUT_OF_MEMORY = -2,
+    OTAP_ERROR_NULL_POINTER = -3,
+    OTAP_ERROR_INVALID_PARAMETER = -4,
+    OTAP_ERROR_UNABLE_TO_READ_STREAM  = -5,
+    OTAP_ERROR_UNABLE_TO_WRITE_STREAM = -6,
+    OTAP_ERROR_UNABLE_TO_CREATE_DIR = -7,
+    OTAP_ERROR_UNABLE_TO_CHANGE_DIR = -8,
+    OTAP_ERROR_UNABLE_TO_OPEN_FILE_FOR_READING = -9,
+    OTAP_ERROR_UNABLE_TO_OPEN_FILE_FOR_WRITING = -10,
+    OTAP_ERROR_FILE_ALREADY_EXISTS = -11,
+    OTAP_ERROR_UNABLE_TO_REMOVE_FILE = -12,
+    OTAP_ERROR_UNABLE_TO_SEEK_THROUGH_STREAM = -13,
+    OTAP_ERROR_FEATURE_NOT_IMPLEMENTED = -14,
+    OTAP_ERROR_FILE_DOES_NOT_EXIST = -15,
+    OTAP_ERROR_UNABLE_TO_DETECT_STREAM_POSITION = -16,
+    OTAP_ERROR_UNABLE_TO_STAT_FILE = -17,
+    OTAP_ERROR_UNABLE_TO_READ_SYMLINK = -18,
+    OTAP_ERROR_UNABLE_TO_CREATE_SYMLINK = -19,
+    OTAP_ERROR_UNABLE_TO_READ_SPECIAL_FILE = -20,
+    OTAP_ERROR_UNABLE_TO_CREATE_SPECIAL_FILE = - 21,
 } otap_error_e;
 
 #ifdef NDEBUG
