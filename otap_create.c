@@ -44,18 +44,36 @@ _otap_create_fwrite_mtime (FILE    *stream,
 
 static int
 _otap_create_fwrite_mode (FILE     *stream,
-                          mode_t    mode)
+                          uint32_t  mode)
 {
-    if(fwrite(&mode, sizeof(mode_t), 1, stream) != 1)
+    if(fwrite(&mode, sizeof(uint32_t), 1, stream) != 1)
+        otap_error(OTAP_ERROR_UNABLE_TO_WRITE_STREAM);
+    return 0;
+}
+
+static int
+_otap_create_fwrite_gid (FILE     *stream,
+                         gid_t     gid)
+{
+    if(fwrite(&gid, sizeof(gid_t), 1, stream) != 1)
+        otap_error(OTAP_ERROR_UNABLE_TO_WRITE_STREAM);
+    return 0;
+}
+
+static int
+_otap_create_fwrite_uid (FILE     *stream,
+                         uid_t     uid)
+{
+    if(fwrite(&uid, sizeof(uid_t), 1, stream) != 1)
         otap_error(OTAP_ERROR_UNABLE_TO_WRITE_STREAM);
     return 0;
 }
 
 static int
 _otap_create_fwrite_dev (FILE     *stream,
-                         dev_t     dev)
+                         uint32_t  dev)
 {
-    if(fwrite(&dev, sizeof(dev_t), 1, stream) != 1)
+    if(fwrite(&dev, sizeof(uint32_t), 1, stream) != 1)
         otap_error(OTAP_ERROR_UNABLE_TO_WRITE_STREAM);
     return 0;
 }
@@ -88,6 +106,12 @@ _otap_create_cmd_file_create (FILE* stream, otap_stat_t* f)
         return err;
     if((err = _otap_create_fwrite_mtime(stream, f->mtime)) != 0)
         return err;
+    if((err = _otap_create_fwrite_mode(stream, f->mode)) != 0)
+        return err;
+    if((err = _otap_create_fwrite_uid(stream, f->uid)) != 0)
+        return err;
+    if((err = _otap_create_fwrite_gid(stream, f->gid)) != 0)
+        return err;
 
     uint32_t size = f->size;
     if(fwrite(&size, sizeof(uint32_t), 1, stream) != 1)
@@ -109,6 +133,7 @@ _otap_create_cmd_file_create (FILE* stream, otap_stat_t* f)
         }
     }
     fclose(fp);
+    
     return 0;
 }
 
@@ -452,11 +477,11 @@ _otap_create_cmd_special_create (FILE        *stream,
     if (err != 0)
         return err;
 
-    err = _otap_create_fwrite_mode (stream, info.st_mode);
+    err = _otap_create_fwrite_mode (stream, nod->mode);
     if (err != 0)
         return err;
 
-    return _otap_create_fwrite_dev (stream, info.st_rdev);
+    return _otap_create_fwrite_dev (stream, nod->rdev);
 }
 
 static int
@@ -475,6 +500,9 @@ _otap_create (FILE        *stream,
 
     if((a == NULL) || ((b != NULL) && (a->type != b->type)))
     {
+        if (a)
+            _otap_create_cmd_entity_delete(stream, a->name);
+
         switch(b->type)
         {
         case OTAP_STAT_TYPE_FILE:
@@ -494,7 +522,7 @@ _otap_create (FILE        *stream,
         }
     }
 
-    switch (a->type)
+    switch (b->type)
     {
     case OTAP_STAT_TYPE_FILE:
         return _otap_create_cmd_file_delta(stream, a, b);

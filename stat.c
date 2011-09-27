@@ -40,7 +40,10 @@ __otap_stat_fd(const char *name,
     {
         int fd = open(path, O_RDONLY);
         if (fd < 0)
+        {
+            free(ret);
             return NULL;
+        }
 
         ret->type = OTAP_STAT_TYPE_DIR;
         DIR* dp = fdopendir(fd);
@@ -92,6 +95,10 @@ __otap_stat_fd(const char *name,
         return NULL;
     }
 
+    ret->rdev  = (uint32_t)info.st_rdev;
+    ret->uid   = (uint32_t)info.st_uid;
+    ret->gid   = info.st_gid;
+    ret->mode  = (uint32_t)info.st_mode;
     ret->mtime = (uint32_t)info.st_mtime;
 
     return ret;

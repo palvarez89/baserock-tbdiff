@@ -24,10 +24,10 @@ typedef struct
     otap_stat_type_e type;
     uint32_t         mtime;
     uint32_t         size; // Count for directory.
-    uid_t            user;
-    uid_t            group;
-    mode_t           mode;
-    dev_t            dev;
+    uint32_t         uid;
+    uint32_t         gid;
+    uint32_t         mode;
+    uint32_t         rdev;
 } otap_stat_t;
 
 

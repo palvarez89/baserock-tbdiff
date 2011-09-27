@@ -140,7 +140,19 @@ _otap_apply_cmd_file_create(FILE* stream)
         otap_error(OTAP_ERROR_INVALID_PARAMETER);
 
     uint32_t mtime;
-    if(fread(&mtime, 4, 1, stream) != 1)
+    if(fread(&mtime, sizeof(uint32_t), 1, stream) != 1)
+        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
+
+    uint32_t mode;
+    if(fread(&mode, sizeof(uint32_t), 1, stream) != 1)
+        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
+
+    uint32_t uid;
+    if(fread(&uid, sizeof(uint32_t), 1, stream) != 1)
+        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
+    
+    uint32_t gid;
+    if(fread(&gid, sizeof(uint32_t), 1, stream) != 1)
         otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
 
     uint32_t fsize;
@@ -175,7 +187,13 @@ _otap_apply_cmd_file_create(FILE* stream)
 
     // Apply metadata.
     struct utimbuf timebuff = { time(NULL), mtime };
-    utime(fname, &timebuff); // Don't care if it succeeds right now.
+    
+    fprintf (stderr, "%d - %d\n", uid, gid);
+
+    // Don't care if it succeeds right now.
+    utime(fname, &timebuff); 
+    int err = chmod(fname, (mode_t)mode);
+    err = chown(fname, (uid_t)uid, (gid_t)gid);
 
     return 0;
 }
@@ -375,8 +393,8 @@ _otap_apply_cmd_special_create (FILE *stream)
 {
     char *name = _otap_apply_fread_string (stream);
     uint32_t mtime;
-    mode_t   mode;
-    dev_t    dev;
+    uint32_t mode;
+    uint32_t dev;
 
     if (name == NULL)
         return OTAP_ERROR_UNABLE_TO_READ_STREAM;
@@ -386,12 +404,12 @@ _otap_apply_cmd_special_create (FILE *stream)
         free (name);
         otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
     }
-    if (fread(&mode, sizeof(mode_t), 1, stream) != 1)
+    if (fread(&mode, sizeof(uint32_t), 1, stream) != 1)
     {
         free (name);
         otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
     }
-    if (fread(&dev, sizeof(dev_t), 1, stream) != 1)
+    if (fread(&dev, sizeof(uint32_t), 1, stream) != 1)
     {
         free(name);
         otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
@@ -399,7 +417,7 @@ _otap_apply_cmd_special_create (FILE *stream)
 
     fprintf(stderr, "cmd_special_create %s\n", name);
 
-    if (mknod (name, mode, dev) != 0)
+    if (mknod (name, mode, (dev_t)dev) != 0)
     {
         free (name);
         return OTAP_ERROR_UNABLE_TO_CREATE_SPECIAL_FILE;
