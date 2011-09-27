@@ -97,18 +97,21 @@ __otap_stat_fd(const char *name,
     return ret;
 }
 
-otap_stat_t* otap_stat(const char* path)
+otap_stat_t*
+otap_stat(const char* path)
 {
     otap_stat_t* ret = __otap_stat_fd(path, path);
     return ret;
 }
 
-void otap_stat_free(otap_stat_t* file)
+void
+otap_stat_free(otap_stat_t* file)
 {
     free(file);
 }
 
-void otap_stat_print(otap_stat_t* file)
+void
+otap_stat_print(otap_stat_t* file)
 {
     (void)file;
 }
@@ -164,7 +167,8 @@ otap_stat_entry(otap_stat_t* file, uint32_t entry)
     return ret;
 }
 
-otap_stat_t* otap_stat_entry_find(otap_stat_t* file, const char* name)
+otap_stat_t*
+otap_stat_entry_find(otap_stat_t* file, const char* name)
 {
     if((file == NULL)
             || (file->type != OTAP_STAT_TYPE_DIR))
@@ -199,7 +203,9 @@ otap_stat_t* otap_stat_entry_find(otap_stat_t* file, const char* name)
     return NULL;
 }
 
-char* otap_stat_subpath(otap_stat_t* file, const char* entry)
+char*
+otap_stat_subpath(otap_stat_t *file,
+                  const char  *entry)
 {
     if(file == NULL)
         return NULL;
@@ -238,12 +244,14 @@ char* otap_stat_subpath(otap_stat_t* file, const char* entry)
     return path;
 }
 
-char* otap_stat_path(otap_stat_t* file)
+char*
+otap_stat_path(otap_stat_t* file)
 {
     return otap_stat_subpath(file, NULL);
 }
 
-int otap_stat_open(otap_stat_t* file, int flags)
+int
+otap_stat_open(otap_stat_t* file, int flags)
 {
     char* path = otap_stat_path(file);
     if(path == NULL)
@@ -253,7 +261,9 @@ int otap_stat_open(otap_stat_t* file, int flags)
     return fd;
 }
 
-FILE* otap_stat_fopen(otap_stat_t* file, const char* mode)
+FILE*
+otap_stat_fopen(otap_stat_t *file,
+                const char  *mode)
 {
     char* path = otap_stat_path(file);
     if(path == NULL)
