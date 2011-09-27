@@ -297,10 +297,28 @@ _otap_create_cmd_dir_create(FILE        *stream,
                             otap_stat_t *d)
 {
     int err;
-    if(((err = _otap_create_fwrite_cmd(stream, OTAP_CMD_DIR_CREATE)) != 0)
-            || ((err = _otap_create_fwrite_string(stream, d->name)) != 0))
+    
+    err = _otap_create_fwrite_cmd(stream, OTAP_CMD_DIR_CREATE);
+    if(err != 0)
         return err;
-    return _otap_create_fwrite_mtime(stream, d->mtime);
+        
+    err = _otap_create_fwrite_string(stream, d->name);
+    if(err != 0)
+        return err;
+
+    err = _otap_create_fwrite_mtime(stream, d->mtime);
+    if(err != 0)
+        return err;
+
+    err = _otap_create_fwrite_uid(stream, d->uid);
+    if(err != 0)
+        return err;
+        
+    err = _otap_create_fwrite_gid(stream, d->gid);
+    if(err != 0)
+        return err;
+    
+    return _otap_create_fwrite_mode (stream, d->mode);
 }
 
 static int

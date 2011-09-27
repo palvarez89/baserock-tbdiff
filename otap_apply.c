@@ -67,15 +67,30 @@ _otap_apply_cmd_dir_create(FILE* stream)
         otap_error(OTAP_ERROR_INVALID_PARAMETER);
 
     uint32_t mtime;
-    if(fread(&mtime, 4, 1, stream) != 1)
+    if(fread(&mtime, sizeof(uint32_t), 1, stream) != 1)
         otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
 
-    if(mkdir(dname, (S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)) != 0)
+    uint32_t uid;
+    if(fread(&uid, sizeof(uint32_t), 1, stream) != 1)
+        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
+
+    uint32_t gid;
+    if(fread(&gid, sizeof(uint32_t), 1, stream) != 1)
+        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
+
+    uint32_t mode;
+    if(fread(&mode, sizeof(uint32_t), 1, stream) != 1)
+        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
+
+    if(mkdir(dname, (mode_t)mode) != 0)
         otap_error(OTAP_ERROR_UNABLE_TO_CREATE_DIR);
 
     // Apply metadata.
     struct utimbuf timebuff = { time(NULL), mtime };
     utime(dname, &timebuff); // Don't care if it succeeds right now.
+    int ret;
+    ret = chown (dname, (uid_t)uid, (gid_t)gid);
+    ret = chmod (dname, mode);
 
     return 0;
 }
@@ -213,7 +228,7 @@ _otap_apply_cmd_file_delta(FILE* stream)
         otap_error(OTAP_ERROR_INVALID_PARAMETER);
 
     uint32_t mtime;
-    if(fread(&mtime, 4, 1, stream) != 1)
+    if(fread(&mtime, sizeof(uint32_t), 1, stream) != 1)
         otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
 
     FILE* op = fopen(fname, "rb");
