@@ -291,7 +291,7 @@ static int
 __otap_apply_cmd_entity_delete(const char* name)
 {
     DIR* dp = opendir(name);
-    if (dp == NULL)
+    if(dp == NULL)
     {
         if(remove(name) != 0)
             otap_error(OTAP_ERROR_UNABLE_TO_REMOVE_FILE);
@@ -299,10 +299,10 @@ __otap_apply_cmd_entity_delete(const char* name)
         return 0;
     }
 
-    if (chdir(name) != 0)
+    if(chdir(name) != 0)
     {
-        closedir (dp);
-        otap_error (OTAP_ERROR_UNABLE_TO_CHANGE_DIR);
+        closedir(dp);
+        otap_error(OTAP_ERROR_UNABLE_TO_CHANGE_DIR);
     }
 
     struct dirent* entry;
@@ -317,7 +317,7 @@ __otap_apply_cmd_entity_delete(const char* name)
         {
             closedir(dp);
 
-            if (chdir("..") != 0)
+            if(chdir("..") != 0)
                 otap_error(OTAP_ERROR_UNABLE_TO_CHANGE_DIR);
 
             return err;
@@ -325,7 +325,7 @@ __otap_apply_cmd_entity_delete(const char* name)
     }
 
     closedir(dp);
-    if (chdir("..") != 0)
+    if(chdir("..") != 0)
         otap_error(OTAP_ERROR_UNABLE_TO_CHANGE_DIR);
     if(remove(name) != 0)
         otap_error(OTAP_ERROR_UNABLE_TO_REMOVE_FILE);
@@ -377,9 +377,9 @@ _otap_apply_cmd_symlink_create(FILE *stream)
     if(fread(linkpath, sizeof(char), len, stream) != len)
         otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
 
-    fprintf (stderr, "cmd_symlink_create %s -> %s\n", linkname, linkpath);
+    fprintf(stderr, "cmd_symlink_create %s -> %s\n", linkname, linkpath);
 
-    if (symlink (linkpath, linkname))
+    if(symlink(linkpath, linkname))
         return OTAP_ERROR_UNABLE_TO_CREATE_SYMLINK;
 
     struct utimbuf timebuff = { time(NULL), mtime };
@@ -389,27 +389,39 @@ _otap_apply_cmd_symlink_create(FILE *stream)
 }
 
 static int
-_otap_apply_cmd_special_create (FILE *stream)
+_otap_apply_cmd_special_create(FILE *stream)
 {
-    char *name = _otap_apply_fread_string (stream);
+    char *name = _otap_apply_fread_string(stream);
     uint32_t mtime;
     uint32_t mode;
+    uint32_t uid;
+    uint32_t gid;
     uint32_t dev;
 
-    if (name == NULL)
+    if(name == NULL)
         return OTAP_ERROR_UNABLE_TO_READ_STREAM;
 
-    if (fread(&mtime, sizeof(uint32_t), 1, stream) != 1)
+    if(fread(&mtime, sizeof(uint32_t), 1, stream) != 1)
     {
-        free (name);
+        free(name);
         otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
     }
-    if (fread(&mode, sizeof(uint32_t), 1, stream) != 1)
+    if(fread(&mode, sizeof(uint32_t), 1, stream) != 1)
     {
-        free (name);
+        free(name);
         otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
     }
-    if (fread(&dev, sizeof(uint32_t), 1, stream) != 1)
+    if(fread(&uid, sizeof(uint32_t), 1, stream) != 1)
+    {
+        free(name);
+        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
+    }
+    if(fread(&gid, sizeof(uint32_t), 1, stream) != 1)
+    {
+        free(name);
+        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
+    }
+    if(fread(&dev, sizeof(uint32_t), 1, stream) != 1)
     {
         free(name);
         otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
@@ -417,22 +429,20 @@ _otap_apply_cmd_special_create (FILE *stream)
 
     fprintf(stderr, "cmd_special_create %s\n", name);
 
-    if (mknod (name, mode, (dev_t)dev) != 0)
+    if(mknod(name, mode, (dev_t)dev) != 0)
     {
-        free (name);
-        return OTAP_ERROR_UNABLE_TO_CREATE_SPECIAL_FILE;
-    }
-    /* We can't override umask during mknod hence the chmod */
-    if (chmod (name, mode) != 0)
-    {
-        free (name);
+        free(name);
         return OTAP_ERROR_UNABLE_TO_CREATE_SPECIAL_FILE;
     }
 
     struct utimbuf timebuff = { time(NULL), mtime };
     utime(name, &timebuff); // Don't care if it succeeds right now.
 
-    free (name);
+    int ret;
+    ret = chmod(name, mode);
+    ret = chown(name, (uid_t)uid, (gid_t));
+
+    free(name);
     return OTAP_ERROR_SUCCESS;
 }
 
@@ -476,11 +486,11 @@ otap_apply(FILE* stream)
                 return err;
             break;
         case OTAP_CMD_SYMLINK_CREATE:
-            if ((err = _otap_apply_cmd_symlink_create(stream)) != 0)
+            if((err = _otap_apply_cmd_symlink_create(stream)) != 0)
                 return err;
             break;
         case OTAP_CMD_SPECIAL_CREATE:
-            if ((err = _otap_apply_cmd_special_create(stream)) != 0)
+            if((err = _otap_apply_cmd_special_create(stream)) != 0)
                 return err;
             break;
         case OTAP_CMD_ENTITY_MOVE:

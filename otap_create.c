@@ -480,6 +480,14 @@ _otap_create_cmd_special_create (FILE        *stream,
     err = _otap_create_fwrite_mode (stream, nod->mode);
     if (err != 0)
         return err;
+        
+    err = _otap_create_fwrite_uid (stream, nod->uid);
+    if (err != 0)
+        return err;
+
+    err = _otap_create_fwrite_gid (stream, nod->gid);
+    if (err != 0)
+        return err;
 
     return _otap_create_fwrite_dev (stream, nod->rdev);
 }
@@ -500,9 +508,6 @@ _otap_create (FILE        *stream,
 
     if((a == NULL) || ((b != NULL) && (a->type != b->type)))
     {
-        if (a)
-            _otap_create_cmd_entity_delete(stream, a->name);
-
         switch(b->type)
         {
         case OTAP_STAT_TYPE_FILE:
@@ -534,6 +539,7 @@ _otap_create (FILE        *stream,
     case OTAP_STAT_TYPE_SOCKET:
         otap_error(OTAP_ERROR_FEATURE_NOT_IMPLEMENTED);
     case OTAP_STAT_TYPE_DIR:
+        /* Special function to check if dir perm/ownership changed, no break */
     default:
         break;
     }
