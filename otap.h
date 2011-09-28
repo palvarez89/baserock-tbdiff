@@ -21,7 +21,7 @@ typedef enum
     OTAP_CMD_ENTITY_COPY          = 0x31,
     OTAP_CMD_ENTITY_DELETE        = 0x32,
     OTAP_CMD_SYMLINK_CREATE       = 0x40,
-    OTAP_CMD_SPECIAL_CREATE       = 0x50
+    OTAP_CMD_SPECIAL_CREATE       = 0x50,
 } otap_cmd_e;
 
 typedef enum
@@ -31,6 +31,7 @@ typedef enum
     OTAP_METADATA_MODE  = 0x2,
     OTAP_METADATA_UID   = 0x4,
     OTAP_METADATA_GID   = 0x8,
+    OTAP_METADATA_RDEV   = 0x10,
 } otap_metadata_type_e;
 
 extern const char* otap_ident;

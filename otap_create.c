@@ -148,13 +148,13 @@ _otap_metadata_mask (otap_stat_t *a,
     uint16_t metadata_mask = OTAP_METADATA_NONE;
 
     /* If nothing changes we issue no command */
-    if (a->mtime == b->mtime)
+    if (a->mtime != b->mtime)
         metadata_mask |= OTAP_METADATA_MTIME;
-    if (a->uid == b->uid)
+    if (a->uid != b->uid)
         metadata_mask |= OTAP_METADATA_UID;
-    if (a->gid == b->gid)
+    if (a->gid != b->gid)
         metadata_mask |= OTAP_METADATA_GID;
-    if (a->mode == b->mode) 
+    if (a->mode != b->mode) 
         metadata_mask |= OTAP_METADATA_MODE;
     
     return metadata_mask;
@@ -552,31 +552,45 @@ static int
 _otap_create_cmd_special_create (FILE        *stream,
                                  otap_stat_t *nod)
 {
-    int err = _otap_create_fwrite_cmd(stream, OTAP_CMD_SPECIAL_CREATE);
-    if (err != 0)
+    int err;
+    
+    if ((err = _otap_create_fwrite_cmd(stream, OTAP_CMD_SPECIAL_CREATE)) != 0 ||
+        (err = _otap_create_fwrite_string(stream, nod->name))            != 0 ||
+        (err = _otap_create_fwrite_mtime (stream, nod->mtime))           != 0 ||
+        (err = _otap_create_fwrite_mode (stream, nod->mode))             != 0 ||
+        (err = _otap_create_fwrite_uid (stream, nod->uid))               != 0 ||
+        (err = _otap_create_fwrite_gid (stream, nod->gid))               != 0)
         return err;
-
-    err = _otap_create_fwrite_string(stream, nod->name);
-    if (err != 0)
-        return err;
-
-    err = _otap_create_fwrite_mtime (stream, nod->mtime);
-    if (err != 0)
-        return err;
-
-    err = _otap_create_fwrite_mode (stream, nod->mode);
-    if (err != 0)
-        return err;
-        
-    err = _otap_create_fwrite_uid (stream, nod->uid);
-    if (err != 0)
-        return err;
-
-    err = _otap_create_fwrite_gid (stream, nod->gid);
-    if (err != 0)
-        return err;
-
     return _otap_create_fwrite_dev (stream, nod->rdev);
+}
+
+static int
+_otap_create_cmd_special_delta(FILE        *stream,
+                               otap_stat_t *a,
+                               otap_stat_t *b)
+{
+    uint16_t metadata_mask = OTAP_METADATA_NONE;
+
+    /* If nothing changes we issue no command */
+    if (a->mtime != b->mtime)
+        metadata_mask |= OTAP_METADATA_MTIME;
+    if (a->uid != b->uid)
+        metadata_mask |= OTAP_METADATA_UID;
+    if (a->gid != b->gid)
+        metadata_mask |= OTAP_METADATA_GID;
+    if (a->mode != b->mode) 
+        metadata_mask |= OTAP_METADATA_MODE;
+    if (a->rdev != b->rdev)
+        metadata_mask |= OTAP_METADATA_RDEV;
+        
+    if (metadata_mask != OTAP_METADATA_NONE)
+        return 0;
+
+    int err;
+    if ((err = _otap_create_cmd_entity_delete(stream, a->name)) != 0)
+        return err;
+
+    return _otap_create_cmd_special_create(stream, b);
 }
 
 static int
@@ -624,9 +638,10 @@ _otap_create (FILE        *stream,
     case OTAP_STAT_TYPE_BLKDEV:
     case OTAP_STAT_TYPE_FIFO:
     case OTAP_STAT_TYPE_SOCKET:
-        otap_error(OTAP_ERROR_FEATURE_NOT_IMPLEMENTED);
+        return _otap_create_cmd_special_delta(stream, a, b);
     case OTAP_STAT_TYPE_DIR:
-        _otap_create_cmd_dir_delta (stream, a, b);
+        if (!top)
+            _otap_create_cmd_dir_delta (stream, a, b);
     default:
         break;
     }

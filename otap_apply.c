@@ -486,7 +486,7 @@ _otap_apply_cmd_dir_delta(FILE *stream)
     if (dname == NULL)
         otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
  
-    fprintf(stderr, "cmd_special_delta %s\n", dname);
+    fprintf(stderr, "cmd_dir_delta %s\n", dname);
     
     if (metadata_mask & OTAP_METADATA_MTIME)
     {
