@@ -34,6 +34,15 @@ _otap_create_fwrite_string(FILE       *stream,
 }
 
 static int
+_otap_create_fwrite_mdata_mask (FILE    *stream,
+                                uint16_t mask)
+{
+    if(fwrite(&mask, sizeof(uint16_t), 1, stream) != 1)
+        otap_error(OTAP_ERROR_UNABLE_TO_WRITE_STREAM);
+    return 0;
+}
+
+static int
 _otap_create_fwrite_mtime (FILE    *stream,
                            uint32_t  mtime)
 {
@@ -100,17 +109,12 @@ static int
 _otap_create_cmd_file_create (FILE* stream, otap_stat_t* f)
 {
     int err;
-    if((err = _otap_create_fwrite_cmd(stream, OTAP_CMD_FILE_CREATE)) != 0)
-        return err;
-    if((err = _otap_create_fwrite_string(stream, f->name)) != 0)
-        return err;
-    if((err = _otap_create_fwrite_mtime(stream, f->mtime)) != 0)
-        return err;
-    if((err = _otap_create_fwrite_mode(stream, f->mode)) != 0)
-        return err;
-    if((err = _otap_create_fwrite_uid(stream, f->uid)) != 0)
-        return err;
-    if((err = _otap_create_fwrite_gid(stream, f->gid)) != 0)
+    if((err = _otap_create_fwrite_cmd(stream, OTAP_CMD_FILE_CREATE)) != 0 ||
+       (err = _otap_create_fwrite_string(stream, f->name))  != 0 ||
+       (err = _otap_create_fwrite_mtime (stream, f->mtime)) != 0 ||
+       (err = _otap_create_fwrite_mode  (stream, f->mode))  != 0 ||
+       (err = _otap_create_fwrite_uid   (stream, f->uid))   != 0 ||
+       (err = _otap_create_fwrite_gid   (stream, f->gid))   != 0)
         return err;
 
     uint32_t size = f->size;
@@ -135,6 +139,47 @@ _otap_create_cmd_file_create (FILE* stream, otap_stat_t* f)
     fclose(fp);
     
     return 0;
+}
+
+static uint16_t
+_otap_metadata_mask (otap_stat_t *a,
+                     otap_stat_t *b)
+{
+    uint16_t metadata_mask = OTAP_METADATA_NONE;
+
+    /* If nothing changes we issue no command */
+    if (a->mtime == b->mtime)
+        metadata_mask |= OTAP_METADATA_MTIME;
+    if (a->uid == b->uid)
+        metadata_mask |= OTAP_METADATA_UID;
+    if (a->gid == b->gid)
+        metadata_mask |= OTAP_METADATA_GID;
+    if (a->mode == b->mode) 
+        metadata_mask |= OTAP_METADATA_MODE;
+    
+    return metadata_mask;
+}
+
+static int
+_otap_create_cmd_file_metadata_update (FILE        *stream,
+                                       otap_stat_t *a,
+                                       otap_stat_t *b)
+{
+    int err;
+    uint16_t metadata_mask = _otap_metadata_mask (a, b);
+
+    if (metadata_mask == OTAP_METADATA_NONE)
+        return 0;
+    /* TODO: Optimize protocol by only sending useful metadata */
+    if ((err = _otap_create_fwrite_cmd(stream, OTAP_CMD_FILE_METADATA_UPDATE)) != 0 ||
+        (err = _otap_create_fwrite_mdata_mask (stream, metadata_mask))         != 0 ||
+        (err = _otap_create_fwrite_mtime      (stream, b->mtime))              != 0 ||
+        (err = _otap_create_fwrite_uid        (stream, b->uid))                != 0 ||
+        (err = _otap_create_fwrite_gid        (stream, b->gid))                != 0 ||
+        (err = _otap_create_fwrite_mode       (stream, b->mode))               != 0)
+        return err;
+
+    return _otap_create_fwrite_string(stream, b->name);
 }
 
 static int
@@ -245,24 +290,32 @@ _otap_create_cmd_file_delta(FILE        *stream,
         end = start;
 
     uint32_t size = flenb - ((flena - end) + start); //(flenb - (o + start));
-
+    
     if((end == start) && (size == 0))
     {
+        _otap_create_cmd_file_metadata_update (stream, a, b);
         fclose(fpb);
         return 0;
     }
 
+    uint16_t metadata_mask = _otap_metadata_mask (a, b);
+
+    /* TODO: Optimize protocol by only sending useful metadata */
     int err;
-    if(((err = _otap_create_fwrite_cmd(stream, OTAP_CMD_FILE_DELTA)) != 0)
-            || ((err = _otap_create_fwrite_string(stream, b->name)) != 0)
-            || ((err = _otap_create_fwrite_mtime(stream, b->mtime)) != 0))
+    if(((err = _otap_create_fwrite_cmd(stream, OTAP_CMD_FILE_DELTA))  != 0) ||
+       ((err = _otap_create_fwrite_string(stream, b->name))           != 0) ||
+       ((err = _otap_create_fwrite_mdata_mask(stream, metadata_mask)) != 0) ||
+       ((err = _otap_create_fwrite_mtime (stream, b->mtime))          != 0) ||
+       ((err = _otap_create_fwrite_uid   (stream, b->uid))            != 0) ||
+       ((err = _otap_create_fwrite_gid   (stream, b->gid))            != 0) ||
+       ((err = _otap_create_fwrite_mode  (stream, b->mode))           != 0))
     {
         fclose(fpb);
         return err;
     }
-    if((fwrite(&start, 4, 1, stream) != 1)
-            || (fwrite(&end, 4, 1, stream) != 1)
-            || (fwrite(&size, 4, 1, stream) != 1))
+    if((fwrite(&start, sizeof(uint32_t), 1, stream) != 1) || 
+       (fwrite(&end,   sizeof(uint32_t), 1, stream) != 1)   ||
+       (fwrite(&size,  sizeof(uint32_t), 1, stream) != 1))
     {
         fclose(fpb);
         otap_error(OTAP_ERROR_UNABLE_TO_WRITE_STREAM);
@@ -412,42 +465,17 @@ _otap_create_cmd_dir_delta (FILE        *stream,
                             otap_stat_t *b)
 {
     int err;
-    uint16_t metadata_mask = OTAP_METADATA_NONE;
+    uint16_t metadata_mask = _otap_metadata_mask (a, b);
 
-    /* If nothing changes we issue no command */
-    if (a->mtime == b->mtime)
-        metadata_mask |= OTAP_METADATA_MTIME;
-    if (a->uid == b->uid)
-        metadata_mask |= OTAP_METADATA_UID;
-    if (a->gid == b->gid)
-        metadata_mask |= OTAP_METADATA_GID;
-    if (a->mode == b->mode) 
-        metadata_mask |= OTAP_METADATA_MODE;
-    
     if (metadata_mask == OTAP_METADATA_NONE)
         return 0;
 
-    err = _otap_create_fwrite_cmd(stream, OTAP_CMD_DIR_DELTA);
-    if (err != 0)
-        return err;
-
-    if(fwrite(&metadata_mask, sizeof (uint16_t), 1, stream) != 1)
-        otap_error(OTAP_ERROR_UNABLE_TO_WRITE_STREAM);
-
-    err = _otap_create_fwrite_mtime (stream, b->mtime);
-    if (err != 0)
-        return err;
-
-    err = _otap_create_fwrite_uid (stream, b->uid);
-    if (err != 0)
-        return err;
-
-    err = _otap_create_fwrite_gid (stream, b->gid);
-    if (err != 0)
-        return err;
-
-    err = _otap_create_fwrite_mode (stream, b->mode);
-    if (err != 0)
+    if ((err = _otap_create_fwrite_cmd(stream, OTAP_CMD_DIR_DELTA))    != 0 ||
+        (err = _otap_create_fwrite_mdata_mask (stream, metadata_mask)) != 0 ||
+        (err = _otap_create_fwrite_mtime      (stream, b->mtime))      != 0 ||
+        (err = _otap_create_fwrite_uid        (stream, b->uid))        != 0 ||
+        (err = _otap_create_fwrite_gid        (stream, b->gid))        != 0 ||
+        (err = _otap_create_fwrite_mode       (stream, b->mode))       != 0)
         return err;
 
     return _otap_create_fwrite_string(stream, b->name);

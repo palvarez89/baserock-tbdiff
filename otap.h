@@ -8,19 +8,20 @@
 
 typedef enum
 {
-    OTAP_CMD_IDENTIFY       = 0x00,
-    OTAP_CMD_UPDATE         = 0x01,
-    OTAP_CMD_DIR_CREATE     = 0x10,
-    OTAP_CMD_DIR_ENTER      = 0x11,
-    OTAP_CMD_DIR_LEAVE      = 0x12,
-    OTAP_CMD_DIR_DELTA      = 0x13,
-    OTAP_CMD_FILE_CREATE    = 0x20,
-    OTAP_CMD_FILE_DELTA     = 0x21,
-    OTAP_CMD_ENTITY_MOVE    = 0x30,
-    OTAP_CMD_ENTITY_COPY    = 0x31,
-    OTAP_CMD_ENTITY_DELETE  = 0x32,
-    OTAP_CMD_SYMLINK_CREATE = 0x40,
-    OTAP_CMD_SPECIAL_CREATE = 0x50
+    OTAP_CMD_IDENTIFY             = 0x00,
+    OTAP_CMD_UPDATE               = 0x01,
+    OTAP_CMD_DIR_CREATE           = 0x10,
+    OTAP_CMD_DIR_ENTER            = 0x11,
+    OTAP_CMD_DIR_LEAVE            = 0x12,
+    OTAP_CMD_DIR_DELTA            = 0x13,
+    OTAP_CMD_FILE_CREATE          = 0x20,
+    OTAP_CMD_FILE_DELTA           = 0x21,
+    OTAP_CMD_FILE_METADATA_UPDATE = 0x22,
+    OTAP_CMD_ENTITY_MOVE          = 0x30,
+    OTAP_CMD_ENTITY_COPY          = 0x31,
+    OTAP_CMD_ENTITY_DELETE        = 0x32,
+    OTAP_CMD_SYMLINK_CREATE       = 0x40,
+    OTAP_CMD_SPECIAL_CREATE       = 0x50
 } otap_cmd_e;
 
 typedef enum

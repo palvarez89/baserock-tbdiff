@@ -14,8 +14,8 @@
 
 
 static otap_stat_t*
-__otap_stat_fd(const char *name,
-               const char *path)
+__otap_stat(const char *name,
+            const char *path)
 {
     struct stat info;
 
@@ -102,7 +102,7 @@ __otap_stat_fd(const char *name,
 otap_stat_t*
 otap_stat(const char* path)
 {
-    otap_stat_t* ret = __otap_stat_fd(path, path);
+    otap_stat_t* ret = __otap_stat(path, path);
     return ret;
 }
 
@@ -150,7 +150,7 @@ otap_stat_entry(otap_stat_t* file, uint32_t entry)
     if(spath == NULL)
         return NULL;
 
-    otap_stat_t* ret = __otap_stat_fd(ds->d_name, (const char*)spath);
+    otap_stat_t* ret = __otap_stat(ds->d_name, (const char*)spath);
 
     free(spath);
 
@@ -184,7 +184,7 @@ otap_stat_entry_find(otap_stat_t* file, const char* name)
             if(spath == NULL)
                 return NULL;
 
-            otap_stat_t* ret = __otap_stat_fd(ds->d_name, (const char *)spath);
+            otap_stat_t* ret = __otap_stat(ds->d_name, (const char *)spath);
 
             free(spath);
             ret->parent = file;

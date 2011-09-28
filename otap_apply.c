@@ -414,30 +414,12 @@ _otap_apply_cmd_special_create(FILE *stream)
     uint32_t gid;
     uint32_t dev;
 
-    if(name == NULL)
-        return OTAP_ERROR_UNABLE_TO_READ_STREAM;
-
-    if(fread(&mtime, sizeof(uint32_t), 1, stream) != 1)
-    {
-        free(name);
-        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
-    }
-    if(fread(&mode, sizeof(uint32_t), 1, stream) != 1)
-    {
-        free(name);
-        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
-    }
-    if(fread(&uid, sizeof(uint32_t), 1, stream) != 1)
-    {
-        free(name);
-        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
-    }
-    if(fread(&gid, sizeof(uint32_t), 1, stream) != 1)
-    {
-        free(name);
-        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
-    }
-    if(fread(&dev, sizeof(uint32_t), 1, stream) != 1)
+    if(name == NULL ||
+       fread(&mtime, sizeof(uint32_t), 1, stream) != 1 ||
+       fread(&mode, sizeof(uint32_t), 1, stream)  != 1 ||
+       fread(&uid, sizeof(uint32_t), 1, stream)   != 1 ||
+       fread(&gid, sizeof(uint32_t), 1, stream)   != 1 ||
+       fread(&dev, sizeof(uint32_t), 1, stream)   != 1)
     {
         free(name);
         otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
