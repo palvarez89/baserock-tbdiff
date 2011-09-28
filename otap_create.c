@@ -416,14 +416,14 @@ _otap_create_cmd_dir_delta (FILE        *stream,
 
     /* If nothing changes we issue no command */
     if (a->mtime == b->mtime)
-        metadata_mask &= OTAP_METADATA_MTIME;
+        metadata_mask |= OTAP_METADATA_MTIME;
     if (a->uid == b->uid)
-        metadata_mask &= OTAP_METADATA_UID;
+        metadata_mask |= OTAP_METADATA_UID;
     if (a->gid == b->gid)
-        metadata_mask &= OTAP_METADATA_GID;
+        metadata_mask |= OTAP_METADATA_GID;
     if (a->mode == b->mode) 
-        metadata_mask &= OTAP_METADATA_MODE;
-        
+        metadata_mask |= OTAP_METADATA_MODE;
+    
     if (metadata_mask == OTAP_METADATA_NONE)
         return 0;
 
@@ -567,7 +567,6 @@ _otap_create (FILE        *stream,
 
     if((a == NULL) || ((b != NULL) && (a->type != b->type)))
     {
-        printf ("foo\n");
         switch(b->type)
         {
         case OTAP_STAT_TYPE_FILE:
@@ -615,8 +614,6 @@ _otap_create (FILE        *stream,
         if(_b == NULL)
             otap_error(OTAP_ERROR_UNABLE_TO_STAT_FILE);
         otap_stat_t* _a = otap_stat_entry_find(a, _b->name);
-        fprintf (stderr, "%p - %p\n", _a, _b);
-        fprintf (stderr, "%s - %s\n", _a->name, _b->name);
         err = _otap_create(stream, _a, _b, false);
         otap_stat_free(_a);
         otap_stat_free(_b);

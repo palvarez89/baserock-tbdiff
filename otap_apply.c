@@ -111,6 +111,7 @@ _otap_apply_cmd_dir_enter(FILE      *stream,
         otap_error(OTAP_ERROR_UNABLE_TO_CHANGE_DIR);
     if(depth != NULL)
         (*depth)++;
+
     if(chdir(dname) != 0)
         otap_error(OTAP_ERROR_UNABLE_TO_CHANGE_DIR);
     return 0;
@@ -463,8 +464,7 @@ _otap_apply_cmd_special_create(FILE *stream)
 
 static int
 _otap_apply_cmd_dir_delta(FILE *stream)
-{
-
+{       
     uint16_t metadata_mask;
     if(fread(&metadata_mask, sizeof(uint16_t), 1, stream) != 1)
         otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
@@ -487,6 +487,10 @@ _otap_apply_cmd_dir_delta(FILE *stream)
 
     int   ret;
     char *dname = _otap_apply_fread_string(stream);
+    if (dname == NULL)
+        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
+ 
+    fprintf(stderr, "cmd_special_delta %s\n", dname);
     
     if (metadata_mask & OTAP_METADATA_MTIME)
     {
