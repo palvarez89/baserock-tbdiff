@@ -13,6 +13,7 @@ typedef enum
     OTAP_CMD_DIR_CREATE     = 0x10,
     OTAP_CMD_DIR_ENTER      = 0x11,
     OTAP_CMD_DIR_LEAVE      = 0x12,
+    OTAP_CMD_DIR_DELTA      = 0x13,
     OTAP_CMD_FILE_CREATE    = 0x20,
     OTAP_CMD_FILE_DELTA     = 0x21,
     OTAP_CMD_ENTITY_MOVE    = 0x30,
@@ -24,31 +25,12 @@ typedef enum
 
 typedef enum
 {
-    OTAP_METADATA_MTIME,
-    OTAP_METADATA_PERMISSION,
-    OTAP_METADATA_UID,
-    OTAP_METADATA_GID,
+    OTAP_METADATA_NONE  = 0x0,
+    OTAP_METADATA_MTIME = 0x1,
+    OTAP_METADATA_MODE  = 0x2,
+    OTAP_METADATA_UID   = 0x4,
+    OTAP_METADATA_GID   = 0x8,
 } otap_metadata_type_e;
-
-typedef struct
-{
-    uint32_t metadata_mask;
-    uint32_t mtime;
-    uint32_t uid;
-    uint32_t gid;
-    union __attribute__((__packed__))
-    {
-        struct __attribute__((__packed__))
-        {
-            unsigned or:1, ow:1, ox:1;
-            unsigned gr:1, gw:1, gx:1;
-            unsigned ur:1, uw:1, ux:1;
-            unsigned reserved:7;
-        };
-        uint16_t mask;
-    } perms;
-    uint16_t reserved;
-} __attribute__((__packed__)) otap_metadata_t;
 
 extern const char* otap_ident;
 

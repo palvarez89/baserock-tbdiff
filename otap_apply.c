@@ -461,6 +461,47 @@ _otap_apply_cmd_special_create(FILE *stream)
     return OTAP_ERROR_SUCCESS;
 }
 
+static int
+_otap_apply_cmd_dir_delta(FILE *stream)
+{
+
+    uint16_t metadata_mask;
+    if(fread(&metadata_mask, sizeof(uint16_t), 1, stream) != 1)
+        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
+
+    uint32_t mtime;
+    if(fread(&mtime, sizeof(uint32_t), 1, stream) != 1)
+        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
+
+    uint32_t uid;
+    if(fread(&uid, sizeof(uint32_t), 1, stream) != 1)
+        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
+
+    uint32_t gid;
+    if(fread(&gid, sizeof(uint32_t), 1, stream) != 1)
+        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
+
+    uint32_t mode;
+    if(fread(&mode, sizeof(uint32_t), 1, stream) != 1)
+        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
+
+    int   ret;
+    char *dname = _otap_apply_fread_string(stream);
+    
+    if (metadata_mask & OTAP_METADATA_MTIME)
+    {
+        struct utimbuf timebuff = { time(NULL), mtime };
+        utime(dname, &timebuff); // Don't care if it succeeds right now.
+    }
+    if (metadata_mask & OTAP_METADATA_UID || metadata_mask & OTAP_METADATA_GID)
+        ret = chown (dname, (uid_t)uid, (gid_t)gid);
+    if (metadata_mask | OTAP_METADATA_MODE)
+        ret = chmod (dname, mode);
+    
+    free(dname);
+    return OTAP_ERROR_SUCCESS;
+}
+
 int
 otap_apply(FILE* stream)
 {
@@ -506,6 +547,10 @@ otap_apply(FILE* stream)
             break;
         case OTAP_CMD_SPECIAL_CREATE:
             if((err = _otap_apply_cmd_special_create(stream)) != 0)
+                return err;
+            break;
+        case OTAP_CMD_DIR_DELTA:
+            if((err = _otap_apply_cmd_dir_delta(stream)) != 0)
                 return err;
             break;
         case OTAP_CMD_ENTITY_MOVE:

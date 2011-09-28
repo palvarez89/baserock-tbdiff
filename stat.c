@@ -38,15 +38,9 @@ __otap_stat_fd(const char *name,
     }
     else if(S_ISDIR(info.st_mode))
     {
-        int fd = open(path, O_RDONLY);
-        if (fd < 0)
-        {
-            free(ret);
-            return NULL;
-        }
-
         ret->type = OTAP_STAT_TYPE_DIR;
-        DIR* dp = fdopendir(fd);
+        DIR* dp = opendir(path);
+        
         if(dp == NULL)
         {
             free(ret);
@@ -63,6 +57,7 @@ __otap_stat_fd(const char *name,
 
             ret->size++;
         }
+        closedir(dp);
     }
     else if(S_ISLNK(info.st_mode))
     {
@@ -131,16 +126,12 @@ otap_stat_entry(otap_stat_t* file, uint32_t entry)
             || (entry >= file->size))
         return NULL;
 
-    int fd = otap_stat_open(file, O_RDONLY);
-    if(fd < 0)
-        return NULL;
+    char *path = otap_stat_path(file);
+    DIR* dp = opendir(path);
+    free (path);
 
-    DIR* dp = fdopendir(fd);
     if(dp == NULL)
-    {
-        close(fd);
         return NULL;
-    }
 
     uintptr_t i;
     struct dirent* ds;
@@ -148,16 +139,12 @@ otap_stat_entry(otap_stat_t* file, uint32_t entry)
     {
         ds = readdir(dp);
         if(ds == NULL)
-        {
-            close(fd);
             return NULL;
-        }
-        if((strcmp(ds->d_name, ".") == 0)
-                || (strcmp(ds->d_name, "..") == 0))
+
+        if((strcmp(ds->d_name, ".") == 0) ||
+           (strcmp(ds->d_name, "..") == 0))
             i--;
     }
-    close(fd);
-    fd = -1;
 
     char* spath = otap_stat_subpath(file, ds->d_name);
     if(spath == NULL)
@@ -181,12 +168,10 @@ otap_stat_entry_find(otap_stat_t* file, const char* name)
             || (file->type != OTAP_STAT_TYPE_DIR))
         return NULL;
 
-    int fd = otap_stat_open(file, O_RDONLY);
-    if(fd < 0)
-        return NULL;
-
-    DIR* dp = fdopendir(fd);
-    close(fd);
+    char *path = otap_stat_path (file);
+    DIR* dp = opendir(path);
+    free (path);
+    
     if(dp == NULL)
         return NULL;
 
@@ -206,6 +191,7 @@ otap_stat_entry_find(otap_stat_t* file, const char* name)
             return ret;
         }
     }
+
 
     return NULL;
 }

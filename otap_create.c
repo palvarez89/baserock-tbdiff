@@ -347,7 +347,7 @@ _otap_create_cmd_dir_leave(FILE      *stream,
         token = 255;
         for(; count > 256; count -= 256)
         {
-            if(fwrite(&token, 1, 1, stream) != 1)
+            if(fwrite(&token, sizeof (uint8_t), 1, stream) != 1)
                 otap_error(OTAP_ERROR_UNABLE_TO_WRITE_STREAM);
         }
     }
@@ -404,6 +404,53 @@ _otap_create_dir(FILE        *stream,
     }
 
     return _otap_create_cmd_dir_leave(stream, 1);
+}
+
+static int
+_otap_create_cmd_dir_delta (FILE        *stream,
+                            otap_stat_t *a,
+                            otap_stat_t *b)
+{
+    int err;
+    uint16_t metadata_mask = OTAP_METADATA_NONE;
+
+    /* If nothing changes we issue no command */
+    if (a->mtime == b->mtime)
+        metadata_mask &= OTAP_METADATA_MTIME;
+    if (a->uid == b->uid)
+        metadata_mask &= OTAP_METADATA_UID;
+    if (a->gid == b->gid)
+        metadata_mask &= OTAP_METADATA_GID;
+    if (a->mode == b->mode) 
+        metadata_mask &= OTAP_METADATA_MODE;
+        
+    if (metadata_mask == OTAP_METADATA_NONE)
+        return 0;
+
+    err = _otap_create_fwrite_cmd(stream, OTAP_CMD_DIR_DELTA);
+    if (err != 0)
+        return err;
+
+    if(fwrite(&metadata_mask, sizeof (uint16_t), 1, stream) != 1)
+        otap_error(OTAP_ERROR_UNABLE_TO_WRITE_STREAM);
+
+    err = _otap_create_fwrite_mtime (stream, b->mtime);
+    if (err != 0)
+        return err;
+
+    err = _otap_create_fwrite_uid (stream, b->uid);
+    if (err != 0)
+        return err;
+
+    err = _otap_create_fwrite_gid (stream, b->gid);
+    if (err != 0)
+        return err;
+
+    err = _otap_create_fwrite_mode (stream, b->mode);
+    if (err != 0)
+        return err;
+
+    return _otap_create_fwrite_string(stream, b->name);
 }
 
 static int
@@ -520,6 +567,7 @@ _otap_create (FILE        *stream,
 
     if((a == NULL) || ((b != NULL) && (a->type != b->type)))
     {
+        printf ("foo\n");
         switch(b->type)
         {
         case OTAP_STAT_TYPE_FILE:
@@ -551,7 +599,7 @@ _otap_create (FILE        *stream,
     case OTAP_STAT_TYPE_SOCKET:
         otap_error(OTAP_ERROR_FEATURE_NOT_IMPLEMENTED);
     case OTAP_STAT_TYPE_DIR:
-        /* Special function to check if dir perm/ownership changed, no break */
+        _otap_create_cmd_dir_delta (stream, a, b);
     default:
         break;
     }
@@ -567,6 +615,8 @@ _otap_create (FILE        *stream,
         if(_b == NULL)
             otap_error(OTAP_ERROR_UNABLE_TO_STAT_FILE);
         otap_stat_t* _a = otap_stat_entry_find(a, _b->name);
+        fprintf (stderr, "%p - %p\n", _a, _b);
+        fprintf (stderr, "%s - %s\n", _a->name, _b->name);
         err = _otap_create(stream, _a, _b, false);
         otap_stat_free(_a);
         otap_stat_free(_b);
