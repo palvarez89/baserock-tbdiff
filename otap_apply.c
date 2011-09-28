@@ -217,6 +217,11 @@ _otap_apply_cmd_file_create(FILE* stream)
 static int
 _otap_apply_cmd_file_delta(FILE* stream)
 {
+    uint16_t mdata_mask;
+    uint32_t mtime;
+    uint32_t uid;
+    uint32_t gid;
+    uint32_t mode;
     uint16_t flen;
     if(fread(&flen, 2, 1, stream) != 1)
         otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
@@ -224,12 +229,19 @@ _otap_apply_cmd_file_delta(FILE* stream)
     if(fread(fname, 1, flen, stream) != flen)
         otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
     fname[flen] = '\0';
-    printf("cmd_file_delta %s\n", fname);
-    if((strchr(fname, '/') != NULL) || (strcmp(fname, "..") == 0))
-        otap_error(OTAP_ERROR_INVALID_PARAMETER);
 
-    uint32_t mtime;
-    if(fread(&mtime, sizeof(uint32_t), 1, stream) != 1)
+    printf("cmd_file_delta %s\n", fname);
+
+    if((strchr(fname, '/') != NULL) ||
+       (strcmp(fname, "..") == 0))
+        otap_error(OTAP_ERROR_INVALID_PARAMETER);
+ 
+    /* Reading metadata */
+    if(fread(&mdata_mask, sizeof(uint16_t), 1, stream) != 1 ||
+       fread(&mtime,      sizeof(uint32_t), 1, stream) != 1 ||
+       fread(&uid,        sizeof(uint32_t), 1, stream) != 1 ||
+       fread(&gid,        sizeof(uint32_t), 1, stream) != 1 ||
+       fread(&mode,       sizeof(uint32_t), 1, stream) != 1)
         otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
 
     FILE* op = fopen(fname, "rb");
@@ -297,8 +309,17 @@ _otap_apply_cmd_file_delta(FILE* stream)
     fclose(op);
 
     // Apply metadata.
-    struct utimbuf timebuff = { time(NULL), mtime };
-    utime(fname, &timebuff); // Don't care if it succeeds right now.
+    int ret;
+    if (mdata_mask & OTAP_METADATA_MTIME)
+    {
+        struct utimbuf timebuff = { time(NULL), mtime };
+        utime(fname, &timebuff); // Don't care if it succeeds right now.
+    }
+    if (mdata_mask & OTAP_METADATA_UID ||
+        mdata_mask & OTAP_METADATA_GID)
+        ret = chown (fname, (uid_t)uid, (gid_t)gid);
+    if (mdata_mask | OTAP_METADATA_MODE)
+        ret = chmod (fname, mode);
 
     return 0;
 }
@@ -448,23 +469,16 @@ static int
 _otap_apply_cmd_dir_delta(FILE *stream)
 {       
     uint16_t metadata_mask;
-    if(fread(&metadata_mask, sizeof(uint16_t), 1, stream) != 1)
-        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
-
-    uint32_t mtime;
-    if(fread(&mtime, sizeof(uint32_t), 1, stream) != 1)
-        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
-
+    uint32_t mtime;    
     uint32_t uid;
-    if(fread(&uid, sizeof(uint32_t), 1, stream) != 1)
-        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
-
     uint32_t gid;
-    if(fread(&gid, sizeof(uint32_t), 1, stream) != 1)
-        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
-
     uint32_t mode;
-    if(fread(&mode, sizeof(uint32_t), 1, stream) != 1)
+            
+    if(fread(&metadata_mask, sizeof(uint16_t), 1, stream) != 1 ||
+       fread(&mtime, sizeof(uint32_t), 1, stream)         != 1 ||
+       fread(&uid, sizeof(uint32_t), 1, stream)           != 1 ||
+       fread(&gid, sizeof(uint32_t), 1, stream)           != 1 ||
+       fread(&mode, sizeof(uint32_t), 1, stream)          != 1)
         otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
 
     int   ret;
@@ -473,6 +487,43 @@ _otap_apply_cmd_dir_delta(FILE *stream)
         otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
  
     fprintf(stderr, "cmd_special_delta %s\n", dname);
+    
+    if (metadata_mask & OTAP_METADATA_MTIME)
+    {
+        struct utimbuf timebuff = { time(NULL), mtime };
+        utime(dname, &timebuff); // Don't care if it succeeds right now.
+    }
+    if (metadata_mask & OTAP_METADATA_UID || metadata_mask & OTAP_METADATA_GID)
+        ret = chown (dname, (uid_t)uid, (gid_t)gid);
+    if (metadata_mask | OTAP_METADATA_MODE)
+        ret = chmod (dname, mode);
+    
+    free(dname);
+    return OTAP_ERROR_SUCCESS;
+}
+
+static int
+_otap_apply_cmd_file_mdata_update (FILE *stream)
+{       
+    uint16_t metadata_mask;
+    uint32_t mtime;    
+    uint32_t uid;
+    uint32_t gid;
+    uint32_t mode;
+            
+    if(fread(&metadata_mask, sizeof(uint16_t), 1, stream) != 1 ||
+       fread(&mtime, sizeof(uint32_t), 1, stream)         != 1 ||
+       fread(&uid, sizeof(uint32_t), 1, stream)           != 1 ||
+       fread(&gid, sizeof(uint32_t), 1, stream)           != 1 ||
+       fread(&mode, sizeof(uint32_t), 1, stream)          != 1)
+        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
+
+    int   ret;
+    char *dname = _otap_apply_fread_string(stream);
+    if (dname == NULL)
+        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
+ 
+    fprintf(stderr, "cmd_metadata_update %s\n", dname);
     
     if (metadata_mask & OTAP_METADATA_MTIME)
     {
@@ -537,6 +588,10 @@ otap_apply(FILE* stream)
             break;
         case OTAP_CMD_DIR_DELTA:
             if((err = _otap_apply_cmd_dir_delta(stream)) != 0)
+                return err;
+            break;
+        case OTAP_CMD_FILE_METADATA_UPDATE:
+            if((err = _otap_apply_cmd_file_mdata_update(stream)) != 0)
                 return err;
             break;
         case OTAP_CMD_ENTITY_MOVE:
