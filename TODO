@@ -1,9 +1,15 @@
 General
 -------
 
- + Make the code nicer and fit with coding style
  + Fix endian issues in case we run the generator on a different
    endianness to the deployer.
+ + Separate reading/writing stream data from actual file system operation
+ + Create a manifest of deleted/created/modified files
+ + Improve commandline for the deploy command
+ + Rename the project to trebuchet-differ (tbdiff)
+ + Create autotools scripts
+ + Improve function namespaces to ease understanding
+ + Add copyright headers to all source files
 
 Features
 --------
@@ -14,11 +20,5 @@ Features
    a stream, so that metadata files can be prepared on the server.
  + Ideally deploy should be able to take any stream URI (or perhaps
    stdin, allowing for curl externally?)
- + Need to support:
-   - Symbolic links
-   - Device nodes
-   - Named pipes
-   - (Ignore?) Sockets
  + Support a given pathname changing kind.
    - That can be done by embedding a delete and then a create
-

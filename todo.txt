@@ -1,4 +1,0 @@
-Use named states.
-Dependance mechanism for efficient state switching.
-
-Boot kernel from ext2 volume and mount btrfs subvolume as root in 'uEnv.txt' or 'boot.scr'.

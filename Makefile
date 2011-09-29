@@ -1,9 +1,11 @@
 .PHONY: all
-all: otap_deploy otap_create
 
 CC := gcc
 
 OPT ?= -O2
+
+DEPLOY=tbdiff-deploy
+CREATE=tbdiff-create
 
 CFLAGS ?=
 CFLAGS += -g
@@ -16,10 +18,14 @@ CREATE_SRC := create.c otap_create.c
 DEPLOY_OBJ := $(patsubst %.c,%.o,$(SHARED_SRC) $(DEPLOY_SRC))
 CREATE_OBJ := $(patsubst %.c,%.o,$(SHARED_SRC) $(CREATE_SRC))
 
-otap_deploy: deploy.o otap_apply.o otap.o stat.o
+
+
+all: $(DEPLOY) $(CREATE)
+
+$(DEPLOY): deploy.o otap_apply.o otap.o stat.o
 	$(CC) $(LDFLAGS) -o $@ $^
 
-otap_create: create.o otap_create.o otap.o stat.o
+$(CREATE): create.o otap_create.o otap.o stat.o
 	$(CC) $(LDFLAGS) -o $@ $^
 
 %.o: %.c
@@ -29,14 +35,14 @@ ifeq (,$(findstring clean,$(MAKECMDGOALS)))
 -include $(patsubst %.c,%.d,$(SHARED_SRC) $(DEPLOY_SRC) $(CREATE_SRC))
 endif
 
-install: otap_create otap_deploy
-	install otap_create /usr/local/bin
-	install otap_deploy /usr/local/bin
+install: $(DEPLOY) $(CREATE)
+	install $(CREATE) /usr/local/bin
+	install $(DEPLOY) /usr/local/bin
 
 uninstall:
-	rm -rf /usr/local/bin/otap_create
-	rm -rf /usr/local/bin/otap_crate
+	rm -rf /usr/local/bin/$(DEPLOY)
+	rm -rf /usr/local/bin/$(CREATE)
 
 .PHONY: clean
 clean:
-	rm  -f otap_deploy otap_create *.o *.d
+	rm  -f $(DEPLOY) $(CREATE) *.o *.d
