@@ -157,26 +157,19 @@ _otap_apply_cmd_file_create(FILE* stream)
         otap_error(OTAP_ERROR_INVALID_PARAMETER);
 
     uint32_t mtime;
-    if(fread(&mtime, sizeof(uint32_t), 1, stream) != 1)
-        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
-
     uint32_t mode;
-    if(fread(&mode, sizeof(uint32_t), 1, stream) != 1)
-        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
-
     uint32_t uid;
-    if(fread(&uid, sizeof(uint32_t), 1, stream) != 1)
-        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
-    
     uint32_t gid;
-    if(fread(&gid, sizeof(uint32_t), 1, stream) != 1)
-        otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
-
     uint32_t fsize;
-    if(fread(&fsize, 4, 1, stream) != 1)
+
+    if(fread(&mtime, sizeof(uint32_t), 1, stream) != 1 ||
+       fread(&mode,  sizeof(uint32_t), 1, stream) != 1 ||
+       fread(&uid, sizeof(uint32_t), 1, stream)   != 1 ||
+       fread(&gid, sizeof(uint32_t), 1, stream)   != 1 ||
+       fread(&fsize, 4, 1, stream) != 1)
         otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
 
-    printf("cmd_file_create %s:%"PRId32"\n", fname, fsize);
+    fprintf(stderr, "cmd_file_create %s:%"PRId32"\n", fname, fsize);
 
     FILE* fp = fopen(fname, "rb");
     if(fp != NULL)
@@ -231,7 +224,7 @@ _otap_apply_cmd_file_delta(FILE* stream)
         otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
     fname[flen] = '\0';
 
-    printf("cmd_file_delta %s\n", fname);
+    fprintf(stderr, "cmd_file_delta %s\n", fname);
 
     if((strchr(fname, '/') != NULL) ||
        (strcmp(fname, "..") == 0))
@@ -381,7 +374,7 @@ _otap_apply_cmd_entity_delete (FILE* stream)
         otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
     ename[elen] = '\0';
 
-    printf("cmd_entity_delete %s\n", ename);
+    fprintf(stderr, "cmd_entity_delete %s\n", ename);
 
     if((strchr(ename, '/') != NULL) || (strcmp(ename, "..") == 0))
         otap_error(OTAP_ERROR_INVALID_PARAMETER);

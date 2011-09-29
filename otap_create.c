@@ -422,44 +422,6 @@ _otap_create_cmd_entity_delete (FILE       *stream,
 }
 
 static int
-_otap_create_dir(FILE        *stream,
-                 otap_stat_t *d)
-{
-    int err;
-    if(((err =_otap_create_cmd_dir_create(stream, d)) != 0)
-            || ((err = _otap_create_cmd_dir_enter(stream, d->name)) != 0))
-        return err;
-
-    uintptr_t i;
-    for(i = 0; i < d->size; i++)
-    {
-        otap_stat_t* f = otap_stat_entry(d, i);
-
-        if(f == NULL)
-            otap_error(OTAP_ERROR_UNABLE_TO_STAT_FILE);
-
-        switch(f->type)
-        {
-        case OTAP_STAT_TYPE_FILE:
-            err = _otap_create_cmd_file_create(stream, f);
-            break;
-        case OTAP_STAT_TYPE_DIR:
-            err = _otap_create_dir(stream, f);
-            break;
-        default:
-            otap_stat_free(f);
-            otap_error(OTAP_ERROR_FEATURE_NOT_IMPLEMENTED);
-            break;
-        }
-        otap_stat_free(f);
-        if(err != 0)
-            return err;
-    }
-
-    return _otap_create_cmd_dir_leave(stream, 1);
-}
-
-static int
 _otap_create_cmd_dir_delta (FILE        *stream,
                             otap_stat_t *a,
                             otap_stat_t *b)
@@ -585,6 +547,53 @@ _otap_create_cmd_special_delta(FILE        *stream,
         return err;
 
     return _otap_create_cmd_special_create(stream, b);
+}
+
+static int
+_otap_create_dir(FILE        *stream,
+                 otap_stat_t *d)
+{
+    int err;
+    if(((err =_otap_create_cmd_dir_create(stream, d)) != 0)
+            || ((err = _otap_create_cmd_dir_enter(stream, d->name)) != 0))
+        return err;
+
+    uintptr_t i;
+    for(i = 0; i < d->size; i++)
+    {
+        otap_stat_t* f = otap_stat_entry(d, i);
+
+        if(f == NULL)
+            otap_error(OTAP_ERROR_UNABLE_TO_STAT_FILE);
+
+        switch(f->type)
+        {
+        case OTAP_STAT_TYPE_FILE:
+            err = _otap_create_cmd_file_create(stream, f);
+            break;
+        case OTAP_STAT_TYPE_DIR:
+            err = _otap_create_dir(stream, f);
+            break;
+        case OTAP_STAT_TYPE_SYMLINK:
+            err = _otap_create_cmd_symlink_create(stream, f);
+            break;
+        case OTAP_STAT_TYPE_BLKDEV:
+        case OTAP_STAT_TYPE_CHRDEV:
+        case OTAP_STAT_TYPE_FIFO:
+        case OTAP_STAT_TYPE_SOCKET:
+            err = _otap_create_cmd_special_create(stream, f);
+            break;
+        default:
+            otap_stat_free(f);
+            otap_error(OTAP_ERROR_FEATURE_NOT_IMPLEMENTED);
+            break;
+        }
+        otap_stat_free(f);
+        if(err != 0)
+            return err;
+    }
+
+    return _otap_create_cmd_dir_leave(stream, 1);
 }
 
 static int
