@@ -12,6 +12,7 @@
 #include <time.h>
 
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <dirent.h>
 #include <unistd.h>
 #include <utime.h>
@@ -392,8 +393,12 @@ _otap_apply_cmd_symlink_create(FILE *stream)
 {
     uint16_t len;
     uint32_t mtime;
+    uint32_t uid;
+    uint32_t gid;
 
-    if(fread(&mtime, sizeof(uint32_t), 1, stream) != 1)
+    if(fread(&mtime, sizeof(uint32_t), 1, stream) != 1 ||
+       fread(&uid,   sizeof(uint32_t), 1, stream) != 1 ||
+       fread(&gid,   sizeof(uint32_t), 1, stream) != 1)
         otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
 
     /* Reading link file name */
@@ -419,8 +424,14 @@ _otap_apply_cmd_symlink_create(FILE *stream)
     if(symlink(linkpath, linkname))
         return OTAP_ERROR_UNABLE_TO_CREATE_SYMLINK;
 
-    struct utimbuf timebuff = { time(NULL), mtime };
-    utime(linkname, &timebuff); // Don't care if it succeeds right now.
+    int ret;
+    struct timeval tv[2];
+    gettimeofday(&tv[0], NULL);
+    tv[1].tv_sec = (long) mtime;
+    tv[1].tv_usec = 0;
+
+    lutimes(linkname, tv); // Don't care if it succeeds right now.
+    ret = lchown(linkname, (uid_t)uid, (uid_t)gid);
 
     return OTAP_ERROR_SUCCESS;
 }

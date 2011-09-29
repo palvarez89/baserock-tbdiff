@@ -487,25 +487,19 @@ _otap_create_cmd_symlink_create (FILE        *stream,
 {
     int err;
     char path[PATH_BUFFER_LENGTH];
+
     char *slpath = otap_stat_path (symlink);
     ssize_t len = readlink (slpath, path, sizeof(path)-1);
     free (slpath);
-
     if (len < 0)
         return OTAP_ERROR_UNABLE_TO_READ_SYMLINK;
-
     path[len] = '\0';
 
-    err = _otap_create_fwrite_cmd(stream, OTAP_CMD_SYMLINK_CREATE);
-    if (err != 0)
-        return err;
-
-    err = _otap_create_fwrite_mtime (stream, symlink->mtime);
-    if (err != 0)
-        return err;
-
-    err = _otap_create_fwrite_string(stream, symlink->name);
-    if (err != 0)
+    if((err = _otap_create_fwrite_cmd(stream, OTAP_CMD_SYMLINK_CREATE)) != 0 ||
+       (err = _otap_create_fwrite_mtime (stream, symlink->mtime)) != 0 ||
+       (err = _otap_create_fwrite_uid   (stream, symlink->uid)) != 0 ||
+       (err = _otap_create_fwrite_gid   (stream, symlink->gid)) != 0 ||
+       (err = _otap_create_fwrite_string(stream, symlink->name)) != 0)
         return err;
 
     return _otap_create_fwrite_string(stream, path);
