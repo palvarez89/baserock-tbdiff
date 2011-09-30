@@ -34,7 +34,7 @@
 
 
 char*
-_otap_apply_fread_string(FILE *stream)
+tbd_apply_fread_string(FILE *stream)
 {
 	uint16_t dlen;
 	if(fread(&dlen, sizeof(uint16_t), 1, stream) != 1)
@@ -48,7 +48,7 @@ _otap_apply_fread_string(FILE *stream)
 }
 
 static int
-_otap_apply_identify(FILE* stream)
+tbd_apply_identify(FILE* stream)
 {
 	uint8_t cmd;
 	if(fread(&cmd, 1, 1, stream) != 1)
@@ -69,7 +69,7 @@ _otap_apply_identify(FILE* stream)
 }
 
 static int
-_otap_apply_cmd_dir_create(FILE* stream)
+tbd_apply_cmd_dir_create(FILE* stream)
 {
 	uint16_t dlen;
 	if(fread(&dlen, sizeof(uint16_t), 1, stream) != 1)
@@ -112,7 +112,7 @@ _otap_apply_cmd_dir_create(FILE* stream)
 }
 
 static int
-_otap_apply_cmd_dir_enter(FILE      *stream,
+tbd_apply_cmd_dir_enter(FILE      *stream,
                           uintptr_t *depth)
 {
 	uint16_t dlen;
@@ -134,7 +134,7 @@ _otap_apply_cmd_dir_enter(FILE      *stream,
 }
 
 static int
-_otap_apply_cmd_dir_leave(FILE      *stream,
+tbd_apply_cmd_dir_leave(FILE      *stream,
                           uintptr_t *depth)
 {
 	uint8_t count;
@@ -158,7 +158,7 @@ _otap_apply_cmd_dir_leave(FILE      *stream,
 }
 
 static int
-_otap_apply_cmd_file_create(FILE* stream)
+tbd_apply_cmd_file_create(FILE* stream)
 {
 	uint16_t flen;
 	if(fread(&flen, 2, 1, stream) != 1)
@@ -221,7 +221,7 @@ _otap_apply_cmd_file_create(FILE* stream)
 }
 
 static int
-_otap_apply_cmd_file_delta(FILE* stream)
+tbd_apply_cmd_file_delta(FILE* stream)
 {
 	uint16_t mdata_mask;
 	uint32_t mtime;
@@ -324,7 +324,7 @@ _otap_apply_cmd_file_delta(FILE* stream)
 }
 
 static int
-__otap_apply_cmd_entity_delete(const char* name)
+_tbd_apply_cmd_entity_delete(const char* name)
 {
 	DIR* dp = opendir(name);
 	if(dp == NULL) {
@@ -346,7 +346,7 @@ __otap_apply_cmd_entity_delete(const char* name)
 			continue;
 
 		int err;
-		if((err = __otap_apply_cmd_entity_delete(entry->d_name)) != 0) {
+		if((err = _tbd_apply_cmd_entity_delete(entry->d_name)) != 0) {
 			closedir(dp);
 
 			if(chdir("..") != 0)
@@ -365,7 +365,7 @@ __otap_apply_cmd_entity_delete(const char* name)
 }
 
 static int
-_otap_apply_cmd_entity_delete(FILE* stream)
+tbd_apply_cmd_entity_delete(FILE* stream)
 {
 	uint16_t elen;
 	if(fread(&elen, 2, 1, stream) != 1)
@@ -379,11 +379,11 @@ _otap_apply_cmd_entity_delete(FILE* stream)
 
 	if((strchr(ename, '/') != NULL) || (strcmp(ename, "..") == 0))
 		otap_error(TBD_ERROR_INVALID_PARAMETER);
-	return __otap_apply_cmd_entity_delete(ename);
+	return _tbd_apply_cmd_entity_delete(ename);
 }
 
 static int
-_otap_apply_cmd_symlink_create(FILE *stream)
+tbd_apply_cmd_symlink_create(FILE *stream)
 {
 	uint16_t len;
 	uint32_t mtime;
@@ -431,9 +431,9 @@ _otap_apply_cmd_symlink_create(FILE *stream)
 }
 
 static int
-_otap_apply_cmd_special_create(FILE *stream)
+tbd_apply_cmd_special_create(FILE *stream)
 {
-	char *name = _otap_apply_fread_string(stream);
+	char *name = tbd_apply_fread_string(stream);
 	uint32_t mtime;
 	uint32_t mode;
 	uint32_t uid;
@@ -469,7 +469,7 @@ _otap_apply_cmd_special_create(FILE *stream)
 }
 
 static int
-_otap_apply_cmd_dir_delta(FILE *stream)
+tbd_apply_cmd_dir_delta(FILE *stream)
 {
 	uint16_t metadata_mask;
 	uint32_t mtime;
@@ -485,7 +485,7 @@ _otap_apply_cmd_dir_delta(FILE *stream)
 		otap_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	int   ret;
-	char *dname = _otap_apply_fread_string(stream);
+	char *dname = tbd_apply_fread_string(stream);
 	if(dname == NULL)
 		otap_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
@@ -505,7 +505,7 @@ _otap_apply_cmd_dir_delta(FILE *stream)
 }
 
 static int
-_otap_apply_cmd_file_mdata_update(FILE *stream)
+tbd_apply_cmd_file_mdata_update(FILE *stream)
 {
 	uint16_t metadata_mask;
 	uint32_t mtime;
@@ -521,7 +521,7 @@ _otap_apply_cmd_file_mdata_update(FILE *stream)
 		otap_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	int   ret;
-	char *dname = _otap_apply_fread_string(stream);
+	char *dname = tbd_apply_fread_string(stream);
 	if(dname == NULL)
 		otap_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
@@ -547,7 +547,7 @@ otap_apply(FILE* stream)
 		otap_error(TBD_ERROR_NULL_POINTER);
 
 	int err;
-	if((err = _otap_apply_identify(stream)) != 0)
+	if((err = tbd_apply_identify(stream)) != 0)
 		return err;
 
 	uintptr_t depth = 0;
@@ -558,46 +558,46 @@ otap_apply(FILE* stream)
 			otap_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
 		switch(cmd) {
 		case TBD_CMD_DIR_CREATE:
-			if((err = _otap_apply_cmd_dir_create(stream)) != 0)
+			if((err = tbd_apply_cmd_dir_create(stream)) != 0)
 				return err;
 			break;
 		case TBD_CMD_DIR_ENTER:
-			if((err = _otap_apply_cmd_dir_enter(stream, &depth)) != 0)
+			if((err = tbd_apply_cmd_dir_enter(stream, &depth)) != 0)
 				return err;
 			break;
 		case TBD_CMD_DIR_LEAVE:
-			if((err = _otap_apply_cmd_dir_leave(stream, &depth)) != 0)
+			if((err = tbd_apply_cmd_dir_leave(stream, &depth)) != 0)
 				return err;
 			break;
 		case TBD_CMD_FILE_CREATE:
-			if((err = _otap_apply_cmd_file_create(stream)) != 0)
+			if((err = tbd_apply_cmd_file_create(stream)) != 0)
 				return err;
 			break;
 		case TBD_CMD_FILE_DELTA:
-			if((err = _otap_apply_cmd_file_delta(stream)) != 0)
+			if((err = tbd_apply_cmd_file_delta(stream)) != 0)
 				return err;
 			break;
 		case TBD_CMD_SYMLINK_CREATE:
-			if((err = _otap_apply_cmd_symlink_create(stream)) != 0)
+			if((err = tbd_apply_cmd_symlink_create(stream)) != 0)
 				return err;
 			break;
 		case TBD_CMD_SPECIAL_CREATE:
-			if((err = _otap_apply_cmd_special_create(stream)) != 0)
+			if((err = tbd_apply_cmd_special_create(stream)) != 0)
 				return err;
 			break;
 		case TBD_CMD_DIR_DELTA:
-			if((err = _otap_apply_cmd_dir_delta(stream)) != 0)
+			if((err = tbd_apply_cmd_dir_delta(stream)) != 0)
 				return err;
 			break;
 		case TBD_CMD_FILE_METADATA_UPDATE:
-			if((err = _otap_apply_cmd_file_mdata_update(stream)) != 0)
+			if((err = tbd_apply_cmd_file_mdata_update(stream)) != 0)
 				return err;
 			break;
 		case TBD_CMD_ENTITY_MOVE:
 		case TBD_CMD_ENTITY_COPY:
 			otap_error(TBD_ERROR_FEATURE_NOT_IMPLEMENTED); // TODO - Implement.
 		case TBD_CMD_ENTITY_DELETE:
-			if((err = _otap_apply_cmd_entity_delete(stream)) != 0)
+			if((err = tbd_apply_cmd_entity_delete(stream)) != 0)
 				return err;
 			break;
 		case TBD_CMD_UPDATE:
