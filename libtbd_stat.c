@@ -31,8 +31,8 @@
 
 
 static tbd_stat_t*
-__otap_stat(const char *name,
-            const char *path)
+__tbd_stat(const char *name,
+           const char *path)
 {
 	struct stat info;
 
@@ -49,10 +49,10 @@ __otap_stat(const char *name,
 	memcpy(ret->name, name, (nlen + 1));
 
 	if(S_ISREG(info.st_mode)) {
-		ret->type = tbd_stat_tYPE_FILE;
+		ret->type = TBD_STAT_TYPE_FILE;
 		ret->size = info.st_size;
 	} else if(S_ISDIR(info.st_mode)) {
-		ret->type = tbd_stat_tYPE_DIR;
+		ret->type = TBD_STAT_TYPE_DIR;
 		DIR* dp = opendir(path);
 
 		if(dp == NULL) {
@@ -71,19 +71,19 @@ __otap_stat(const char *name,
 		}
 		closedir(dp);
 	} else if(S_ISLNK(info.st_mode)) {
-		ret->type = tbd_stat_tYPE_SYMLINK;
+		ret->type = TBD_STAT_TYPE_SYMLINK;
 		ret->size = 0;
 	} else if(S_ISCHR(info.st_mode)) {
-		ret->type = tbd_stat_tYPE_CHRDEV;
+		ret->type = TBD_STAT_TYPE_CHRDEV;
 		ret->size = 0;
 	} else if(S_ISBLK(info.st_mode)) {
-		ret->type = tbd_stat_tYPE_BLKDEV;
+		ret->type = TBD_STAT_TYPE_BLKDEV;
 		ret->size = 0;
 	} else if(S_ISFIFO(info.st_mode)) {
-		ret->type = tbd_stat_tYPE_FIFO;
+		ret->type = TBD_STAT_TYPE_FIFO;
 		ret->size = 0;
 	} else if(S_ISSOCK(info.st_mode)) {
-		ret->type = tbd_stat_tYPE_SOCKET;
+		ret->type = TBD_STAT_TYPE_SOCKET;
 		ret->size = 0;
 	} else {
 		free(ret);
@@ -100,33 +100,33 @@ __otap_stat(const char *name,
 }
 
 tbd_stat_t*
-otap_stat(const char* path)
+tbd_stat(const char* path)
 {
-	tbd_stat_t* ret = __otap_stat(path, path);
+	tbd_stat_t* ret = __tbd_stat(path, path);
 	return ret;
 }
 
 void
-otap_stat_free(tbd_stat_t* file)
+tbd_stat_free(tbd_stat_t* file)
 {
 	free(file);
 }
 
 void
-otap_stat_print(tbd_stat_t* file)
+tbd_stat_print(tbd_stat_t* file)
 {
 	(void)file;
 }
 
 tbd_stat_t*
-otap_stat_entry(tbd_stat_t* file, uint32_t entry)
+tbd_stat_entry(tbd_stat_t* file, uint32_t entry)
 {
 	if((file == NULL)
-	    || (file->type != tbd_stat_tYPE_DIR)
+	    || (file->type != TBD_STAT_TYPE_DIR)
 	    || (entry >= file->size))
 		return NULL;
 
-	char *path = otap_stat_path(file);
+	char *path = tbd_stat_path(file);
 	DIR* dp = opendir(path);
 	free (path);
 
@@ -148,11 +148,11 @@ otap_stat_entry(tbd_stat_t* file, uint32_t entry)
 	}
 	closedir (dp);
 
-	char* spath = otap_stat_subpath(file, ds->d_name);
+	char* spath = tbd_stat_subpath(file, ds->d_name);
 	if(spath == NULL)
 		return NULL;
 
-	tbd_stat_t* ret = __otap_stat(ds->d_name, (const char*)spath);
+	tbd_stat_t* ret = __tbd_stat(ds->d_name, (const char*)spath);
 
 	free(spath);
 
@@ -164,13 +164,13 @@ otap_stat_entry(tbd_stat_t* file, uint32_t entry)
 }
 
 tbd_stat_t*
-otap_stat_entry_find(tbd_stat_t* file, const char* name)
+tbd_stat_entry_find(tbd_stat_t* file, const char* name)
 {
 	if((file == NULL)
-	    || (file->type != tbd_stat_tYPE_DIR))
+	    || (file->type != TBD_STAT_TYPE_DIR))
 		return NULL;
 
-	char *path = otap_stat_path (file);
+	char *path = tbd_stat_path (file);
 	DIR* dp = opendir(path);
 	free (path);
 
@@ -181,11 +181,11 @@ otap_stat_entry_find(tbd_stat_t* file, const char* name)
 	for(ds = readdir(dp); ds != NULL; ds = readdir(dp)) {
 		if(strcmp(ds->d_name, name) == 0) {
 			closedir (dp);
-			char* spath = otap_stat_subpath(file, ds->d_name);
+			char* spath = tbd_stat_subpath(file, ds->d_name);
 			if(spath == NULL)
 				return NULL;
 
-			tbd_stat_t* ret = __otap_stat(ds->d_name, (const char *)spath);
+			tbd_stat_t* ret = __tbd_stat(ds->d_name, (const char *)spath);
 			free(spath);
 			ret->parent = file;
 
@@ -198,7 +198,7 @@ otap_stat_entry_find(tbd_stat_t* file, const char* name)
 }
 
 char*
-otap_stat_subpath(tbd_stat_t *file,
+tbd_stat_subpath(tbd_stat_t *file,
                   const char  *entry)
 {
 	if(file == NULL)
@@ -237,15 +237,15 @@ otap_stat_subpath(tbd_stat_t *file,
 }
 
 char*
-otap_stat_path(tbd_stat_t* file)
+tbd_stat_path(tbd_stat_t* file)
 {
-	return otap_stat_subpath(file, NULL);
+	return tbd_stat_subpath(file, NULL);
 }
 
 int
-otap_stat_open(tbd_stat_t* file, int flags)
+tbd_stat_open(tbd_stat_t* file, int flags)
 {
-	char* path = otap_stat_path(file);
+	char* path = tbd_stat_path(file);
 	if(path == NULL)
 		return -1;
 	int fd = open(path, flags);
@@ -254,10 +254,10 @@ otap_stat_open(tbd_stat_t* file, int flags)
 }
 
 FILE*
-otap_stat_fopen(tbd_stat_t *file,
+tbd_stat_fopen(tbd_stat_t *file,
                 const char  *mode)
 {
-	char* path = otap_stat_path(file);
+	char* path = tbd_stat_path(file);
 	if(path == NULL)
 		return NULL;
 	FILE* fp = fopen(path, mode);

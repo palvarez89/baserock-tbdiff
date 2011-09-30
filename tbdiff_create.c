@@ -41,7 +41,7 @@ main(int    argc,
 
 	tbd_stat_t* tstat[2];
 
-	tstat[0] = otap_stat(argv[2]);
+	tstat[0] = tbd_stat(argv[2]);
 	if(tstat[0] == NULL) {
 		fprintf(stderr, "Error: Unable to stat '%s'.\n", argv[2]);
 		return EXIT_FAILURE;
@@ -52,7 +52,7 @@ main(int    argc,
 		return EXIT_FAILURE;
 	}
 
-	tstat[1] = otap_stat(argv[3]);
+	tstat[1] = tbd_stat(argv[3]);
 	if(tstat[1] == NULL) {
 		fprintf(stderr, "Error: Unable to stat '%s'.\n", argv[3]);
 		return EXIT_FAILURE;
@@ -78,8 +78,8 @@ main(int    argc,
 	}
 
 	fclose(fp);
-	otap_stat_free(tstat[0]);
-	otap_stat_free(tstat[1]);
+	tbd_stat_free(tstat[0]);
+	tbd_stat_free(tstat[1]);
 
 	return EXIT_SUCCESS;
 }
