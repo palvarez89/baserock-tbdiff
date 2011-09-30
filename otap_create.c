@@ -351,24 +351,11 @@ _otap_create_cmd_dir_create(FILE        *stream,
 {
     int err;
     
-    err = _otap_create_fwrite_cmd(stream, OTAP_CMD_DIR_CREATE);
-    if(err != 0)
-        return err;
-        
-    err = _otap_create_fwrite_string(stream, d->name);
-    if(err != 0)
-        return err;
-
-    err = _otap_create_fwrite_mtime(stream, d->mtime);
-    if(err != 0)
-        return err;
-
-    err = _otap_create_fwrite_uid(stream, d->uid);
-    if(err != 0)
-        return err;
-        
-    err = _otap_create_fwrite_gid(stream, d->gid);
-    if(err != 0)
+    if((err = _otap_create_fwrite_cmd(stream, OTAP_CMD_DIR_CREATE)) != 0 ||
+       (err = _otap_create_fwrite_string(stream, d->name)) != 0 ||
+       (err = _otap_create_fwrite_mtime(stream, d->mtime)) != 0 ||
+       (err = _otap_create_fwrite_uid(stream, d->uid))     != 0 ||
+       (err = _otap_create_fwrite_gid(stream, d->gid))     != 0)
         return err;
     
     return _otap_create_fwrite_mode (stream, d->mode);
@@ -606,24 +593,31 @@ _otap_create (FILE        *stream,
         otap_error(OTAP_ERROR_NULL_POINTER);
 
     int err;
-    if(((b == NULL) || ((a != NULL) && (a->type != b->type)))
-            && ((err = _otap_create_cmd_entity_delete(stream, a->name)) != 0))
+    if(((b == NULL) || ((a != NULL) && (a->type != b->type))))
+    {
+       fprintf(stderr, "file delete %s\n", a->name);
+       if((err = _otap_create_cmd_entity_delete(stream, a->name)) != 0)
         return err;
+     }
 
     if((a == NULL) || ((b != NULL) && (a->type != b->type)))
     {
         switch(b->type)
         {
         case OTAP_STAT_TYPE_FILE:
+            fprintf (stderr, "file new %s\n", b->name);
             return _otap_create_cmd_file_create(stream, b);
         case OTAP_STAT_TYPE_DIR:
+            fprintf (stderr, "dir new %s\n", b->name);
             return _otap_create_dir(stream, b);
         case OTAP_STAT_TYPE_SYMLINK:
+            fprintf (stderr, "symlink new %s\n", b->name);
             return _otap_create_cmd_symlink_create (stream, b);
         case OTAP_STAT_TYPE_CHRDEV:
         case OTAP_STAT_TYPE_BLKDEV:
         case OTAP_STAT_TYPE_FIFO:
         case OTAP_STAT_TYPE_SOCKET:
+            fprintf (stderr, "special new %s\n", b->name);
             return _otap_create_cmd_special_create (stream, b);
         default:
             otap_error(OTAP_ERROR_FEATURE_NOT_IMPLEMENTED);
@@ -634,17 +628,24 @@ _otap_create (FILE        *stream,
     switch (b->type)
     {
     case OTAP_STAT_TYPE_FILE:
+        fprintf (stderr, "file delta %s\n", a->name);
         return _otap_create_cmd_file_delta(stream, a, b);
     case OTAP_STAT_TYPE_SYMLINK:
+        fprintf (stderr, "symlink delta %s\n", a->name);
         return _otap_create_cmd_symlink_delta(stream, a, b);
     case OTAP_STAT_TYPE_CHRDEV:
     case OTAP_STAT_TYPE_BLKDEV:
     case OTAP_STAT_TYPE_FIFO:
     case OTAP_STAT_TYPE_SOCKET:
+        fprintf (stderr, "special delta %s\n", a->name);
         return _otap_create_cmd_special_delta(stream, a, b);
     case OTAP_STAT_TYPE_DIR:
         if (!top)
+        {
+            fprintf (stderr, "dir delta %s\n", a->name);
             _otap_create_cmd_dir_delta (stream, a, b);
+        }
+        break;
     default:
         break;
     }
@@ -674,6 +675,7 @@ _otap_create (FILE        *stream,
         if(_a == NULL)
             otap_error(OTAP_ERROR_UNABLE_TO_STAT_FILE);
         otap_stat_t* _b = otap_stat_entry_find(b, _a->name);
+        fprintf (stderr, "file delete %s\n", _a->name);
         err = (_b != NULL ? 0 : _otap_create_cmd_entity_delete(stream, _a->name));
         otap_stat_free(_b);
         otap_stat_free(_a);

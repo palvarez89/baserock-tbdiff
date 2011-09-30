@@ -139,12 +139,16 @@ otap_stat_entry(otap_stat_t* file, uint32_t entry)
     {
         ds = readdir(dp);
         if(ds == NULL)
+        {
+            closedir(dp);
             return NULL;
+        }
 
         if((strcmp(ds->d_name, ".") == 0) ||
            (strcmp(ds->d_name, "..") == 0))
             i--;
     }
+    closedir (dp);
 
     char* spath = otap_stat_subpath(file, ds->d_name);
     if(spath == NULL)
@@ -180,19 +184,20 @@ otap_stat_entry_find(otap_stat_t* file, const char* name)
     {
         if(strcmp(ds->d_name, name) == 0)
         {
+            closedir (dp);
             char* spath = otap_stat_subpath(file, ds->d_name);
             if(spath == NULL)
                 return NULL;
-
+            
             otap_stat_t* ret = __otap_stat(ds->d_name, (const char *)spath);
-
             free(spath);
             ret->parent = file;
+
             return ret;
         }
     }
 
-
+    closedir (dp);
     return NULL;
 }
 

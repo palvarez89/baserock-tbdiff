@@ -1,6 +1,6 @@
 General
 -------
-
+ + Use sizeof(var) or (type) instead of fixed byte lengths on fread/fwrite
  + Fix endian issues in case we run the generator on a different
    endianness to the deployer.
  + Separate reading/writing stream data from actual file system operation
