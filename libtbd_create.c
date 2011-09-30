@@ -159,7 +159,7 @@ tbd_create_cmd_file_create(FILE       *stream,
 }
 
 static uint16_t
-_otap_metadata_mask(tbd_stat_t *a,
+tbd_metadata_mask(tbd_stat_t *a,
                     tbd_stat_t *b)
 {
 	uint16_t metadata_mask = TBD_METADATA_NONE;
@@ -183,7 +183,7 @@ tbd_create_cmd_file_metadata_update(FILE        *stream,
                                        tbd_stat_t *b)
 {
 	int err;
-	uint16_t metadata_mask = _otap_metadata_mask(a, b);
+	uint16_t metadata_mask = tbd_metadata_mask(a, b);
 
 	if(metadata_mask == TBD_METADATA_NONE)
 		return 0;
@@ -303,7 +303,7 @@ tbd_create_cmd_file_delta(FILE        *stream,
 		return 0;
 	}
 
-	uint16_t metadata_mask = _otap_metadata_mask(a, b);
+	uint16_t metadata_mask = tbd_metadata_mask(a, b);
 
 	/* TODO: Optimize protocol by only sending useful metadata */
 	int err;
@@ -411,7 +411,7 @@ tbd_create_cmd_dir_delta(FILE        *stream,
                            tbd_stat_t  *b)
 {
 	int err;
-	uint16_t metadata_mask = _otap_metadata_mask(a, b);
+	uint16_t metadata_mask = tbd_metadata_mask(a, b);
 
 	if(metadata_mask == TBD_METADATA_NONE)
 		return 0;
