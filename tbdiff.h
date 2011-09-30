@@ -77,7 +77,12 @@ typedef enum {
 #ifdef NDEBUG
 #define tbd_error(e) return e
 #else
-#define tbd_error(e) { if(e != 0) fprintf(stderr, "TBDiff error '%s' in function '%s' at line %d of file '%s'.\n", #e, __FUNCTION__, __LINE__, __FILE__); return e; }
+/*#define tbd_error(e) { if(e != 0) fprintf(stderr, "TBDiff error '%s' in function '%s' at line %d of file '%s'.\n", #e, __FUNCTION__, __LINE__, __FILE__); return e; }*/
+#define tbd_error(e)\
+	({if(e != 0) fprintf(stderr, \
+	 "TBDiff error '%s' in function '%s' at line %d of file '%s'.\n", \
+	 #e, __func__, __LINE__, __FILE__); \
+	 e;})
 #endif
 
 extern int         tbd_apply (FILE *stream);
