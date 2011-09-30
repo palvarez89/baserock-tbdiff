@@ -75,12 +75,12 @@ typedef enum {
 } tbd_error_e;
 
 #ifdef NDEBUG
-#define otap_error(e) return e
+#define tbd_error(e) return e
 #else
-#define otap_error(e) { if(e != 0) fprintf(stderr, "OTAP error '%s' in function '%s' at line %d of file '%s'.\n", #e, __FUNCTION__, __LINE__, __FILE__); return e; }
+#define tbd_error(e) { if(e != 0) fprintf(stderr, "TBDiff error '%s' in function '%s' at line %d of file '%s'.\n", #e, __FUNCTION__, __LINE__, __FILE__); return e; }
 #endif
 
-extern int         otap_apply(FILE *stream);
-extern int         otap_create(FILE *stream, tbd_stat_t *a, tbd_stat_t *b);
+extern int         tbd_apply (FILE *stream);
+extern int         tbd_create(FILE *stream, tbd_stat_t *a, tbd_stat_t *b);
 
 #endif /* __TBDIFF_H__ */

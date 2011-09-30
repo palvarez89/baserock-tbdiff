@@ -70,10 +70,10 @@ main(int    argc,
 	}
 
 	int err;
-	if((err = otap_create(fp, tstat[0], tstat[1])) != 0) {
+	if((err = tbd_create(fp, tstat[0], tstat[1])) != 0) {
 		fclose(fp);
 		remove(argv[1]);
-		fprintf(stderr, "Error: Failed to create otap (err=%d).\n", err);
+		fprintf(stderr, "Error: Failed to create tbdiff image (err=%d).\n", err);
 		return EXIT_FAILURE;
 	}
 

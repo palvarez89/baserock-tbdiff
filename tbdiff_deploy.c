@@ -40,7 +40,7 @@ main(int    argc,
 	}
 
 	int err;
-	if((err = otap_apply(patch)) != 0) {
+	if((err = tbd_apply(patch)) != 0) {
 		fclose(patch);
 		fprintf(stderr, "Error: Error applying patch stream (err=%d).\n", err);
 		return EXIT_FAILURE;

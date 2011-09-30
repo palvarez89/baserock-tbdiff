@@ -1,5 +1,5 @@
-otap_create
-otap_deploy
+tbdiff-create
+tbdiff-deploy
 *.o
 *.log
 *.d
