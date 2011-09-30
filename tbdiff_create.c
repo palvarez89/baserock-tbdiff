@@ -39,7 +39,7 @@ main(int    argc,
 	if(getcwd(cwd_buff, cwd_size) == NULL)
 		return EXIT_FAILURE;
 
-	tbd_stat_t* tstat[2];
+	tbd_stat_t *tstat[2];
 
 	tstat[0] = tbd_stat(argv[2]);
 	if(tstat[0] == NULL) {
@@ -63,7 +63,7 @@ main(int    argc,
 		return EXIT_FAILURE;
 	}
 
-	FILE* fp = fopen(argv[1], "wb");
+	FILE *fp = fopen(argv[1], "wb");
 	if(fp == NULL) {
 		fprintf(stderr, "ERROR: Unable to open patch for writing.\n");
 		return EXIT_FAILURE;

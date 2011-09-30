@@ -80,7 +80,7 @@ typedef enum {
 #define otap_error(e) { if(e != 0) fprintf(stderr, "OTAP error '%s' in function '%s' at line %d of file '%s'.\n", #e, __FUNCTION__, __LINE__, __FILE__); return e; }
 #endif
 
-extern int         otap_apply(FILE* stream);
-extern int         otap_create(FILE* stream, tbd_stat_t* a, tbd_stat_t* b);
+extern int         otap_apply(FILE *stream);
+extern int         otap_create(FILE *stream, tbd_stat_t *a, tbd_stat_t *b);
 
 #endif /* __TBDIFF_H__ */

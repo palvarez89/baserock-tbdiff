@@ -48,7 +48,7 @@ tbd_apply_fread_string(FILE *stream)
 }
 
 static int
-tbd_apply_identify(FILE* stream)
+tbd_apply_identify(FILE *stream)
 {
 	uint8_t cmd;
 	if(fread(&cmd, 1, 1, stream) != 1)
@@ -69,7 +69,7 @@ tbd_apply_identify(FILE* stream)
 }
 
 static int
-tbd_apply_cmd_dir_create(FILE* stream)
+tbd_apply_cmd_dir_create(FILE *stream)
 {
 	uint16_t dlen;
 	if(fread(&dlen, sizeof(uint16_t), 1, stream) != 1)
@@ -113,7 +113,7 @@ tbd_apply_cmd_dir_create(FILE* stream)
 
 static int
 tbd_apply_cmd_dir_enter(FILE      *stream,
-                          uintptr_t *depth)
+                        uintptr_t *depth)
 {
 	uint16_t dlen;
 	if(fread(&dlen, 2, 1, stream) != 1)
@@ -135,7 +135,7 @@ tbd_apply_cmd_dir_enter(FILE      *stream,
 
 static int
 tbd_apply_cmd_dir_leave(FILE      *stream,
-                          uintptr_t *depth)
+                        uintptr_t *depth)
 {
 	uint8_t count;
 	if(fread(&count, 1, 1, stream) != 1)
@@ -158,7 +158,7 @@ tbd_apply_cmd_dir_leave(FILE      *stream,
 }
 
 static int
-tbd_apply_cmd_file_create(FILE* stream)
+tbd_apply_cmd_file_create(FILE *stream)
 {
 	uint16_t flen;
 	if(fread(&flen, 2, 1, stream) != 1)
@@ -185,7 +185,7 @@ tbd_apply_cmd_file_create(FILE* stream)
 
 	fprintf(stderr, "cmd_file_create %s:%"PRId32"\n", fname, fsize);
 
-	FILE* fp = fopen(fname, "rb");
+	FILE *fp = fopen(fname, "rb");
 	if(fp != NULL) {
 		fclose(fp);
 		otap_error(TBD_ERROR_FILE_ALREADY_EXISTS);
@@ -221,7 +221,7 @@ tbd_apply_cmd_file_create(FILE* stream)
 }
 
 static int
-tbd_apply_cmd_file_delta(FILE* stream)
+tbd_apply_cmd_file_delta(FILE *stream)
 {
 	uint16_t mdata_mask;
 	uint32_t mtime;
@@ -250,14 +250,14 @@ tbd_apply_cmd_file_delta(FILE* stream)
 	    fread(&mode,       sizeof(uint32_t), 1, stream) != 1)
 		otap_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
-	FILE* op = fopen(fname, "rb");
+	FILE *op = fopen(fname, "rb");
 	if(op == NULL)
 		otap_error(TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_READING);
 	if(remove(fname) != 0) {
 		fclose(op);
 		otap_error(TBD_ERROR_UNABLE_TO_REMOVE_FILE);
 	}
-	FILE* np = fopen(fname, "wb");
+	FILE *np = fopen(fname, "wb");
 	if(np == NULL) {
 		fclose(op);
 		otap_error(TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_WRITING);
@@ -324,9 +324,9 @@ tbd_apply_cmd_file_delta(FILE* stream)
 }
 
 static int
-_tbd_apply_cmd_entity_delete(const char* name)
+tbd_apply_cmd_entity_delete_for_name(const char *name)
 {
-	DIR* dp = opendir(name);
+	DIR *dp = opendir(name);
 	if(dp == NULL) {
 		if(remove(name) != 0)
 			otap_error(TBD_ERROR_UNABLE_TO_REMOVE_FILE);
@@ -339,14 +339,14 @@ _tbd_apply_cmd_entity_delete(const char* name)
 		otap_error(TBD_ERROR_UNABLE_TO_CHANGE_DIR);
 	}
 
-	struct dirent* entry;
+	struct dirent *entry;
 
 	while((entry = readdir(dp)) != NULL) {
 		if((strcmp(entry->d_name, ".") == 0) || (strcmp(entry->d_name, "..") == 0))
 			continue;
 
 		int err;
-		if((err = _tbd_apply_cmd_entity_delete(entry->d_name)) != 0) {
+		if((err = tbd_apply_cmd_entity_delete_for_name(entry->d_name)) != 0) {
 			closedir(dp);
 
 			if(chdir("..") != 0)
@@ -365,7 +365,7 @@ _tbd_apply_cmd_entity_delete(const char* name)
 }
 
 static int
-tbd_apply_cmd_entity_delete(FILE* stream)
+tbd_apply_cmd_entity_delete(FILE *stream)
 {
 	uint16_t elen;
 	if(fread(&elen, 2, 1, stream) != 1)
@@ -379,7 +379,7 @@ tbd_apply_cmd_entity_delete(FILE* stream)
 
 	if((strchr(ename, '/') != NULL) || (strcmp(ename, "..") == 0))
 		otap_error(TBD_ERROR_INVALID_PARAMETER);
-	return _tbd_apply_cmd_entity_delete(ename);
+	return tbd_apply_cmd_entity_delete_for_name(ename);
 }
 
 static int
@@ -541,7 +541,7 @@ tbd_apply_cmd_file_mdata_update(FILE *stream)
 }
 
 int
-otap_apply(FILE* stream)
+otap_apply(FILE *stream)
 {
 	if(stream == NULL)
 		otap_error(TBD_ERROR_NULL_POINTER);

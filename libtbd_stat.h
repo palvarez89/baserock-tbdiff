@@ -45,14 +45,14 @@ typedef struct {
 	uint32_t         rdev;
 } tbd_stat_t;
 
-extern tbd_stat_t*  tbd_stat(const char* path);
-extern void         tbd_stat_free(tbd_stat_t* file);
-extern void         tbd_stat_print(tbd_stat_t* file);
-extern tbd_stat_t*  tbd_stat_entry(tbd_stat_t* file, uint32_t entry);
-extern tbd_stat_t*  tbd_stat_entry_find(tbd_stat_t* file, const char* name);
-extern char*        tbd_stat_subpath(tbd_stat_t* file, const char* entry);
-extern char*        tbd_stat_path(tbd_stat_t* file);
-extern int          tbd_stat_open(tbd_stat_t* file, int flags);
-extern FILE*        tbd_stat_fopen(tbd_stat_t* file, const char* mode);
+extern tbd_stat_t*  tbd_stat(const char *path);
+extern void         tbd_stat_free(tbd_stat_t *file);
+extern void         tbd_stat_print(tbd_stat_t *file);
+extern tbd_stat_t*  tbd_stat_entry(tbd_stat_t *file, uint32_t entry);
+extern tbd_stat_t*  tbd_stat_entry_find(tbd_stat_t *file, const char *name);
+extern char*        tbd_stat_subpath(tbd_stat_t *file, const char *entry);
+extern char*        tbd_stat_path(tbd_stat_t *file);
+extern int          tbd_stat_open(tbd_stat_t *file, int flags);
+extern FILE*        tbd_stat_fopen(tbd_stat_t *file, const char *mode);
 
 #endif /* __LIBTBD_STAT_H__ */
