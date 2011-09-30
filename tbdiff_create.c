@@ -47,7 +47,7 @@ main(int    argc,
 		return EXIT_FAILURE;
 	}
 
-	if (chdir(cwd_buff) != 0) {
+	if(chdir(cwd_buff) != 0) {
 		fprintf(stderr, "Error: Unable to return to '%s'.\n", cwd_buff);
 		return EXIT_FAILURE;
 	}
