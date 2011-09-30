@@ -21,8 +21,8 @@
 
 #include <unistd.h>
 
-#include "stat.h"
-#include "otap.h"
+#include "libtbd_stat.h"
+#include "tbdiff.h"
 
 
 int

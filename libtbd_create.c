@@ -15,9 +15,8 @@
  *    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "otap.h"
+#include "tbdiff.h"
 #include "tbdiff-private.h"
-#include "error.h"
 
 
 #include <stdlib.h>

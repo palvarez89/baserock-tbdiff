@@ -15,8 +15,8 @@
  *    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef __otap_stat_h__
-#define __otap_stat_h__
+#ifndef __LIBTBD_STAT_H__
+#define __LIBTBD_STAT_H__
 
 #include <stdio.h>
 #include <stdint.h>
@@ -31,12 +31,12 @@ typedef enum {
 	OTAP_STAT_TYPE_BLKDEV  = 'b',
 	OTAP_STAT_TYPE_FIFO    = 'p',
 	OTAP_STAT_TYPE_SOCKET  = 's'
-} otap_stat_type_e;
+} tbd_stat_type_e;
 
 typedef struct {
 	void*            parent;
 	char*            name;
-	otap_stat_type_e type;
+	tbd_stat_type_e  type;
 	uint32_t         mtime;
 	uint32_t         size; // Count for directory.
 	uint32_t         uid;
@@ -44,7 +44,6 @@ typedef struct {
 	uint32_t         mode;
 	uint32_t         rdev;
 } otap_stat_t;
-
 
 extern otap_stat_t* otap_stat(const char* path);
 extern void         otap_stat_free(otap_stat_t* file);
@@ -56,4 +55,4 @@ extern char*        otap_stat_path(otap_stat_t* file);
 extern int          otap_stat_open(otap_stat_t* file, int flags);
 extern FILE*        otap_stat_fopen(otap_stat_t* file, const char* mode);
 
-#endif
+#endif /* __LIBTBD_STAT_H__ */

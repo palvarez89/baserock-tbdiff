@@ -15,4 +15,9 @@
  *    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#ifndef __TBDIFF_PRIVATE_H__
+#define __TBDIFF_PRIVATE_H__
+
 #define TB_DIFF_PROTOCOL_ID "CodeThink:OTAPv0"
+
+#endif

@@ -11,19 +11,19 @@ CFLAGS ?=
 CFLAGS += -g
 CFLAGS += -Wall -Wextra -Werror $(OPT)
 
-SHARED_SRC := stat.c
-DEPLOY_SRC := tbdiff_deploy.c libtdb_create.c
-CREATE_SRC := tbdiff_create.c libtdb_apply.c
+SHARED_SRC := libtbd_stat.c
+DEPLOY_SRC := tbdiff_deploy.c libtbd_create.c
+CREATE_SRC := tbdiff_create.c libtbd_apply.c
 
 DEPLOY_OBJ := $(patsubst %.c,%.o,$(SHARED_SRC) $(DEPLOY_SRC))
 CREATE_OBJ := $(patsubst %.c,%.o,$(SHARED_SRC) $(CREATE_SRC))
 
 all: $(DEPLOY) $(CREATE)
 
-$(DEPLOY): tbdiff_deploy.o libtdb_apply.o stat.o
+$(DEPLOY): tbdiff_deploy.o libtbd_apply.o libtbd_stat.o
 	$(CC) $(LDFLAGS) -o $@ $^
 
-$(CREATE): tbdiff_create.o libtdb_create.o stat.o
+$(CREATE): tbdiff_create.o libtbd_create.o libtbd_stat.o
 	$(CC) $(LDFLAGS) -o $@ $^
 
 %.o: %.c

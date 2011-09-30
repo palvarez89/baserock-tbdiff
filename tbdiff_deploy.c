@@ -15,15 +15,13 @@
  *    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include "tbdiff.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
-
 #include <unistd.h>
-
-#include "otap.h"
-
 #include <errno.h>
 
 int
