@@ -18,6 +18,6 @@
 #ifndef __TBDIFF_PRIVATE_H__
 #define __TBDIFF_PRIVATE_H__
 
-#define TB_DIFF_PROTOCOL_ID "CodeThink:OTAPv0"
+#define TB_DIFF_PROTOCOL_ID "Codethink:TBDIFFv0"
 
 #endif
