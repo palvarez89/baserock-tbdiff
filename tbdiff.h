@@ -82,6 +82,6 @@ typedef enum {
 
 extern const char* otap_ident;
 extern int         otap_apply(FILE* stream);
-extern int         otap_create(FILE* stream, otap_stat_t* a, otap_stat_t* b);
+extern int         otap_create(FILE* stream, tbd_stat_t* a, tbd_stat_t* b);
 
 #endif /* __TBDIFF_H__ */

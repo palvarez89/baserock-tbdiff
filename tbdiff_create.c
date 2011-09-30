@@ -39,7 +39,7 @@ main(int    argc,
 	if(getcwd(cwd_buff, cwd_size) == NULL)
 		return EXIT_FAILURE;
 
-	otap_stat_t* tstat[2];
+	tbd_stat_t* tstat[2];
 
 	tstat[0] = otap_stat(argv[2]);
 	if(tstat[0] == NULL) {

@@ -24,13 +24,13 @@
 #include <sys/types.h>
 
 typedef enum {
-	OTAP_STAT_TYPE_FILE    = 'f',
-	OTAP_STAT_TYPE_DIR     = 'd',
-	OTAP_STAT_TYPE_SYMLINK = 'l',
-	OTAP_STAT_TYPE_CHRDEV  = 'c',
-	OTAP_STAT_TYPE_BLKDEV  = 'b',
-	OTAP_STAT_TYPE_FIFO    = 'p',
-	OTAP_STAT_TYPE_SOCKET  = 's'
+	tbd_stat_tYPE_FILE    = 'f',
+	tbd_stat_tYPE_DIR     = 'd',
+	tbd_stat_tYPE_SYMLINK = 'l',
+	tbd_stat_tYPE_CHRDEV  = 'c',
+	tbd_stat_tYPE_BLKDEV  = 'b',
+	tbd_stat_tYPE_FIFO    = 'p',
+	tbd_stat_tYPE_SOCKET  = 's'
 } tbd_stat_type_e;
 
 typedef struct {
@@ -43,16 +43,16 @@ typedef struct {
 	uint32_t         gid;
 	uint32_t         mode;
 	uint32_t         rdev;
-} otap_stat_t;
+} tbd_stat_t;
 
-extern otap_stat_t* otap_stat(const char* path);
-extern void         otap_stat_free(otap_stat_t* file);
-extern void         otap_stat_print(otap_stat_t* file);
-extern otap_stat_t* otap_stat_entry(otap_stat_t* file, uint32_t entry);
-extern otap_stat_t* otap_stat_entry_find(otap_stat_t* file, const char* name);
-extern char*        otap_stat_subpath(otap_stat_t* file, const char* entry);
-extern char*        otap_stat_path(otap_stat_t* file);
-extern int          otap_stat_open(otap_stat_t* file, int flags);
-extern FILE*        otap_stat_fopen(otap_stat_t* file, const char* mode);
+extern tbd_stat_t* otap_stat(const char* path);
+extern void         otap_stat_free(tbd_stat_t* file);
+extern void         otap_stat_print(tbd_stat_t* file);
+extern tbd_stat_t* otap_stat_entry(tbd_stat_t* file, uint32_t entry);
+extern tbd_stat_t* otap_stat_entry_find(tbd_stat_t* file, const char* name);
+extern char*        otap_stat_subpath(tbd_stat_t* file, const char* entry);
+extern char*        otap_stat_path(tbd_stat_t* file);
+extern int          otap_stat_open(tbd_stat_t* file, int flags);
+extern FILE*        otap_stat_fopen(tbd_stat_t* file, const char* mode);
 
 #endif /* __LIBTBD_STAT_H__ */

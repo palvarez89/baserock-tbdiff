@@ -30,7 +30,7 @@
 
 
 
-static otap_stat_t*
+static tbd_stat_t*
 __otap_stat(const char *name,
             const char *path)
 {
@@ -40,19 +40,19 @@ __otap_stat(const char *name,
 		return NULL;
 
 	size_t nlen = strlen(name);
-	otap_stat_t* ret = (otap_stat_t*)malloc(sizeof(otap_stat_t) + (nlen + 1));
+	tbd_stat_t* ret = (tbd_stat_t*)malloc(sizeof(tbd_stat_t) + (nlen + 1));
 	if(ret == NULL)
 		return NULL;
 
 	ret->parent = NULL;
-	ret->name   = (char*)((uintptr_t)ret + sizeof(otap_stat_t));
+	ret->name   = (char*)((uintptr_t)ret + sizeof(tbd_stat_t));
 	memcpy(ret->name, name, (nlen + 1));
 
 	if(S_ISREG(info.st_mode)) {
-		ret->type = OTAP_STAT_TYPE_FILE;
+		ret->type = tbd_stat_tYPE_FILE;
 		ret->size = info.st_size;
 	} else if(S_ISDIR(info.st_mode)) {
-		ret->type = OTAP_STAT_TYPE_DIR;
+		ret->type = tbd_stat_tYPE_DIR;
 		DIR* dp = opendir(path);
 
 		if(dp == NULL) {
@@ -71,19 +71,19 @@ __otap_stat(const char *name,
 		}
 		closedir(dp);
 	} else if(S_ISLNK(info.st_mode)) {
-		ret->type = OTAP_STAT_TYPE_SYMLINK;
+		ret->type = tbd_stat_tYPE_SYMLINK;
 		ret->size = 0;
 	} else if(S_ISCHR(info.st_mode)) {
-		ret->type = OTAP_STAT_TYPE_CHRDEV;
+		ret->type = tbd_stat_tYPE_CHRDEV;
 		ret->size = 0;
 	} else if(S_ISBLK(info.st_mode)) {
-		ret->type = OTAP_STAT_TYPE_BLKDEV;
+		ret->type = tbd_stat_tYPE_BLKDEV;
 		ret->size = 0;
 	} else if(S_ISFIFO(info.st_mode)) {
-		ret->type = OTAP_STAT_TYPE_FIFO;
+		ret->type = tbd_stat_tYPE_FIFO;
 		ret->size = 0;
 	} else if(S_ISSOCK(info.st_mode)) {
-		ret->type = OTAP_STAT_TYPE_SOCKET;
+		ret->type = tbd_stat_tYPE_SOCKET;
 		ret->size = 0;
 	} else {
 		free(ret);
@@ -99,30 +99,30 @@ __otap_stat(const char *name,
 	return ret;
 }
 
-otap_stat_t*
+tbd_stat_t*
 otap_stat(const char* path)
 {
-	otap_stat_t* ret = __otap_stat(path, path);
+	tbd_stat_t* ret = __otap_stat(path, path);
 	return ret;
 }
 
 void
-otap_stat_free(otap_stat_t* file)
+otap_stat_free(tbd_stat_t* file)
 {
 	free(file);
 }
 
 void
-otap_stat_print(otap_stat_t* file)
+otap_stat_print(tbd_stat_t* file)
 {
 	(void)file;
 }
 
-otap_stat_t*
-otap_stat_entry(otap_stat_t* file, uint32_t entry)
+tbd_stat_t*
+otap_stat_entry(tbd_stat_t* file, uint32_t entry)
 {
 	if((file == NULL)
-	    || (file->type != OTAP_STAT_TYPE_DIR)
+	    || (file->type != tbd_stat_tYPE_DIR)
 	    || (entry >= file->size))
 		return NULL;
 
@@ -152,7 +152,7 @@ otap_stat_entry(otap_stat_t* file, uint32_t entry)
 	if(spath == NULL)
 		return NULL;
 
-	otap_stat_t* ret = __otap_stat(ds->d_name, (const char*)spath);
+	tbd_stat_t* ret = __otap_stat(ds->d_name, (const char*)spath);
 
 	free(spath);
 
@@ -163,11 +163,11 @@ otap_stat_entry(otap_stat_t* file, uint32_t entry)
 	return ret;
 }
 
-otap_stat_t*
-otap_stat_entry_find(otap_stat_t* file, const char* name)
+tbd_stat_t*
+otap_stat_entry_find(tbd_stat_t* file, const char* name)
 {
 	if((file == NULL)
-	    || (file->type != OTAP_STAT_TYPE_DIR))
+	    || (file->type != tbd_stat_tYPE_DIR))
 		return NULL;
 
 	char *path = otap_stat_path (file);
@@ -185,7 +185,7 @@ otap_stat_entry_find(otap_stat_t* file, const char* name)
 			if(spath == NULL)
 				return NULL;
 
-			otap_stat_t* ret = __otap_stat(ds->d_name, (const char *)spath);
+			tbd_stat_t* ret = __otap_stat(ds->d_name, (const char *)spath);
 			free(spath);
 			ret->parent = file;
 
@@ -198,7 +198,7 @@ otap_stat_entry_find(otap_stat_t* file, const char* name)
 }
 
 char*
-otap_stat_subpath(otap_stat_t *file,
+otap_stat_subpath(tbd_stat_t *file,
                   const char  *entry)
 {
 	if(file == NULL)
@@ -207,11 +207,11 @@ otap_stat_subpath(otap_stat_t *file,
 	size_t elen = ((entry == NULL) ? 0 : (strlen(entry) + 1));
 
 	size_t plen;
-	otap_stat_t* root;
+	tbd_stat_t* root;
 	for(root = file, plen = 0;
 	    root != NULL;
 	    plen += (strlen(root->name) + 1),
-	    root = (otap_stat_t*)root->parent);
+	    root = (tbd_stat_t*)root->parent);
 	plen += elen;
 
 
@@ -225,7 +225,7 @@ otap_stat_subpath(otap_stat_t *file,
 		memcpy(ptr, entry, elen);
 	}
 
-	for(root = file; root != NULL; root = (otap_stat_t*)root->parent) {
+	for(root = file; root != NULL; root = (tbd_stat_t*)root->parent) {
 		size_t rlen = strlen(root->name) + 1;
 		ptr = (char*)((uintptr_t)ptr - rlen);
 		memcpy(ptr, root->name, rlen);
@@ -237,13 +237,13 @@ otap_stat_subpath(otap_stat_t *file,
 }
 
 char*
-otap_stat_path(otap_stat_t* file)
+otap_stat_path(tbd_stat_t* file)
 {
 	return otap_stat_subpath(file, NULL);
 }
 
 int
-otap_stat_open(otap_stat_t* file, int flags)
+otap_stat_open(tbd_stat_t* file, int flags)
 {
 	char* path = otap_stat_path(file);
 	if(path == NULL)
@@ -254,7 +254,7 @@ otap_stat_open(otap_stat_t* file, int flags)
 }
 
 FILE*
-otap_stat_fopen(otap_stat_t *file,
+otap_stat_fopen(tbd_stat_t *file,
                 const char  *mode)
 {
 	char* path = otap_stat_path(file);
