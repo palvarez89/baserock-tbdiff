@@ -78,7 +78,7 @@ tbd_apply_cmd_dir_create(FILE *stream)
 	if(fread(dname, 1, dlen, stream) != dlen)
 		tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	dname[dlen] = '\0';
-	printf("cmd_dir_create %s\n", dname);
+	fprintf(stderr, "cmd_dir_create %s\n", dname);
 	if(strchr(dname, '/') != NULL)
 		tbd_error(TBD_ERROR_INVALID_PARAMETER);
 
@@ -122,7 +122,7 @@ tbd_apply_cmd_dir_enter(FILE      *stream,
 	if(fread(dname, 1, dlen, stream) != dlen)
 		tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	dname[dlen] = '\0';
-	printf("cmd_dir_enter %s\n", dname);
+	fprintf(stderr, "cmd_dir_enter %s\n", dname);
 	if((strchr(dname, '/') != NULL) || (strcmp(dname, "..") == 0))
 		tbd_error(TBD_ERROR_UNABLE_TO_CHANGE_DIR);
 	if(depth != NULL)
@@ -141,7 +141,7 @@ tbd_apply_cmd_dir_leave(FILE      *stream,
 	if(fread(&count, 1, 1, stream) != 1)
 		tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	uintptr_t rcount = count + 1;
-	printf("cmd_dir_leave %"PRIuPTR"\n", rcount);
+	fprintf(stderr, "cmd_dir_leave %"PRIuPTR"\n", rcount);
 
 	if((depth != NULL) && (*depth < rcount))
 		tbd_error(TBD_ERROR_INVALID_PARAMETER);
