@@ -11,7 +11,7 @@ CFLAGS ?=
 CFLAGS += -g
 CFLAGS += -Wall -Wextra -Werror $(OPT)
 
-SHARED_SRC := otap.c stat.c
+SHARED_SRC := stat.c
 DEPLOY_SRC := deploy.c otap_apply.c
 CREATE_SRC := create.c otap_create.c
 
@@ -22,10 +22,10 @@ CREATE_OBJ := $(patsubst %.c,%.o,$(SHARED_SRC) $(CREATE_SRC))
 
 all: $(DEPLOY) $(CREATE)
 
-$(DEPLOY): deploy.o otap_apply.o otap.o stat.o
+$(DEPLOY): deploy.o otap_apply.o stat.o
 	$(CC) $(LDFLAGS) -o $@ $^
 
-$(CREATE): create.o otap_create.o otap.o stat.o
+$(CREATE): create.o otap_create.o stat.o
 	$(CC) $(LDFLAGS) -o $@ $^
 
 %.o: %.c

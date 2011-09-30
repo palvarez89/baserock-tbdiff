@@ -16,7 +16,9 @@
  */
 
 #include "otap.h"
+#include "tbdiff-private.h"
 #include "error.h"
+
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -111,7 +113,7 @@ _otap_create_cmd_ident(FILE* stream)
 
 	if((err = _otap_create_fwrite_cmd(stream, OTAP_CMD_IDENTIFY)) != 0)
 		return err;
-	if((err = _otap_create_fwrite_string(stream, otap_ident)) != 0)
+	if((err = _otap_create_fwrite_string(stream, TB_DIFF_PROTOCOL_ID)) != 0)
 		return err;
 	return 0;
 }

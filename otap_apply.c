@@ -16,8 +16,7 @@
  */
 
 #include "otap.h"
-
-//#define NDEBUG
+#include "tbdiff-private.h"
 #include "error.h"
 
 #include <stdlib.h>
@@ -60,12 +59,12 @@ _otap_apply_identify(FILE* stream)
 	uint16_t nlen;
 	if(fread(&nlen, 2, 1, stream) != 1)
 		otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
-	if(strlen(otap_ident) != nlen)
+	if(strlen(TB_DIFF_PROTOCOL_ID) != nlen)
 		otap_error(OTAP_ERROR_INVALID_PARAMETER);
 	char nstr[nlen];
 	if(fread(nstr, 1, nlen, stream) != nlen)
 		otap_error(OTAP_ERROR_UNABLE_TO_READ_STREAM);
-	if(strncmp(nstr, otap_ident, nlen) != 0)
+	if(strncmp(nstr, TB_DIFF_PROTOCOL_ID, nlen) != 0)
 		otap_error(OTAP_ERROR_INVALID_PARAMETER);
 	return 0;
 }

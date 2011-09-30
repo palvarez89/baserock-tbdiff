@@ -15,4 +15,4 @@
  *    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-const char* otap_ident = "CodeThink:OTAPv0";
+#define TB_DIFF_PROTOCOL_ID "CodeThink:OTAPv0"
