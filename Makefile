@@ -9,7 +9,7 @@ CREATE=tbdiff-create
 
 CFLAGS ?=
 CFLAGS += -g
-CFLAGS += -Wall -Wextra -Werror $(OPT)
+CFLAGS += -Wall -Wextra -Werror -Wno-unused-result $(OPT)
 
 SHARED_SRC := libtbd_stat.c
 DEPLOY_SRC := tbdiff_deploy.c libtbd_create.c

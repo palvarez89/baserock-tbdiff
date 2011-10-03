@@ -103,9 +103,9 @@ tbd_apply_cmd_dir_create(FILE *stream)
 	// Apply metadata.
 	struct utimbuf timebuff = { time(NULL), mtime };
 	utime(dname, &timebuff); // Don't care if it succeeds right now.
-	int ret;
-	ret = chown(dname, (uid_t)uid, (gid_t)gid);
-	ret = chmod (dname, mode);
+
+	chown(dname, (uid_t)uid, (gid_t)gid);
+	chmod (dname, mode);
 
 	return 0;
 }
@@ -212,9 +212,8 @@ tbd_apply_cmd_file_create(FILE *stream)
 	// Don't care if it succeeds right now.
 	utime(fname, &timebuff);
 	/* Chown ALWAYS have to be done before chmod */
-	int err;
-	err = chown(fname, (uid_t)uid, (gid_t)gid);
-	err = chmod(fname, mode);
+	chown(fname, (uid_t)uid, (gid_t)gid);
+	chmod(fname, mode);
 
 	return 0;
 }
@@ -308,16 +307,15 @@ tbd_apply_cmd_file_delta(FILE *stream)
 	fclose(op);
 
 	// Apply metadata.
-	int ret;
 	if(mdata_mask & TBD_METADATA_MTIME) {
 		struct utimbuf timebuff = { time(NULL), mtime };
 		utime(fname, &timebuff); // Don't care if it succeeds right now.
 	}
 	if(mdata_mask & TBD_METADATA_UID ||
 	    mdata_mask & TBD_METADATA_GID)
-		ret = chown(fname, (uid_t)uid, (gid_t)gid);
+		chown(fname, (uid_t)uid, (gid_t)gid);
 	if(mdata_mask | TBD_METADATA_MODE)
-		ret = chmod(fname, mode);
+		chmod(fname, mode);
 
 	return 0;
 }
@@ -417,14 +415,13 @@ tbd_apply_cmd_symlink_create(FILE *stream)
 	if(symlink(linkpath, linkname))
 		return TBD_ERROR_UNABLE_TO_CREATE_SYMLINK;
 
-	int ret;
 	struct timeval tv[2];
 	gettimeofday(&tv[0], NULL);
 	tv[1].tv_sec = (long) mtime;
 	tv[1].tv_usec = 0;
 
 	lutimes(linkname, tv); // Don't care if it succeeds right now.
-	ret = lchown(linkname, (uid_t)uid, (uid_t)gid);
+	lchown(linkname, (uid_t)uid, (uid_t)gid);
 
 	return TBD_ERROR_SUCCESS;
 }
@@ -459,9 +456,8 @@ tbd_apply_cmd_special_create(FILE *stream)
 	struct utimbuf timebuff = { time(NULL), mtime };
 	utime(name, &timebuff); // Don't care if it succeeds right now.
 
-	int ret;
-	ret = chown(name, (uid_t)uid, (gid_t)gid);
-	ret = chmod(name, mode);
+	chown(name, (uid_t)uid, (gid_t)gid);
+	chmod(name, mode);
 
 	free(name);
 	return TBD_ERROR_SUCCESS;
@@ -483,7 +479,6 @@ tbd_apply_cmd_dir_delta(FILE *stream)
 	    fread(&mode, sizeof(uint32_t), 1, stream)          != 1)
 		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
-	int   ret;
 	char *dname = tbd_apply_fread_string(stream);
 	if(dname == NULL)
 		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
@@ -495,9 +490,9 @@ tbd_apply_cmd_dir_delta(FILE *stream)
 		utime(dname, &timebuff); // Don't care if it succeeds right now.
 	}
 	if(metadata_mask & TBD_METADATA_UID || metadata_mask & TBD_METADATA_GID)
-		ret = chown(dname, (uid_t)uid, (gid_t)gid);
+		chown(dname, (uid_t)uid, (gid_t)gid);
 	if(metadata_mask | TBD_METADATA_MODE)
-		ret = chmod(dname, mode);
+		chmod(dname, mode);
 
 	free(dname);
 	return TBD_ERROR_SUCCESS;
@@ -519,7 +514,6 @@ tbd_apply_cmd_file_mdata_update(FILE *stream)
 	    fread(&mode, sizeof(uint32_t), 1, stream)          != 1)
 		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
-	int   ret;
 	char *dname = tbd_apply_fread_string(stream);
 	if(dname == NULL)
 		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
@@ -531,9 +525,9 @@ tbd_apply_cmd_file_mdata_update(FILE *stream)
 		utime(dname, &timebuff); // Don't care if it succeeds right now.
 	}
 	if(metadata_mask & TBD_METADATA_UID || metadata_mask & TBD_METADATA_GID)
-		ret = chown(dname, (uid_t)uid, (gid_t)gid);
+		chown(dname, (uid_t)uid, (gid_t)gid);
 	if(metadata_mask | TBD_METADATA_MODE)
-		ret = chmod(dname, mode);
+		chmod(dname, mode);
 
 	free(dname);
 	return TBD_ERROR_SUCCESS;

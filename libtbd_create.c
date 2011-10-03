@@ -475,9 +475,10 @@ tbd_create_cmd_symlink_delta(FILE        *stream,
 	path_a[len_a] = path_b[len_b] = '\0';
 
 	int pathcmp = strcmp(path_a, path_b);
+	printf ("readlink %s %s - %d", path_a, path_b, pathcmp);
 
 	/* If both symlinks are equal, we quit */
-	if((b->mtime == a->mtime) && (pathcmp != 0))
+	if((b->mtime == a->mtime) && (pathcmp == 0))
 		return 0;
 
 	/* TODO: If only mtime changes, use a mtime update cmd */
