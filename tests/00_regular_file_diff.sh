@@ -9,13 +9,17 @@ TEST_TOOLS=$3
 
 . ./test_lib.sh
 
+############# Test specific code ############
+
+# This test checks that normal files content and metadata are 
+
+ORG_FILE=$ORIGIN/b.txt
+TGT_FILE=$TARGET/b.txt
+
 function setup {
-	rm -rf $TESTDIR
-	mkdir -p $ORIGIN       && \
-	mkdir -p $TARGET       && \
 	echo 1 > $ORG_FILE     && \
 	echo 2 > $TGT_FILE     && \
-	chgrp cdrom $TGT_FILE    && \
+	chown :cdrom $TGT_FILE    && \
 	chmod 707 $TGT_FILE
 }
 
@@ -24,7 +28,9 @@ function setup {
 function check_results {
 	check_content    $ORG_FILE "2" && \
 	check_perm       $ORG_FILE 707 && \
+	check_group      $ORG_FILE cdrom && \
 	check_same_mtime $ORG_FILE $TGT_FILE
 }
 
+#############################################
 main $@
