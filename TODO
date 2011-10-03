@@ -1,3 +1,27 @@
+Test suite
+----------
+tbdiff just passed a coding style and branding review. There are still bugs with real scenarios (debootstrapped directory trees). The lack of a test suite is making it really hard to refactor code so the first priority at the moment is to create a set of unit tests. A basic bash based test framework is being put in place, once it is finished no bug should be fixed unless it provides a unit test to prevent regressions in the future.
+
+File system safety
+------------------
+There has been a problem while testing on a real system directory tree, during deployment of a diff image between two Debian debootstrapped trees, the root filesystem of the test host was corrupted. Further investigation has shown that /bin /root /usr were listed for deletion in the command stream. We need to figure out why tbdiff is sending remove commands for directories that are not removed. But most importantly we have to put safeguards so that we make sure we never crawl up the directory trees and perform operations on the host system.
+
+Split stream parsing and filesystem operations
+----------------------------------------------
+Right now the stream parsing and the filesystem operations are both made in one go. This operations should be made separately so that output the stream and dry runs can be performed. We should have a defined struct per command for easier understanding of what goes into the wire.
+
+Abstract endianness
+-------------------
+At the moment the endianness of the file is the same than the one used in the image creation host. We need to state the endianness of the file and perform the transformations in those platforms that need it.
+
+Abstract the stream object
+--------------------------
+Right now FILE* is used as the stream object. However abstracting the stream object is desirable.
+
+Write atuotools or waf scripts to build and release
+---------------------------------------------------
+A simple Makefile is not the best way to maintain a package. Waf or autotools scripts should be put in place.
+
 General
 -------
  + Use sizeof(var) or (type) instead of fixed byte lengths on fread/fwrite
