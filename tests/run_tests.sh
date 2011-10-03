@@ -14,7 +14,7 @@ fi
 
 ALLTESTSDIR=`pwd`
 
-for i in [0-9][0-9]*
+for i in [0-9][0-9]*.sh
 do
 	cd $ALLTESTSDIR
 	echo "#### Running $i"
