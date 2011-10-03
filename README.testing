@@ -1,0 +1,20 @@
+The testing framework basically aims to run the create and deploy tools in a
+controlled environment to check for any regressions during code changes and
+refactoring.
+
+This are the rules of the test club:
+
+- For each new feature there should be a unit test
+- For each bug fixed there should be a unit test
+
+Running the test suite
+----------------------
+You need to change to the tests directory and execute run_tests.sh:
+
+$ ./run_tests.sh
+
+
+Anatomy of a unit test
+----------------------
+
+Each test 
