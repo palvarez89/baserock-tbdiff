@@ -27,4 +27,4 @@ function check_results {
 	check_same_mtime $ORG_FILE $TGT_FILE
 }
 
-main
+main $@

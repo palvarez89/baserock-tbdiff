@@ -24,6 +24,12 @@ function check_content {
 }
 
 function start {
+	if [ $# -ne 2 ]
+	then
+		echo "ERROR: Not enough arguments."
+		cleanup_and_exit
+	fi
+
 	if [ ! -f $1 ]
 	then
 		echo "ERROR: $1 is an invalid tbdiff-create path"  1>&2
@@ -43,7 +49,7 @@ function cleanup_and_exit {
 }
 
 function main {
-	start
+	start $@
 	echo -n "$TEST_ID Setting up $TEST_NAME test: "
 	setup
 	if [ $? -ne 0 ]
