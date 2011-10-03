@@ -17,11 +17,14 @@ ALLTESTSDIR=`pwd`
 for i in [0-9][0-9]*
 do
 	cd $ALLTESTSDIR
+	echo "#### Running $i"
 	fakeroot -- ./$i ../tbdiff-create ../tbdiff-deploy
 	if [ $? -ne 0 ]
 	then
 		echo "Test program $i failed" 1>&2
 		cd $ALLTESTSDIR
+		echo "-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^-"
 		exit 1
 	fi
+		echo "#####################################################################"
 done

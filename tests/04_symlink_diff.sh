@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TEST_ID="01"
+TEST_ID="04"
 TEST_NAME="Symlink add/remove"
 
 CREATE=`pwd`/$1
