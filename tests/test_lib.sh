@@ -83,7 +83,6 @@ function main {
 	$DEPLOY $IMGFILE && \
 	RETVAL=$?
 	cd $CWD
-	
 	if test "x$RETVAL" != "x0"
 	then
 		echo $FAIL
@@ -94,7 +93,7 @@ function main {
 
 	echo -n "$TEST_ID Checking $TEST_NAME results: "
 	check_results
-	if test "x$RETVAL" != "x0"
+	if test "x$?" != "x0"
 	then
 		echo $FAIL
 		echo "Applying image did not produce the expected results" 1>&2

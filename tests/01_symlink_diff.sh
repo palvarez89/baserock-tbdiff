@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TEST_ID="02"
+TEST_ID="01"
 TEST_NAME="Symlink add/remove"
 
 CREATE=`pwd`/$1
@@ -18,8 +18,8 @@ function setup {
 }
 
 function check_results {
-	test -L           $ORIGIN/a           && \
-	check_symlink     $ORIGIN/a "/bar"    && \
+	test -L           $ORIGIN/a && \
+	check_symlink     $ORIGIN/a "/bar" && \
 	check_group       $ORIGIN/a cdrom     && \
 	check_same_mtime  $ORIGIN/a $TARGET/a && \
 	check_same_uidgid $ORIGIN/a $TARGET/a
