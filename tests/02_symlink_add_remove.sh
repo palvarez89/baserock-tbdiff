@@ -11,15 +11,11 @@ TEST_TOOLS=$3
 
 ############# Test specific code ############
 
-# This test checks that normal files content and metadata are 
-
 function setup {
 	ln -s /foo $ORIGIN/remove && \
 	ln -s /bar $TARGET/add && \
 	chown -h :cdrom $TARGET/add
 }
-
-# check_same_mtime FILE_A FILE_B
 
 function check_results {
 	test   -L $ORIGIN/add    && \
