@@ -11,6 +11,11 @@ function check_same_mtime {
 	test $(stat -c %Y $1) = $(stat -c %Y $2)
 }
 
+# check_same_uidgid FILE_A FILE_B
+function check_same_uidgid {
+	test $(stat -c "%u.%g" $1) = $(stat -c "%u.%g" $2)
+}
+
 # check_content FILE EXPECTED_OCTAL_PERMISSIONS
 function check_perm {
 	test $(stat -c %a $1) = $2

@@ -11,8 +11,6 @@ TEST_TOOLS=$3
 
 ############# Test specific code ############
 
-# This test checks that normal files content and metadata are 
-
 ORG_FILE=$ORIGIN/b.txt
 TGT_FILE=$TARGET/b.txt
 
@@ -22,8 +20,6 @@ function setup {
 	chown :cdrom $TGT_FILE    && \
 	chmod 707 $TGT_FILE
 }
-
-# check_same_mtime FILE_A FILE_B
 
 function check_results {
 	check_content    $ORG_FILE "2" && \
