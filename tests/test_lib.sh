@@ -59,10 +59,10 @@ function main {
 	$CREATE $IMGFILE $ORIGIN $TARGET && \
 	cd $ORIGIN && \
 	$DEPLOY $IMGFILE && \
-	RET=$?
+	RETVAL=$?
 	cd $CWD
 	
-	if [ $RET -ne 0 ]
+	if test "x$RETVAL" != "x0"
 	then
 		echo $FAIL
 		echo "Could not create and deploy image." 1>&2
@@ -72,7 +72,7 @@ function main {
 
 	echo -n "$TEST_ID Checking $TEST_NAME results: "
 	check_results
-	if [ $RET -ne 0 ]
+	if test "x$RETVAL" != "x0"
 	then
 		echo $FAIL
 		echo "Applying image did not produce the expected results" 1>&2
