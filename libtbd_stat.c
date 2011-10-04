@@ -183,8 +183,7 @@ tbd_stat_entry_find(tbd_stat_t *file,
 		if(strcmp(ds->d_name, name) == 0) {
 			char *spath = tbd_stat_subpath(file, ds->d_name);
 
-			if(spath == NULL)
-			{
+			if(spath == NULL) {
 				closedir (dp);
 				return NULL;
 			}
