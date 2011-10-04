@@ -20,7 +20,6 @@ function setup {
 }
 
 function check_results {
-	ls -la $ORIGIN/a
 	test -d           $ORIGIN/a        && \
 	test -f           $ORIGIN/a/1      && \
 	check_same_mode   $ORIGIN/a $TARGET/a #&& \
