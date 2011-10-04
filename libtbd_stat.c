@@ -45,8 +45,9 @@ _tbd_stat(const char *name,
 		return NULL;
 
 	ret->parent = NULL;
+	ret->size = 0;
 	ret->name   = (char*)((uintptr_t)ret + sizeof(tbd_stat_t));
-	memcpy(ret->name, name, (nlen + 1));
+	memcpy(ret->name, name, (nlen + 1));	
 
 	if(S_ISREG(info.st_mode)) {
 		ret->type = TBD_STAT_TYPE_FILE;
@@ -59,8 +60,8 @@ _tbd_stat(const char *name,
 			free(ret);
 			return NULL;
 		}
-
-		ret->size = 0;
+		
+		/* FIXME: Remove the need for directory size? */
 		struct dirent *ds;
 		for(ds = readdir(dp); ds != NULL; ds = readdir(dp)) {
 			if((strcmp(ds->d_name, ".") == 0)
@@ -70,22 +71,17 @@ _tbd_stat(const char *name,
 			ret->size++;
 		}
 		closedir(dp);
-	} else if(S_ISLNK(info.st_mode)) {
+	} else if(S_ISLNK(info.st_mode))
 		ret->type = TBD_STAT_TYPE_SYMLINK;
-		ret->size = 0;
-	} else if(S_ISCHR(info.st_mode)) {
+	else if(S_ISCHR(info.st_mode))
 		ret->type = TBD_STAT_TYPE_CHRDEV;
-		ret->size = 0;
-	} else if(S_ISBLK(info.st_mode)) {
+	else if(S_ISBLK(info.st_mode))
 		ret->type = TBD_STAT_TYPE_BLKDEV;
-		ret->size = 0;
-	} else if(S_ISFIFO(info.st_mode)) {
+	else if(S_ISFIFO(info.st_mode))
 		ret->type = TBD_STAT_TYPE_FIFO;
-		ret->size = 0;
-	} else if(S_ISSOCK(info.st_mode)) {
+	else if(S_ISSOCK(info.st_mode))
 		ret->type = TBD_STAT_TYPE_SOCKET;
-		ret->size = 0;
-	} else {
+	else {
 		free(ret);
 		return NULL;
 	}
@@ -95,7 +91,6 @@ _tbd_stat(const char *name,
 	ret->gid   = (uint32_t)info.st_gid;
 	ret->mode  = (uint32_t)info.st_mode;
 	ret->mtime = (uint32_t)info.st_mtime;
-
 	return ret;
 }
 
