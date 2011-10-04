@@ -660,14 +660,19 @@ tbd_create_impl(FILE        *stream,
 
 	// Handle deletions.
 	for(i = 0; i < a->size; i++) {
+		err = 0;
+		
 		tbd_stat_t *_a = tbd_stat_entry(a, i);
 		if(_a == NULL)
 			return tbd_error(TBD_ERROR_UNABLE_TO_STAT_FILE);
 		tbd_stat_t *_b = tbd_stat_entry_find(b, _a->name);
-		fprintf(stderr, "file delete %s\n", _a->name);
-		err = (_b != NULL ? 0 : tbd_create_cmd_entity_delete(stream, _a->name));
+
+		if (_b == NULL)
+			err = tbd_create_cmd_entity_delete(stream, _a->name);
+
 		tbd_stat_free(_b);
 		tbd_stat_free(_a);
+
 		if(err != 0)
 			return err;
 	}

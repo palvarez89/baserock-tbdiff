@@ -181,15 +181,20 @@ tbd_stat_entry_find(tbd_stat_t *file,
 	struct dirent *ds;
 	for(ds = readdir(dp); ds != NULL; ds = readdir(dp)) {
 		if(strcmp(ds->d_name, name) == 0) {
-			closedir (dp);
 			char *spath = tbd_stat_subpath(file, ds->d_name);
+
 			if(spath == NULL)
+			{
+				closedir (dp);
 				return NULL;
+			}
+
 
 			tbd_stat_t *ret = __tbd_stat(ds->d_name, (const char *)spath);
 			free(spath);
 			ret->parent = file;
 
+			closedir (dp);
 			return ret;
 		}
 	}

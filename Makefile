@@ -41,6 +41,8 @@ uninstall:
 	rm -rf /usr/local/bin/$(DEPLOY)
 	rm -rf /usr/local/bin/$(CREATE)
 
+test:
+	cd tests && ./run_tests.sh && cd ..
 .PHONY: clean
 clean:
 	rm  -f $(DEPLOY) $(CREATE) *.o *.d
