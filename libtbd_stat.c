@@ -209,15 +209,14 @@ tbd_stat_subpath(tbd_stat_t *file,
 		return NULL;
 
 	size_t elen = ((entry == NULL) ? 0 : (strlen(entry) + 1));
-
 	size_t plen;
+
 	tbd_stat_t *root;
 	for(root = file, plen = 0;
 	    root != NULL;
-	    plen += (strlen(root->name) + 1),
-	    root = (tbd_stat_t*)root->parent);
-	plen += elen;
+	    plen += (strlen(root->name) + 1), root = (tbd_stat_t*)root->parent);
 
+	plen += elen;
 
 	char *path = (char*)malloc(plen);
 	if(path == NULL)
