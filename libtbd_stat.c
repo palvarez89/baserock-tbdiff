@@ -31,8 +31,8 @@
 
 
 static tbd_stat_t*
-_tbd_stat(const char *name,
-          const char *path)
+tbd_stat_from_path(const char *name,
+                   const char *path)
 {
 	struct stat info;
 
@@ -97,7 +97,7 @@ _tbd_stat(const char *name,
 tbd_stat_t*
 tbd_stat(const char *path)
 {
-	tbd_stat_t *ret = _tbd_stat(path, path);
+	tbd_stat_t *ret = tbd_stat_from_path(path, path);
 	return ret;
 }
 
@@ -147,7 +147,7 @@ tbd_stat_entry(tbd_stat_t *file, uint32_t entry)
 	if(spath == NULL)
 		return NULL;
 
-	tbd_stat_t *ret = _tbd_stat(ds->d_name, (const char*)spath);
+	tbd_stat_t *ret = tbd_stat_from_path(ds->d_name, (const char*)spath);
 
 	free(spath);
 
@@ -183,7 +183,7 @@ tbd_stat_entry_find(tbd_stat_t *file,
 				return NULL;
 			}
 
-			tbd_stat_t *ret = _tbd_stat(ds->d_name, (const char *)spath);
+			tbd_stat_t *ret = tbd_stat_from_path(ds->d_name, (const char*)spath);
 			free(spath);
 			ret->parent = file;
 
