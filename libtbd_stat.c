@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stddef.h>
 #include <string.h>
 #include <inttypes.h>
 
@@ -141,14 +142,16 @@ tbd_stat_entry(tbd_stat_t *file, uint32_t entry)
 		    (strcmp(ds->d_name, "..") == 0))
 			i--;
 	}
+	char *name = strndup(ds->d_name, ds->d_reclen-offsetof(struct dirent, d_name));
 	closedir (dp);
 
-	char *spath = tbd_stat_subpath(file, ds->d_name);
+	char *spath = tbd_stat_subpath(file, name);
 	if(spath == NULL)
 		return NULL;
 
-	tbd_stat_t *ret = tbd_stat_from_path(ds->d_name, (const char*)spath);
+	tbd_stat_t *ret = tbd_stat_from_path(name, (const char*)spath);
 
+	free(name);
 	free(spath);
 
 	if (ret == NULL)
