@@ -8,6 +8,7 @@ DEPLOY=tbdiff-deploy
 CREATE=tbdiff-create
 
 CFLAGS ?=
+CFLAGS += -std=gnu99
 CFLAGS += -g
 CFLAGS += -Wall -Wextra -Werror -Wno-unused-result $(OPT)
 

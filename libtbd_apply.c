@@ -51,19 +51,19 @@ tbd_apply_identify(FILE *stream)
 {
 	uint8_t cmd;
 	if(fread(&cmd, 1, 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	if(cmd != TBD_CMD_IDENTIFY)
-		return tbd_error(TBD_ERROR_INVALID_PARAMETER);
+		return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
 	uint16_t nlen;
 	if(fread(&nlen, 2, 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	if(strlen(TB_DIFF_PROTOCOL_ID) != nlen)
-		return tbd_error(TBD_ERROR_INVALID_PARAMETER);
+		return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
 	char nstr[nlen];
 	if(fread(nstr, 1, nlen, stream) != nlen)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	if(strncmp(nstr, TB_DIFF_PROTOCOL_ID, nlen) != 0)
-		return tbd_error(TBD_ERROR_INVALID_PARAMETER);
+		return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
 	return 0;
 }
 
@@ -72,33 +72,33 @@ tbd_apply_cmd_dir_create(FILE *stream)
 {
 	uint16_t dlen;
 	if(fread(&dlen, sizeof(uint16_t), 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	char dname[dlen + 1];
 	if(fread(dname, 1, dlen, stream) != dlen)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	dname[dlen] = '\0';
 	fprintf(stderr, "cmd_dir_create %s\n", dname);
 	if(strchr(dname, '/') != NULL)
-		return tbd_error(TBD_ERROR_INVALID_PARAMETER);
+		return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
 
 	uint32_t mtime;
 	if(fread(&mtime, sizeof(uint32_t), 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	uint32_t uid;
 	if(fread(&uid, sizeof(uint32_t), 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	uint32_t gid;
 	if(fread(&gid, sizeof(uint32_t), 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	uint32_t mode;
 	if(fread(&mode, sizeof(uint32_t), 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	if(mkdir(dname, (mode_t)mode) != 0)
-		return tbd_error(TBD_ERROR_UNABLE_TO_CREATE_DIR);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_CREATE_DIR);
 
 	// Apply metadata.
 	struct utimbuf timebuff = { time(NULL), mtime };
@@ -116,19 +116,19 @@ tbd_apply_cmd_dir_enter(FILE      *stream,
 {
 	uint16_t dlen;
 	if(fread(&dlen, 2, 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	char dname[dlen + 1];
 	if(fread(dname, 1, dlen, stream) != dlen)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	dname[dlen] = '\0';
 	fprintf(stderr, "cmd_dir_enter %s\n", dname);
 	if((strchr(dname, '/') != NULL) || (strcmp(dname, "..") == 0))
-		return tbd_error(TBD_ERROR_UNABLE_TO_CHANGE_DIR);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_CHANGE_DIR);
 	if(depth != NULL)
 		(*depth)++;
 
 	if(chdir(dname) != 0)
-		return tbd_error(TBD_ERROR_UNABLE_TO_CHANGE_DIR);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_CHANGE_DIR);
 	return 0;
 }
 
@@ -138,17 +138,17 @@ tbd_apply_cmd_dir_leave(FILE      *stream,
 {
 	uint8_t count;
 	if(fread(&count, 1, 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	uintptr_t rcount = count + 1;
 	fprintf(stderr, "cmd_dir_leave %"PRIuPTR"\n", rcount);
 
 	if((depth != NULL) && (*depth < rcount))
-		return tbd_error(TBD_ERROR_INVALID_PARAMETER);
+		return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
 
 	uintptr_t i;
 	for(i = 0; i < rcount; i++) {
 		if(chdir("..") != 0)
-			return tbd_error(TBD_ERROR_UNABLE_TO_CHANGE_DIR);
+			return TBD_ERROR(TBD_ERROR_UNABLE_TO_CHANGE_DIR);
 	}
 
 	if(depth != NULL)
@@ -161,13 +161,13 @@ tbd_apply_cmd_file_create(FILE *stream)
 {
 	uint16_t flen;
 	if(fread(&flen, 2, 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	char fname[flen + 1];
 	if(fread(fname, 1, flen, stream) != flen)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	fname[flen] = '\0';
 	if((strchr(fname, '/') != NULL) || (strcmp(fname, "..") == 0))
-		return tbd_error(TBD_ERROR_INVALID_PARAMETER);
+		return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
 
 	uint32_t mtime;
 	uint32_t mode;
@@ -180,19 +180,19 @@ tbd_apply_cmd_file_create(FILE *stream)
 	    fread(&uid, sizeof(uint32_t), 1, stream)   != 1 ||
 	    fread(&gid, sizeof(uint32_t), 1, stream)   != 1 ||
 	    fread(&fsize, 4, 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	fprintf(stderr, "cmd_file_create %s:%"PRId32"\n", fname, fsize);
 
 	FILE *fp = fopen(fname, "rb");
 	if(fp != NULL) {
 		fclose(fp);
-		return tbd_error(TBD_ERROR_FILE_ALREADY_EXISTS);
+		return TBD_ERROR(TBD_ERROR_FILE_ALREADY_EXISTS);
 	}
 
 	fp = fopen(fname, "wb");
 	if(fp == NULL)
-		return tbd_error(TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_WRITING);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_WRITING);
 
 	uintptr_t block = 256;
 	uint8_t fbuff[block];
@@ -200,9 +200,9 @@ tbd_apply_cmd_file_create(FILE *stream)
 		if(fsize < block)
 			block = fsize;
 		if(fread(fbuff, 1, block, stream) != block)
-			return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+			return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 		if(fwrite(fbuff, 1, block, fp) != block)
-			return tbd_error(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+			return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	}
 	fclose(fp);
 
@@ -228,17 +228,17 @@ tbd_apply_cmd_file_delta(FILE *stream)
 	uint32_t mode;
 	uint16_t flen;
 	if(fread(&flen, 2, 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	char fname[flen + 1];
 	if(fread(fname, 1, flen, stream) != flen)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	fname[flen] = '\0';
 
 	fprintf(stderr, "cmd_file_delta %s\n", fname);
 
 	if((strchr(fname, '/') != NULL) ||
 	    (strcmp(fname, "..") == 0))
-		return tbd_error(TBD_ERROR_INVALID_PARAMETER);
+		return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
 
 	/* Reading metadata */
 	if(fread(&mdata_mask, sizeof(uint16_t), 1, stream) != 1 ||
@@ -246,26 +246,26 @@ tbd_apply_cmd_file_delta(FILE *stream)
 	    fread(&uid,        sizeof(uint32_t), 1, stream) != 1 ||
 	    fread(&gid,        sizeof(uint32_t), 1, stream) != 1 ||
 	    fread(&mode,       sizeof(uint32_t), 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	FILE *op = fopen(fname, "rb");
 	if(op == NULL)
-		return tbd_error(TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_READING);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_READING);
 	if(remove(fname) != 0) {
 		fclose(op);
-		return tbd_error(TBD_ERROR_UNABLE_TO_REMOVE_FILE);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_REMOVE_FILE);
 	}
 	FILE *np = fopen(fname, "wb");
 	if(np == NULL) {
 		fclose(op);
-		return tbd_error(TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_WRITING);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_WRITING);
 	}
 
 	uint32_t dstart, dend;
 	if(fread(&dstart, 4, 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	if(fread(&dend, 4, 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	uintptr_t block;
 	uint8_t fbuff[256];
@@ -273,34 +273,34 @@ tbd_apply_cmd_file_delta(FILE *stream)
 		if(dstart < block)
 			block = dstart;
 		if(fread(fbuff, 1, block, op) != block)
-			return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+			return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 		if(fwrite(fbuff, 1, block, np) != block)
-			return tbd_error(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+			return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	}
 
 	uint32_t fsize;
 	if(fread(&fsize, 4, 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	for(block = 256; fsize != 0; fsize -= block) {
 		if(fsize < block)
 			block = fsize;
 		if(fread(fbuff, 1, block, stream) != block)
-			return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+			return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 		if(fwrite(fbuff, 1, block, np) != block)
-			return tbd_error(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+			return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	}
 
 	if(fseek(op, dend, SEEK_SET) != 0) {
 		fclose(np);
 		fclose(op);
-		return tbd_error(TBD_ERROR_UNABLE_TO_SEEK_THROUGH_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_SEEK_THROUGH_STREAM);
 	}
 
 	for(block = 256; block != 0;) {
 		block = fread(fbuff, 1, block, op);
 		if(fwrite(fbuff, 1, block, np) != block)
-			return tbd_error(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+			return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	}
 
 	fclose(np);
@@ -326,14 +326,14 @@ tbd_apply_cmd_entity_delete_for_name(const char *name)
 	DIR *dp = opendir(name);
 	if(dp == NULL) {
 		if(remove(name) != 0)
-			return tbd_error(TBD_ERROR_UNABLE_TO_REMOVE_FILE);
+			return TBD_ERROR(TBD_ERROR_UNABLE_TO_REMOVE_FILE);
 
 		return 0;
 	}
 
 	if(chdir(name) != 0) {
 		closedir(dp);
-		return tbd_error(TBD_ERROR_UNABLE_TO_CHANGE_DIR);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_CHANGE_DIR);
 	}
 
 	struct dirent *entry;
@@ -347,7 +347,7 @@ tbd_apply_cmd_entity_delete_for_name(const char *name)
 			closedir(dp);
 
 			if(chdir("..") != 0)
-				return tbd_error(TBD_ERROR_UNABLE_TO_CHANGE_DIR);
+				return TBD_ERROR(TBD_ERROR_UNABLE_TO_CHANGE_DIR);
 
 			return err;
 		}
@@ -355,9 +355,9 @@ tbd_apply_cmd_entity_delete_for_name(const char *name)
 
 	closedir(dp);
 	if(chdir("..") != 0)
-		return tbd_error(TBD_ERROR_UNABLE_TO_CHANGE_DIR);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_CHANGE_DIR);
 	if(remove(name) != 0)
-		return tbd_error(TBD_ERROR_UNABLE_TO_REMOVE_FILE);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_REMOVE_FILE);
 	return 0;
 }
 
@@ -366,16 +366,16 @@ tbd_apply_cmd_entity_delete(FILE *stream)
 {
 	uint16_t elen;
 	if(fread(&elen, 2, 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	char ename[elen + 1];
 	if(fread(ename, 1, elen, stream) != elen)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	ename[elen] = '\0';
 
 	fprintf(stderr, "cmd_entity_delete %s\n", ename);
 
 	if((strchr(ename, '/') != NULL) || (strcmp(ename, "..") == 0))
-		return tbd_error(TBD_ERROR_INVALID_PARAMETER);
+		return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
 	return tbd_apply_cmd_entity_delete_for_name(ename);
 }
 
@@ -390,25 +390,25 @@ tbd_apply_cmd_symlink_create(FILE *stream)
 	if(fread(&mtime, sizeof(uint32_t), 1, stream) != 1 ||
 	    fread(&uid,   sizeof(uint32_t), 1, stream) != 1 ||
 	    fread(&gid,   sizeof(uint32_t), 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	/* Reading link file name */
 	if(fread(&len, sizeof(uint16_t), 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	char linkname[len + 1];
 	linkname[len] = '\0';
 	if(fread(linkname, sizeof(char), len, stream) != len)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	/* Reading target path */
 	if(fread(&len, sizeof(uint16_t), 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	char linkpath[len+1];
 	linkpath[len] = '\0';
 
 	if(fread(linkpath, sizeof(char), len, stream) != len)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	fprintf(stderr, "cmd_symlink_create %s -> %s\n", linkname, linkpath);
 
@@ -443,7 +443,7 @@ tbd_apply_cmd_special_create(FILE *stream)
 	    fread(&gid, sizeof(uint32_t), 1, stream)   != 1 ||
 	    fread(&dev, sizeof(uint32_t), 1, stream)   != 1) {
 		free(name);
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	}
 
 	fprintf(stderr, "cmd_special_create %s\n", name);
@@ -477,11 +477,11 @@ tbd_apply_cmd_dir_delta(FILE *stream)
 	    fread(&uid, sizeof(uint32_t), 1, stream)           != 1 ||
 	    fread(&gid, sizeof(uint32_t), 1, stream)           != 1 ||
 	    fread(&mode, sizeof(uint32_t), 1, stream)          != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	char *dname = tbd_apply_fread_string(stream);
 	if(dname == NULL)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	fprintf(stderr, "cmd_dir_delta %s\n", dname);
 
@@ -512,11 +512,11 @@ tbd_apply_cmd_file_mdata_update(FILE *stream)
 	    fread(&uid, sizeof(uint32_t), 1, stream)           != 1 ||
 	    fread(&gid, sizeof(uint32_t), 1, stream)           != 1 ||
 	    fread(&mode, sizeof(uint32_t), 1, stream)          != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	char *dname = tbd_apply_fread_string(stream);
 	if(dname == NULL)
-		return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	fprintf(stderr, "cmd_metadata_update %s\n", dname);
 
@@ -537,7 +537,7 @@ int
 tbd_apply(FILE *stream)
 {
 	if(stream == NULL)
-		return tbd_error(TBD_ERROR_NULL_POINTER);
+		return TBD_ERROR(TBD_ERROR_NULL_POINTER);
 
 	int err;
 	if((err = tbd_apply_identify(stream)) != 0)
@@ -548,7 +548,7 @@ tbd_apply(FILE *stream)
 	while(!flush) {
 		uint8_t cmd;
 		if(fread(&cmd, 1, 1, stream) != 1)
-			return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+			return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 		switch(cmd) {
 		case TBD_CMD_DIR_CREATE:
 			if((err = tbd_apply_cmd_dir_create(stream)) != 0)
@@ -588,7 +588,7 @@ tbd_apply(FILE *stream)
 			break;
 		case TBD_CMD_ENTITY_MOVE:
 		case TBD_CMD_ENTITY_COPY:
-			return tbd_error(TBD_ERROR_FEATURE_NOT_IMPLEMENTED); // TODO - Implement.
+			return TBD_ERROR(TBD_ERROR_FEATURE_NOT_IMPLEMENTED); // TODO - Implement.
 		case TBD_CMD_ENTITY_DELETE:
 			if((err = tbd_apply_cmd_entity_delete(stream)) != 0)
 				return err;
@@ -598,7 +598,7 @@ tbd_apply(FILE *stream)
 			break;
 		default:
 			fprintf(stderr, "Error: Invalid command 0x%02"PRIx8".\n", cmd);
-			return tbd_error(TBD_ERROR_INVALID_PARAMETER);
+			return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
 		}
 	}
 

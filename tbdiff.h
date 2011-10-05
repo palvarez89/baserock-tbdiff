@@ -46,7 +46,7 @@ typedef enum {
 	TBD_METADATA_MODE  = 0x2,
 	TBD_METADATA_UID   = 0x4,
 	TBD_METADATA_GID   = 0x8,
-	TBD_METADATA_RDEV   = 0x10,
+	TBD_METADATA_RDEV  = 0x10,
 } tbd_metadata_type_e;
 
 typedef enum {
@@ -75,14 +75,17 @@ typedef enum {
 } tbd_error_e;
 
 #ifdef NDEBUG
-#define tbd_error(e) return e
+#define TBD_ERROR(e) (e)
 #else
-/*#define tbd_error(e) { if(e != 0) fprintf(stderr, "TBDiff error '%s' in function '%s' at line %d of file '%s'.\n", #e, __FUNCTION__, __LINE__, __FILE__); return e; }*/
-#define tbd_error(e)\
-	({if(e != 0) fprintf(stderr, \
-	 "TBDiff error '%s' in function '%s' at line %d of file '%s'.\n", \
-	 #e, __func__, __LINE__, __FILE__); \
-	 e;})
+#define TBD_ERROR(e) tbd_error(e, #e, __func__, __LINE__, __FILE__)
+inline tbd_error_e tbd_error(tbd_error_e e, char const *s, char const *func,
+                                                     int line, char const* file)
+{
+	if (e != TBD_ERROR_SUCCESS)
+		fprintf(stderr, "TBDiff error '%s' in function '%s' at line %d "
+		                        "of file '%s'.\n", s, func, line, file);
+	return e;
+}
 #endif
 
 extern int         tbd_apply (FILE *stream);

@@ -36,7 +36,7 @@ tbd_create_fwrite_cmd(FILE    *stream,
                       uint8_t  cmd)
 {
 	if(fwrite(&cmd, 1, 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
 
@@ -47,7 +47,7 @@ tbd_create_fwrite_string(FILE       *stream,
 	uint16_t slen = strlen(string);
 	if((fwrite(&slen, 2, 1, stream) != 1)
 	    || (fwrite(string, 1, slen, stream) != slen))
-		return tbd_error(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
 
@@ -56,7 +56,7 @@ tbd_create_fwrite_mdata_mask(FILE    *stream,
                              uint16_t mask)
 {
 	if(fwrite(&mask, sizeof(uint16_t), 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
 
@@ -65,7 +65,7 @@ tbd_create_fwrite_mtime(FILE    *stream,
                         uint32_t  mtime)
 {
 	if(fwrite(&mtime, sizeof(uint32_t), 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
 
@@ -74,7 +74,7 @@ tbd_create_fwrite_mode(FILE     *stream,
                        uint32_t  mode)
 {
 	if(fwrite(&mode, sizeof(uint32_t), 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
 
@@ -83,7 +83,7 @@ tbd_create_fwrite_gid(FILE     *stream,
                       gid_t     gid)
 {
 	if(fwrite(&gid, sizeof(gid_t), 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
 
@@ -92,7 +92,7 @@ tbd_create_fwrite_uid(FILE     *stream,
                       uid_t     uid)
 {
 	if(fwrite(&uid, sizeof(uid_t), 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
 
@@ -101,7 +101,7 @@ tbd_create_fwrite_dev(FILE     *stream,
                       uint32_t  dev)
 {
 	if(fwrite(&dev, sizeof(uint32_t), 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
 
@@ -138,11 +138,11 @@ tbd_create_cmd_file_create(FILE       *stream,
 
 	uint32_t size = f->size;
 	if(fwrite(&size, sizeof(uint32_t), 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 
 	FILE *fp = tbd_stat_fopen(f, "rb");
 	if(fp == NULL)
-		return tbd_error(TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_READING);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_READING);
 
 	uint8_t buff[256];
 	uintptr_t b = 256;
@@ -150,7 +150,7 @@ tbd_create_cmd_file_create(FILE       *stream,
 		b = fread(buff, 1, b, fp);
 		if(fwrite(buff, 1, b, stream) != b) {
 			fclose(fp);
-			return tbd_error(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+			return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 		}
 	}
 	fclose(fp);
@@ -206,11 +206,11 @@ tbd_create_cmd_file_delta(FILE        *stream,
 {
 	FILE *fpa = tbd_stat_fopen(a, "rb");
 	if(fpa == NULL)
-		return tbd_error(TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_READING);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_READING);
 	FILE *fpb = tbd_stat_fopen(b, "rb");
 	if(fpb == NULL) {
 		fclose(fpa);
-		return tbd_error(TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_READING);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_READING);
 	}
 
 	// Calculate start.
@@ -239,7 +239,7 @@ tbd_create_cmd_file_delta(FILE        *stream,
 	if((fseek(fpa, 0, SEEK_END) != 0) || (fseek(fpb, 0, SEEK_END) != 0)) {
 		fclose(fpa);
 		fclose(fpb);
-		return tbd_error(TBD_ERROR_UNABLE_TO_SEEK_THROUGH_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_SEEK_THROUGH_STREAM);
 	}
 
 	// Find length.
@@ -249,7 +249,7 @@ tbd_create_cmd_file_delta(FILE        *stream,
 	if((flena < 0) || (flenb < 0)) {
 		fclose(fpa);
 		fclose(fpb);
-		return tbd_error(TBD_ERROR_UNABLE_TO_DETECT_STREAM_POSITION);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_DETECT_STREAM_POSITION);
 	}
 
 	// Find end.
@@ -265,14 +265,14 @@ tbd_create_cmd_file_delta(FILE        *stream,
 		    || (fseek(fpb, flenb - (o + blks[1]), SEEK_SET) != 0)) {
 			fclose(fpa);
 			fclose(fpb);
-			return tbd_error(TBD_ERROR_UNABLE_TO_SEEK_THROUGH_STREAM);
+			return TBD_ERROR(TBD_ERROR_UNABLE_TO_SEEK_THROUGH_STREAM);
 		}
 
 		if((fread(buff[0], 1, blks[0], fpa) != blks[0])
 		    || (fread(buff[1], 1, blks[1], fpb) != blks[1])) {
 			fclose(fpa);
 			fclose(fpb);
-			return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+			return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 		}
 
 		uintptr_t i, ja, jb;
@@ -321,22 +321,22 @@ tbd_create_cmd_file_delta(FILE        *stream,
 	    (fwrite(&end,   sizeof(uint32_t), 1, stream) != 1)   ||
 	    (fwrite(&size,  sizeof(uint32_t), 1, stream) != 1)) {
 		fclose(fpb);
-		return tbd_error(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	}
 	if(fseek(fpb, start, SEEK_SET) != 0) {
 		fclose(fpb);
-		return tbd_error(TBD_ERROR_UNABLE_TO_SEEK_THROUGH_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_SEEK_THROUGH_STREAM);
 	}
 
 	for(o = 0; o < size; o += 256) {
 		uintptr_t csize = ((size - o) > 256 ? 256 : (size - o));
 		if(fread(buff[0], 1, csize, fpb) != csize) {
 			fclose(fpb);
-			return tbd_error(TBD_ERROR_UNABLE_TO_READ_STREAM);
+			return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 		}
 		if(fwrite(buff[0], 1, csize, stream) != csize) {
 			fclose(fpb);
-			return tbd_error(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+			return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 		}
 	}
 
@@ -385,13 +385,13 @@ tbd_create_cmd_dir_leave(FILE      *stream,
 		token = 255;
 		for(; count > 256; count -= 256) {
 			if(fwrite(&token, sizeof (uint8_t), 1, stream) != 1)
-				return tbd_error(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+				return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 		}
 	}
 
 	token = (count - 1);
 	if(fwrite(&token, 1, 1, stream) != 1)
-		return tbd_error(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
 
@@ -548,7 +548,7 @@ tbd_create_dir(FILE        *stream,
 		tbd_stat_t *f = tbd_stat_entry(d, i);
 
 		if(f == NULL)
-			return tbd_error(TBD_ERROR_UNABLE_TO_STAT_FILE);
+			return TBD_ERROR(TBD_ERROR_UNABLE_TO_STAT_FILE);
 
 		switch(f->type) {
 		case TBD_STAT_TYPE_FILE:
@@ -568,7 +568,7 @@ tbd_create_dir(FILE        *stream,
 			break;
 		default:
 			tbd_stat_free(f);
-			return tbd_error(TBD_ERROR_FEATURE_NOT_IMPLEMENTED);
+			return TBD_ERROR(TBD_ERROR_FEATURE_NOT_IMPLEMENTED);
 			break;
 		}
 		tbd_stat_free(f);
@@ -586,7 +586,7 @@ tbd_create_impl(FILE        *stream,
                 bool         top)
 {
 	if((a == NULL) && (b == NULL))
-		return tbd_error(TBD_ERROR_NULL_POINTER);
+		return TBD_ERROR(TBD_ERROR_NULL_POINTER);
 
 	int err;
 	if(((b == NULL) || ((a != NULL) && (a->type != b->type)))) {
@@ -613,7 +613,7 @@ tbd_create_impl(FILE        *stream,
 			fprintf(stderr, "special new %s\n", b->name);
 			return tbd_create_cmd_special_create(stream, b);
 		default:
-			return tbd_error(TBD_ERROR_FEATURE_NOT_IMPLEMENTED);
+			return TBD_ERROR(TBD_ERROR_FEATURE_NOT_IMPLEMENTED);
 			break;
 		}
 	}
@@ -649,7 +649,7 @@ tbd_create_impl(FILE        *stream,
 	for(i = 0; i < b->size; i++) {
 		tbd_stat_t *_b = tbd_stat_entry(b, i);
 		if(_b == NULL)
-			return tbd_error(TBD_ERROR_UNABLE_TO_STAT_FILE);
+			return TBD_ERROR(TBD_ERROR_UNABLE_TO_STAT_FILE);
 		tbd_stat_t *_a = tbd_stat_entry_find(a, _b->name);
 		err = tbd_create_impl(stream, _a, _b, false);
 		tbd_stat_free(_a);
@@ -664,7 +664,7 @@ tbd_create_impl(FILE        *stream,
 		
 		tbd_stat_t *_a = tbd_stat_entry(a, i);
 		if(_a == NULL)
-			return tbd_error(TBD_ERROR_UNABLE_TO_STAT_FILE);
+			return TBD_ERROR(TBD_ERROR_UNABLE_TO_STAT_FILE);
 		tbd_stat_t *_b = tbd_stat_entry_find(b, _a->name);
 
 		if (_b == NULL)
@@ -689,7 +689,7 @@ tbd_create(FILE        *stream,
 {
 	int err;
 	if((stream == NULL) || (a == NULL) || (b == NULL))
-		return tbd_error(TBD_ERROR_NULL_POINTER);
+		return TBD_ERROR(TBD_ERROR_NULL_POINTER);
 
 	if((err = tbd_create_cmd_ident(stream))        != 0 ||
 	   (err = tbd_create_impl(stream, a, b, true)) != 0)
