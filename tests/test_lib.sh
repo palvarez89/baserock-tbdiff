@@ -1,47 +1,47 @@
 OK=" OK"
 FAIL=" FAIL"
 
-TESTDIR=/tmp/tbdiff-test-`uuid`
+TESTDIR=`mktemp -d`
 IMGFILE=$TESTDIR/tbdiff.img
 ORIGIN=$TESTDIR/orig
 TARGET=$TESTDIR/target
 
 # check_same_mtime FILE_A FILE_B
-function check_same_mtime {
+check_same_mtime () {
 	test $(stat -c %Y $1) = $(stat -c %Y $2)
 }
 
 # check_same_uidgid FILE_A FILE_B
-function check_same_uidgid {
+check_same_uidgid () {
 	test $(stat -c "%u.%g" $1) = $(stat -c "%u.%g" $2)
 }
 
 # check_same_mode FILE_A FILE_B
-function check_same_mode {
+check_same_mode () {
 	test $(stat -c "%f" $1) = $(stat -c "%f" $2)
 }
 
 # check_content FILE EXPECTED_OCTAL_PERMISSIONS
-function check_perm {
+check_perm () {
 	test $(stat -c %a $1) = $2
 }
 
 # check_content FILE EXPECTED_OCTAL_PERMISSIONS
-function check_symlink {
+check_symlink () {
 	test $(readlink $1) = $2
 }
 
 # check_content FILE EXPECTED_CONTENT
-function check_content {
+check_content () {
 	test $(cat $1) = $2
 }
 
 # check_group FILE EXPECTED_GROUP_NAME
-function check_group {
+check_group () {
 	test $(stat -c %G $1) = $2
 }
 
-function start {
+start () {
 	if [ $# -ne 2 ]
 	then
 		echo "ERROR: Not enough arguments."
@@ -61,15 +61,21 @@ function start {
 	fi
 }
 
-function cleanup_and_exit {
+cleanup_and_exit () {
 	rm -rf $TESTDIR
 	exit 1
 }
 
-function main {
+main () {
 	start $@
 	echo -n "$TEST_ID Setting up $TEST_NAME test: "
-	rm -rf $TESTDIR && \
+	if [ ! -d $TESTDIR ]
+	then
+		echo $FAIL
+		echo "Couldn't create temporary directory for test. " \
+		     "Please check mktemp accepts -d and permissions." >&2
+		cleanup_and_exit
+	fi
 	mkdir -p $ORIGIN       && \
 	mkdir -p $TARGET       && \
 	setup

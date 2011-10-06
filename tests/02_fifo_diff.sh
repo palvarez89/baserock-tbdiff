@@ -11,14 +11,14 @@ TEST_TOOLS=$3
 
 ############# Test specific code ############
 
-function setup {
+setup () {
 	mkfifo $ORIGIN/remove && \
 	mkfifo $TARGET/add    && \
 	chmod 707 $TARGET/add && \
 	chown -h :cdrom $TARGET/add
 }
 
-function check_results {
+check_results () {
 	test   -p $ORIGIN/add    && \
 	test ! -p $ORIGIN/remove && \
 	check_same_mtime  $ORIGIN/add $TARGET/add && \

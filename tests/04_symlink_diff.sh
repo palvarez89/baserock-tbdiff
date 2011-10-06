@@ -11,13 +11,13 @@ TEST_TOOLS=$3
 
 ############# Test specific code ############
 
-function setup {
+setup () {
 	ln -s /foo $ORIGIN/a && \
 	ln -s /bar $TARGET/a && \
 	chown -h :cdrom $TARGET/a
 }
 
-function check_results {
+check_results () {
 	test -L           $ORIGIN/a && \
 	check_symlink     $ORIGIN/a "/bar" && \
 	check_group       $ORIGIN/a cdrom     && \

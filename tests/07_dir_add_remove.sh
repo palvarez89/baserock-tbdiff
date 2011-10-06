@@ -11,14 +11,14 @@ TEST_TOOLS=$3
 
 ############# Test specific code ############
 
-function setup {
+setup () {
 	mkdir -p $ORIGIN/remove/1/2/3/4 && \
 	mkdir -p $TARGET/add/4/3/2/1 && \
 	chown -h :cdrom $TARGET/add
 	chown -h :cdrom $TARGET/add/4/3/2/1
 }
 
-function check_results {
+check_results () {
 	test   -d $ORIGIN/add/4/3/2/1    && \
 	test ! -d $ORIGIN/remove && \
 	check_same_mtime  $ORIGIN/add $TARGET/add && \

@@ -11,7 +11,7 @@ TEST_TOOLS=$3
 
 ############# Test specific code ############
 
-function setup {
+setup () {
 	mkdir $ORIGIN/a && \
 	mkdir $TARGET/a && \
 	echo "1" > $TARGET/a/1 && \
@@ -19,7 +19,7 @@ function setup {
 	chmod 707 $TARGET/a
 }
 
-function check_results {
+check_results () {
 	test -d           $ORIGIN/a        && \
 	test -f           $ORIGIN/a/1      && \
 	check_same_mode   $ORIGIN/a $TARGET/a #&& \

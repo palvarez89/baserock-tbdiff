@@ -11,13 +11,13 @@ TEST_TOOLS=$3
 
 ############# Test specific code ############
 
-function setup {
+setup () {
 	touch $ORIGIN/remove && \
 	echo 1 > $TARGET/add && \
 	chown -h :cdrom $TARGET/add
 }
 
-function check_results {
+check_results () {
 	test   -f $ORIGIN/add    && \
 	test ! -f $ORIGIN/remove && \
 	check_content     $ORIGIN/add "1"         && \
