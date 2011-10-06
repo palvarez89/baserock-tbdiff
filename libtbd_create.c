@@ -510,21 +510,12 @@ tbd_create_cmd_special_delta(FILE        *stream,
                              tbd_stat_t  *a,
                              tbd_stat_t  *b)
 {
-	uint16_t metadata_mask = TBD_METADATA_NONE;
-
-	/* If nothing changes we issue no command */
-	if(a->mtime != b->mtime)
-		metadata_mask |= TBD_METADATA_MTIME;
-	if(a->uid != b->uid)
-		metadata_mask |= TBD_METADATA_UID;
-	if(a->gid != b->gid)
-		metadata_mask |= TBD_METADATA_GID;
-	if(a->mode != b->mode)
-		metadata_mask |= TBD_METADATA_MODE;
+	uint16_t metadata_mask = tbd_metadata_mask(a, b);
 	if(a->rdev != b->rdev)
 		metadata_mask |= TBD_METADATA_RDEV;
 
-	if(metadata_mask != TBD_METADATA_NONE)
+	/* If nothing changes we issue no command */
+	if(metadata_mask == TBD_METADATA_NONE)
 		return 0;
 
 	int err;
