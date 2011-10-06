@@ -22,7 +22,7 @@ Anatomy of a unit test
 
 Each test needs to copy the following boilerplate:
 
-		#!/bin/bash
+		#!/bin/sh
 
 		TEST_ID="01"
 		TEST_NAME="My unit test"
@@ -33,15 +33,15 @@ Each test needs to copy the following boilerplate:
 		. ./test_lib.sh
 
 		############# Test specific code ############
-		function setup {
+		setup () {
 		}
 		
-		function check_results {
+		check_results () {
 		}
 		#############################################
 		main $@
 
-Test lib is a bash function library that sets up the environment for the test.
+Test lib is a shell function library that sets up the environment for the test.
 To create a test, we have two main variables $ORIGIN and $TARGET which are the
 origin and target directories of the diff respectively. The setup function
 should populate the origin and the target directories for the diff test.
@@ -52,14 +52,14 @@ contents and metadata (mtime, ownership and permissions):
 		ORG_FILE=$ORIGIN/b.txt
 		TGT_FILE=$TARGET/b.txt
 
-		function setup {
+		setup () {
 			echo 1 > $ORG_FILE     && \
 			echo 2 > $TGT_FILE     && \
 			chown :cdrom $TGT_FILE    && \
 			chmod 707 $TGT_FILE
 		}
 
-		function check_results {
+		check_results () {
 			check_content    $ORG_FILE "2" && \
 			check_perm       $ORG_FILE 707 && \
 			check_group      $ORG_FILE cdrom && \
