@@ -78,8 +78,9 @@ typedef enum {
 #define TBD_ERROR(e) (e)
 #else
 #define TBD_ERROR(e) tbd_error(e, #e, __func__, __LINE__, __FILE__)
-inline tbd_error_e tbd_error(tbd_error_e e, char const *s, char const *func,
-                                                     int line, char const* file)
+static inline tbd_error_e
+tbd_error(tbd_error_e e, char const *s, char const *func, int line,
+                                                   char const* file)
 {
 	if (e != TBD_ERROR_SUCCESS)
 		fprintf(stderr, "TBDiff error '%s' in function '%s' at line %d "
