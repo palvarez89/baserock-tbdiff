@@ -65,3 +65,15 @@ contents and metadata (mtime, ownership and permissions):
 			check_group      $ORG_FILE cdrom && \
 			check_same_mtime $ORG_FILE $TGT_FILE
 		}
+
+If either create or deploy should fail then define a test_return function that
+compares the exit code of the program. If it is supposed to fail with a specific
+exit code then check that the codes are equal, if it is just supposed to fail
+then check that it is non-zero
+
+		# create must succeed
+		create_test_return () { test $1 = 0; }
+		# create must fail
+		create_test_return () { test $1 != 0; }
+		# create must fail with error code 1
+		create_test_return () {	test $1 = 1; }
