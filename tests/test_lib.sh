@@ -41,6 +41,46 @@ check_group () {
 	test $(stat -c %G $1) = $2
 }
 
+#declare -f is faster, but won't work in dash
+is_function () {
+	type $1 2>/dev/null | grep 'function'
+}
+
+#check_command COMMAND_STRING TEST_COMMAND COMMAND_DESCRIPTION
+check_command () {
+	COMMAND_STRING=$1
+	TEST_COMMAND=$2
+	COMMAND_DESCRIPTION="$3"
+	eval $COMMAND_STRING
+	RETVAL=$?
+	if is_function "$TEST_COMMAND"; then #test explicitly checks return
+		if $TEST_COMMAND $RETVAL; then
+			if [ "$RETVAL" != "0" ]; then
+				echo $COMMAND_STRING expected failure in \
+				     $COMMAND_DESCRIPTION >&2
+				echo $OK
+				exit 0
+			fi
+		else
+			if [ "$RETVAL" = "0" ]; then
+				echo $COMMAND_STRING Unexpected success in \
+				     $COMMAND_DESCRIPTION >&2
+				echo $FAIL
+				cleanup_and_exit
+			else
+				echo $COMMAND_STRING Unexpected failure in \
+				     $COMMAND_DESCRIPTION >&2
+				echo $FAIL
+				cleanup_and_exit
+			fi
+		fi
+	elif [ "$RETVAL" != "0" ]; then #return value expected to be 0
+		echo $COMMAND_STRING Unexpected failure $COMMAND_DESCRIPTION >&2
+		echo $FAIL
+		cleanup_and_exit
+	fi	
+}
+
 start () {
 	if [ $# -ne 2 ]
 	then
@@ -88,20 +128,15 @@ main () {
 	echo $OK
 
 	echo "$TEST_ID Performing $TEST_NAME image creation and deployment: "
-	CWD=$(pwd)
-	$CREATE $IMGFILE $ORIGIN $TARGET && \
-	cd $ORIGIN && \
-	$DEPLOY $IMGFILE && \
-	RETVAL=$?
-	cd $CWD
-	if test "x$RETVAL" != "x0"
-	then
-		echo $FAIL
-		echo "Could not create and deploy image." 1>&2
-		cleanup_and_exit
-	fi
-	echo $OK
+	CWD=$(pwd) &&
+	check_command "$CREATE $IMGFILE $ORIGIN $TARGET" 'create_test_return' \
+	              "$TEST_ID-$TEST_NAME: creating image"
 
+	cd $ORIGIN && 
+	check_command "$DEPLOY $IMGFILE" 'deploy_test_return' \
+	              "$TEST_ID-$TEST_NAME: deploying image"
+
+	cd $CWD
 	echo -n "$TEST_ID Checking $TEST_NAME results: "
 	check_results
 	if test "x$?" != "x0"
