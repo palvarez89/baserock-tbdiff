@@ -41,9 +41,9 @@ check_group () {
 	test $(stat -c %G $1) = $2
 }
 
-#declare -f is faster, but won't work in dash
-is_function () {
-	type $1 2>/dev/null | grep 'function'
+# tests whether a command exists
+is_command () {
+	type $1 >/dev/null 2>/dev/null
 }
 
 #check_command COMMAND_STRING TEST_COMMAND COMMAND_DESCRIPTION
@@ -53,7 +53,7 @@ check_command () {
 	COMMAND_DESCRIPTION="$3"
 	eval $COMMAND_STRING
 	RETVAL=$?
-	if is_function "$TEST_COMMAND"; then #test explicitly checks return
+	if is_command "$TEST_COMMAND"; then #test explicitly checks return
 		if $TEST_COMMAND $RETVAL; then
 			if [ "$RETVAL" != "0" ]; then
 				echo $COMMAND_STRING expected failure in \

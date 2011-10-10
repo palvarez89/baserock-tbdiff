@@ -74,6 +74,16 @@ main(int    argc,
 		fclose(fp);
 		remove(argv[1]);
 		fprintf(stderr, "Error: Failed to create tbdiff image (err=%d).\n", err);
+		switch (err) {
+		case TBD_ERROR_UNABLE_TO_CREATE_SOCKET_FILE:
+			fprintf(stderr, "%s directory contains Unix Sockets. "
+			        "%s cannot create sockets, please ensure no "
+			        "programs are using sockets in directory.\n",
+			        argv[3], argv[0]);
+			break;
+		default:
+			break;
+		}
 		return EXIT_FAILURE;
 	}
 

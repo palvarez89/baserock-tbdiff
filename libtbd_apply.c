@@ -413,7 +413,7 @@ tbd_apply_cmd_symlink_create(FILE *stream)
 	fprintf(stderr, "cmd_symlink_create %s -> %s\n", linkname, linkpath);
 
 	if(symlink(linkpath, linkname))
-		return TBD_ERROR_UNABLE_TO_CREATE_SYMLINK;
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_CREATE_SYMLINK);
 
 	struct timeval tv[2];
 	gettimeofday(&tv[0], NULL);
@@ -450,7 +450,7 @@ tbd_apply_cmd_special_create(FILE *stream)
 
 	if(mknod(name, mode, (dev_t)dev) != 0) {
 		free(name);
-		return TBD_ERROR_UNABLE_TO_CREATE_SPECIAL_FILE;
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_CREATE_SPECIAL_FILE);
 	}
 
 	struct utimbuf timebuff = { time(NULL), mtime };

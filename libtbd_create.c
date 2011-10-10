@@ -438,7 +438,7 @@ tbd_create_cmd_symlink_create(FILE        *stream,
 	ssize_t len = readlink(slpath, path, sizeof(path)-1);
 	free(slpath);
 	if(len < 0)
-		return TBD_ERROR_UNABLE_TO_READ_SYMLINK;
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_SYMLINK);
 	path[len] = '\0';
 
 	if((err = tbd_create_fwrite_cmd(stream, TBD_CMD_SYMLINK_CREATE)) != 0 ||
@@ -470,7 +470,7 @@ tbd_create_cmd_symlink_delta(FILE        *stream,
 	free(spath_b);
 
 	if(len_a < 0 || len_b < 0)
-		return TBD_ERROR_UNABLE_TO_READ_SYMLINK;
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_SYMLINK);
 
 	path_a[len_a] = path_b[len_b] = '\0';
 
@@ -523,6 +523,26 @@ tbd_create_cmd_special_delta(FILE        *stream,
 		return err;
 
 	return tbd_create_cmd_special_create(stream, b);
+}
+
+static int
+tbd_create_cmd_socket_create(FILE       *stream,
+                             tbd_stat_t *nod)
+{
+	(void)stream;
+	(void)nod;
+	return TBD_ERROR(TBD_ERROR_UNABLE_TO_CREATE_SOCKET_FILE);
+}
+
+static int
+tbd_create_cmd_socket_delta(FILE       *stream,
+                            tbd_stat_t *a,
+                            tbd_stat_t *b)
+{
+	(void)stream;
+	(void)a;
+	(void)b;
+	return TBD_ERROR(TBD_ERROR_UNABLE_TO_CREATE_SOCKET_FILE);
 }
 
 static int
@@ -600,12 +620,13 @@ tbd_create_impl(FILE        *stream,
 		case TBD_STAT_TYPE_CHRDEV:
 		case TBD_STAT_TYPE_BLKDEV:
 		case TBD_STAT_TYPE_FIFO:
-		case TBD_STAT_TYPE_SOCKET:
 			fprintf(stderr, "special new %s\n", b->name);
 			return tbd_create_cmd_special_create(stream, b);
+		case TBD_STAT_TYPE_SOCKET:
+			fprintf(stderr, "socket new %s\n", b->name);
+			return tbd_create_cmd_socket_create(stream, b);
 		default:
 			return TBD_ERROR(TBD_ERROR_FEATURE_NOT_IMPLEMENTED);
-			break;
 		}
 	}
 
@@ -619,9 +640,11 @@ tbd_create_impl(FILE        *stream,
 	case TBD_STAT_TYPE_CHRDEV:
 	case TBD_STAT_TYPE_BLKDEV:
 	case TBD_STAT_TYPE_FIFO:
-	case TBD_STAT_TYPE_SOCKET:
 		fprintf(stderr, "special delta %s\n", a->name);
 		return tbd_create_cmd_special_delta(stream, a, b);
+	case TBD_STAT_TYPE_SOCKET:
+		fprintf(stderr, "socket delta %s\n", a->name);
+		return tbd_create_cmd_socket_delta(stream, a, b);
 	case TBD_STAT_TYPE_DIR:
 		if(!top) {
 			fprintf(stderr, "dir delta %s\n", a->name);
