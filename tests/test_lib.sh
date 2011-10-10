@@ -21,12 +21,12 @@ check_same_mode () {
 	test $(stat -c "%f" $1) = $(stat -c "%f" $2)
 }
 
-# check_content FILE EXPECTED_OCTAL_PERMISSIONS
+# check_perm FILE EXPECTED_OCTAL_PERMISSIONS
 check_perm () {
 	test $(stat -c %a $1) = $2
 }
 
-# check_content FILE EXPECTED_OCTAL_PERMISSIONS
+# check_symlink FILE EXPECTED_PATH
 check_symlink () {
 	test $(readlink $1) = $2
 }
@@ -39,6 +39,31 @@ check_content () {
 # check_group FILE EXPECTED_GROUP_NAME
 check_group () {
 	test $(stat -c %G $1) = $2
+}
+
+# check_xattrs FILE1 FILE2
+# check that two files have the same attributes
+check_xattrs () {
+	test "`getfattr --dump --encoding=base64 $1 | tail -n +2`" = \
+	     "`getfattr --dump --encoding=base64 $2 | tail -n +2`"
+}
+
+# check_xattr_exists FILE KEY
+check_xattr_exists () {
+	# attr doesn't use user. prefix, but getfattr returns 0 on non-existant
+	noprefix=`echo $2 | sed s/user.//`
+	attr -g $2 $1 >dev/null 2>/dev/null
+}
+
+# xattr_get FILE KEY
+xattr_get () {
+	getfattr --only-values --name=$2 $1
+}
+
+# check_xattr_value FILE KEY VALUE
+check_xattr_value () {
+	check_xattr_exists &&
+	test "`xattr_get $1 $2`" = "$3"
 }
 
 # tests whether a command exists
