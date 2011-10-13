@@ -320,45 +320,61 @@ tbd_apply_cmd_file_delta(FILE *stream)
 	return 0;
 }
 
-static int
-tbd_apply_cmd_entity_delete_for_name(const char *name)
+static int tbd_apply_cmd_entity_delete_for_name(const char*);
+static int tbd_apply_cmd_dir_delete(const char *name)
 {
-	DIR *dp = opendir(name);
-	if(dp == NULL) {
-		if(remove(name) != 0)
-			return TBD_ERROR(TBD_ERROR_UNABLE_TO_REMOVE_FILE);
-
-		return 0;
+	int err = TBD_ERROR_SUCCESS;
+	DIR *dp;
+	struct dirent *entry;
+	if ((dp = opendir(name)) == NULL) {
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_REMOVE_FILE);
 	}
 
-	if(chdir(name) != 0) {
+	if (chdir(name) != 0) {
 		closedir(dp);
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_CHANGE_DIR);
 	}
 
-	struct dirent *entry;
-
-	while((entry = readdir(dp)) != NULL) {
-		if((strcmp(entry->d_name, ".") == 0) || (strcmp(entry->d_name, "..") == 0))
+	while ((entry = readdir(dp)) != NULL) {
+		if ((strcmp(entry->d_name, ".") == 0) ||
+		    (strcmp(entry->d_name, "..") == 0)) {
 			continue;
-
-		int err;
-		if((err = tbd_apply_cmd_entity_delete_for_name(entry->d_name)) != 0) {
-			closedir(dp);
-
-			if(chdir("..") != 0)
-				return TBD_ERROR(TBD_ERROR_UNABLE_TO_CHANGE_DIR);
-
-			return err;
+		}
+		if ((err = tbd_apply_cmd_entity_delete_for_name(entry->d_name))
+		    != TBD_ERROR_SUCCESS) {
+			goto cleanup;
 		}
 	}
 
+	if (chdir("..") != 0) {
+		err = TBD_ERROR(TBD_ERROR_UNABLE_TO_CHANGE_DIR);
+		goto cleanup;
+	}
+	if (rmdir(name) != 0) {
+		err = TBD_ERROR(TBD_ERROR_UNABLE_TO_REMOVE_FILE);
+	}
+cleanup:
 	closedir(dp);
-	if(chdir("..") != 0)
-		return TBD_ERROR(TBD_ERROR_UNABLE_TO_CHANGE_DIR);
-	if(remove(name) != 0)
+	return err;
+}
+
+static int
+tbd_apply_cmd_entity_delete_for_name(const char *name)
+{
+	struct stat info;
+	if (lstat(name, &info) != 0) {
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_STAT_FILE);
+	}
+
+	if (S_ISDIR(info.st_mode)) {
+		return tbd_apply_cmd_dir_delete(name);
+	}
+
+	if (unlink(name) != 0) {
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_REMOVE_FILE);
-	return 0;
+	}
+	
+	return TBD_ERROR_SUCCESS;
 }
 
 static int
