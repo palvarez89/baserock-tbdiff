@@ -1,7 +1,7 @@
 #!/bin/bash
 
 TEST_ID="02"
-TEST_NAME="Named pipe (FIFO) add remove test"
+TEST_NAME="Named pipe (FIFO) diff test"
 
 CREATE=`pwd`/$1
 DEPLOY=`pwd`/$2

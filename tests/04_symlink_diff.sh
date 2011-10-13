@@ -1,7 +1,7 @@
 #!/bin/bash
 
 TEST_ID="04"
-TEST_NAME="Symlink add/remove"
+TEST_NAME="Symlink diff"
 
 CREATE=`pwd`/$1
 DEPLOY=`pwd`/$2
@@ -12,12 +12,29 @@ TEST_TOOLS=$3
 ############# Test specific code ############
 
 setup () {
+	for dir in $ORIGIN $TARGET; do
+	(
+		cd $dir &&
+		echo 1 >file &&
+		chown :cdrom file &&
+		mkdir -p dir &&
+		chown :cdrom dir &&
+		ln -s file flink &&
+		ln -s dir dlink
+	); done &&
+	chgrp -h root $TARGET/flink $TARGET/dlink &&
 	ln -s /foo $ORIGIN/a && \
 	ln -s /bar $TARGET/a && \
 	chown -h :cdrom $TARGET/a
 }
 
 check_results () {
+	test -f           $ORIGIN/file &&
+	check_group       $ORIGIN/file cdrom &&
+	test -f           $ORIGIN/dir &&
+	check_group       $ORIGIN/dir cdrom &&
+	check_group       $ORIGIN/flink root &&
+	check_group       $ORIGIN/dlink root &&
 	test -L           $ORIGIN/a && \
 	check_symlink     $ORIGIN/a "/bar" && \
 	check_group       $ORIGIN/a cdrom     && \
