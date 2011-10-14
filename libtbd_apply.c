@@ -307,15 +307,28 @@ tbd_apply_cmd_file_delta(FILE *stream)
 	fclose(op);
 
 	// Apply metadata.
-	if(mdata_mask & TBD_METADATA_MTIME) {
-		struct utimbuf timebuff = { time(NULL), mtime };
-		utime(fname, &timebuff); // Don't care if it succeeds right now.
+	/* file was removed so old permissions were lost
+	 * all permissions need to be reapplied, all were sent in this protocol
+	 * if only changed sent will have to save mdata from file before it is
+	 * removed, then change that data based on the mask
+	 * it will still all have to be reapplied
+	 */
+	{
+		struct utimbuf timebuff; 
+		timebuff.modtime = mtime;
+		if (time(&(timebuff.actime)) == (time_t)-1) {
+			return TBD_ERROR(TBD_ERROR_FAILURE);
+		}
+		if (utime(fname, &timebuff) == -1) {
+			return TBD_ERROR(TBD_ERROR_FAILURE);
+		}
+		if (chown(fname, (uid_t)uid, (gid_t)gid) == -1) {
+			return TBD_ERROR(TBD_ERROR_FAILURE);
+		}
+		if (chmod(fname, mode) == -1) {
+			return TBD_ERROR(TBD_ERROR_FAILURE);
+		}
 	}
-	if(mdata_mask & TBD_METADATA_UID ||
-	    mdata_mask & TBD_METADATA_GID)
-		chown(fname, (uid_t)uid, (gid_t)gid);
-	if(mdata_mask | TBD_METADATA_MODE)
-		chmod(fname, mode);
 
 	return 0;
 }

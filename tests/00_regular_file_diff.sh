@@ -15,6 +15,9 @@ ORG_FILE=$ORIGIN/b.txt
 TGT_FILE=$TARGET/b.txt
 
 setup () {
+	echo 1 >$ORIGIN/a.txt &&
+	echo 2 >$TARGET/a.txt &&
+	chgrp tty $ORIGIN/a.txt $TARGET/a.txt &&
 	echo 1 > $ORG_FILE     && \
 	echo 2 > $TGT_FILE     && \
 	chown :cdrom $TGT_FILE    && \
@@ -22,6 +25,7 @@ setup () {
 }
 
 check_results () {
+	check_group      $ORIGIN/a.txt tty &&
 	check_content    $ORG_FILE "2" && \
 	check_perm       $ORG_FILE 707 && \
 	check_group      $ORG_FILE cdrom && \
