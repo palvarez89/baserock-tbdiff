@@ -22,7 +22,7 @@ setup () {
 		ln -s file flink &&
 		ln -s dir dlink
 	); done &&
-	chgrp -h root $TARGET/flink $TARGET/dlink &&
+	chgrp -h daemon $TARGET/flink $TARGET/dlink &&
 	ln -s /foo $ORIGIN/a && \
 	ln -s /bar $TARGET/a && \
 	chown -h :cdrom $TARGET/a
@@ -31,10 +31,10 @@ setup () {
 check_results () {
 	test -f           $ORIGIN/file &&
 	check_group       $ORIGIN/file cdrom &&
-	test -f           $ORIGIN/dir &&
+	test -d           $ORIGIN/dir &&
 	check_group       $ORIGIN/dir cdrom &&
-	check_group       $ORIGIN/flink root &&
-	check_group       $ORIGIN/dlink root &&
+	check_group       $ORIGIN/flink daemon &&
+	check_group       $ORIGIN/dlink daemon &&
 	test -L           $ORIGIN/a && \
 	check_symlink     $ORIGIN/a "/bar" && \
 	check_group       $ORIGIN/a cdrom     && \
