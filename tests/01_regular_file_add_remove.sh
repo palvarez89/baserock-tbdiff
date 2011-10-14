@@ -11,9 +11,12 @@ TEST_TOOLS=$3
 
 ############# Test specific code ############
 
-setup () {
-	touch $ORIGIN/remove && \
-	echo 1 > $TARGET/add && \
+setup_origin () {
+	touch $ORIGIN/remove
+}
+
+setup_target () {
+	echo 1 > $TARGET/add &&
 	chown -h :cdrom $TARGET/add
 }
 

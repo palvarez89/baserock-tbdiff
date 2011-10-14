@@ -13,15 +13,21 @@ TEST_TOOLS=$3
 # sockets can't be changed sensibly, test that it hasn't been
 
 SOCKBIND=`mktemp`
-setup () {
+setup_origin () {
 	gcc sockbind.c -o $SOCKBIND 2>/dev/null >/dev/null
 	$SOCKBIND "$ORIGIN/tochange" &
-	SOCKBINDPID1=$!
+	SOCKBINDPID=$!
+	until test -S "$ORIGIN/tochange"; do :; done
+	kill $SOCKBINDPID
+	wait $SOCKBINDPID 2>/dev/null || true #wait returns false
+}
+
+setup_target () {
 	$SOCKBIND "$TARGET/tochange" &
-	SOCKBINDPID2=$!
-	until test -S "$TARGET/tochange" -a -S "$ORIGIN/tochange"; do :; done
-	kill $SOCKBINDPID1 $SOCKBINDPID2 &&
-	wait $SOCKBINDPID1 $SOCKBINDPID2 2>/dev/null #surpress terminated output
+	SOCKBINDPID=$!
+	until test -S "$TARGET/tochange"; do :; done
+	kill $SOCKBINDPID &&
+	wait $SOCKBINDPID 2>/dev/null #surpress terminated output
 	rm -f $SOCKBIND
 }
 

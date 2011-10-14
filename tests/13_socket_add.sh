@@ -12,7 +12,11 @@ TEST_TOOLS=$3
 ############# Test specific code ############
 # sockets can't be added sensibly, test that it hasn't been
 SOCKBIND=`mktemp`
-setup () {
+setup_origin () {
+	true
+}
+
+setup_target () {
 	gcc sockbind.c -o $SOCKBIND 2>/dev/null >/dev/null
 	$SOCKBIND "$TARGET/toadd" &
 	SOCKBINDPID=$!

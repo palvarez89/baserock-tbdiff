@@ -14,7 +14,7 @@ TEST_TOOLS=$3
 # creation is only performed by the program that acts as the server
 # tbdiff won't be doing that so the only sensible operation is removal
 SOCKBIND=`mktemp`
-setup () {
+setup_origin () {
 	# sockbind creates a socket then writes any data written to it to stdout
 	# have to fork it because it will never stop, have to wait for it to
 	# make the socket
@@ -24,6 +24,10 @@ setup () {
 	until test -S "$ORIGIN/toremove"; do :; done
 	kill $SOCKBINDPID && wait $SOCKBINDPID 2>/dev/null
 	rm -f $SOCKBIND
+}
+
+setup_target () {
+	true
 }
 
 create_test_return () {

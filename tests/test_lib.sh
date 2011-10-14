@@ -21,12 +21,12 @@ check_same_mode () {
 	test $(stat -c "%f" $1) = $(stat -c "%f" $2)
 }
 
-# check_perm FILE EXPECTED_OCTAL_PERMISSIONS
+# check_content FILE EXPECTED_OCTAL_PERMISSIONS
 check_perm () {
 	test $(stat -c %a $1) = $2
 }
 
-# check_symlink FILE EXPECTED_PATH
+# check_content FILE EXPECTED_OCTAL_PERMISSIONS
 check_symlink () {
 	test $(readlink $1) = $2
 }
@@ -41,31 +41,6 @@ check_group () {
 	test $(stat -c %G $1) = $2
 }
 
-# check_xattrs FILE1 FILE2
-# check that two files have the same attributes
-check_xattrs () {
-	test "`getfattr --dump --encoding=base64 $1 | tail -n +2`" = \
-	     "`getfattr --dump --encoding=base64 $2 | tail -n +2`"
-}
-
-# check_xattr_exists FILE KEY
-check_xattr_exists () {
-	# attr doesn't use user. prefix, but getfattr returns 0 on non-existant
-	noprefix=`echo $2 | sed s/user.//`
-	attr -g $2 $1 >dev/null 2>/dev/null
-}
-
-# xattr_get FILE KEY
-xattr_get () {
-	getfattr --only-values --name=$2 $1
-}
-
-# check_xattr_value FILE KEY VALUE
-check_xattr_value () {
-	check_xattr_exists &&
-	test "`xattr_get $1 $2`" = "$3"
-}
-
 # tests whether a command exists
 is_command () {
 	type $1 >/dev/null 2>/dev/null
@@ -73,9 +48,9 @@ is_command () {
 
 #check_command COMMAND_STRING TEST_COMMAND COMMAND_DESCRIPTION
 check_command () {
-	COMMAND_STRING=$1
-	TEST_COMMAND=$2
-	COMMAND_DESCRIPTION="$3"
+	COMMAND_STRING="$1"
+	COMMAND_DESCRIPTION="$2"
+	TEST_COMMAND="$3"
 	eval $COMMAND_STRING
 	RETVAL=$?
 	if is_command "$TEST_COMMAND"; then #test explicitly checks return
@@ -130,7 +105,9 @@ cleanup_and_exit () {
 	rm -rf $TESTDIR
 	exit 1
 }
-
+command_succeeded () {
+	test "$1" = "0"
+}
 main () {
 	start $@
 	echo -n "$TEST_ID Setting up $TEST_NAME test: "
@@ -141,25 +118,27 @@ main () {
 		     "Please check mktemp accepts -d and permissions." >&2
 		cleanup_and_exit
 	fi
-	mkdir -p $ORIGIN       && \
-	mkdir -p $TARGET       && \
-	setup
-	if [ $? -ne 0 ]
-	then
-		echo $FAIL
-		echo "Couldn't setup the test directory structure. Check your privileges" 1>&2
-		cleanup_and_exit
-	fi
+	mkdir -p $ORIGIN &&
+	check_command 'setup_origin' "$TEST_ID-$TEST_NAME: creating origin" \
+	              'command_succeeded' &&
+	sleep 2s &&
+	mkdir -p $TARGET &&
+	check_command 'setup_target' "$TEST_ID-$TEST_NAME: creating target" \
+	              'command_succeeded' &&
+
 	echo $OK
 
 	echo "$TEST_ID Performing $TEST_NAME image creation and deployment: "
+	sleep 2s &&
 	CWD=$(pwd) &&
-	check_command "$CREATE $IMGFILE $ORIGIN $TARGET" 'create_test_return' \
-	              "$TEST_ID-$TEST_NAME: creating image"
+	check_command "$CREATE $IMGFILE $ORIGIN $TARGET" \
+	              "$TEST_ID-$TEST_NAME: creating image" \
+	              'create_test_return'
 
 	cd $ORIGIN && 
-	check_command "$DEPLOY $IMGFILE" 'deploy_test_return' \
-	              "$TEST_ID-$TEST_NAME: deploying image"
+	check_command "$DEPLOY $IMGFILE"  \
+	              "$TEST_ID-$TEST_NAME: deploying image" \
+	              'deploy_test_return'
 
 	cd $CWD
 	echo -n "$TEST_ID Checking $TEST_NAME results: "

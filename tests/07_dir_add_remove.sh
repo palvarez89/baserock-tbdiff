@@ -11,8 +11,11 @@ TEST_TOOLS=$3
 
 ############# Test specific code ############
 
-setup () {
-	mkdir -p $ORIGIN/remove/1/2/3/4 &&
+setup_origin () {
+	mkdir -p $ORIGIN/remove/1/2/3/4
+}
+
+setup_target () {
 	mkdir -p $TARGET/add/4/3/2/1 &&
 	mkdir -p $TARGET/addsticky &&
 	mkdir -p $TARGET/addsetgid &&

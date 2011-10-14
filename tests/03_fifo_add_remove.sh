@@ -11,10 +11,13 @@ TEST_TOOLS=$3
 
 ############# Test specific code ############
 
-setup () {
-	mkfifo $ORIGIN/remove && \
-	mkfifo $TARGET/add    && \
-	chmod 707 $TARGET/add && \
+setup_origin () {
+	mkfifo $ORIGIN/remove
+}
+
+setup_target () {
+	mkfifo $TARGET/add    &&
+	chmod 707 $TARGET/add &&
 	chown -h :cdrom $TARGET/add
 }
 

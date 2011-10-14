@@ -15,11 +15,14 @@ if is_command getfattr && is_command setfattr; then :; else
 	exit 127
 fi
 
-setup () {
+setup_origin () {
 	touch $ORIGIN/file &&
 	setfattr -n "user.preserve" -v "true" $ORIGIN/file &&
 	setfattr -n "user.change" -v "false" $ORIGIN/file &&
-	setfattr -n "user.remove" -v "false" $ORIGIN/file &&
+	setfattr -n "user.remove" -v "false" $ORIGIN/file
+}
+
+setup_target () {
 	touch $TARGET/file &&
 	setfattr -n "user.preserve" -v "true" $TARGET/file &&
 	setfattr -n "user.change" -v "true" $TARGET/file &&

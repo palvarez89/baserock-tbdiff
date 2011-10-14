@@ -11,21 +11,32 @@ TEST_TOOLS=$3
 
 ############# Test specific code ############
 
-setup () {
-	for dir in $ORIGIN $TARGET; do
+setup_origin () {
 	(
-		cd $dir &&
+		cd $ORIGIN &&
 		echo 1 >file &&
 		chown :cdrom file &&
 		mkdir -p dir &&
 		chown :cdrom dir &&
 		ln -s file flink &&
 		ln -s dir dlink
-	); done &&
-	chgrp -h daemon $TARGET/flink $TARGET/dlink &&
-	ln -s /foo $ORIGIN/a && \
-	ln -s /bar $TARGET/a && \
-	chown -h :cdrom $TARGET/a
+		ln -s /foo a
+	)
+}
+
+setup_target () {
+	(
+		cd $TARGET &&
+		echo 1 >file &&
+		chown :cdrom file &&
+		mkdir -p dir &&
+		chown :cdrom dir &&
+		ln -s file flink &&
+		ln -s dir dlink
+		chgrp -h daemon flink dlink &&
+		ln -s /bar a &&
+		chown -h :cdrom a
+	)
 }
 
 check_results () {

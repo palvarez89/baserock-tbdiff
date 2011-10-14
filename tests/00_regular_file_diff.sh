@@ -14,13 +14,17 @@ TEST_TOOLS=$3
 ORG_FILE=$ORIGIN/b.txt
 TGT_FILE=$TARGET/b.txt
 
-setup () {
-	echo 1 >$ORIGIN/a.txt &&
-	echo 2 >$TARGET/a.txt &&
-	chgrp tty $ORIGIN/a.txt $TARGET/a.txt &&
-	echo 1 > $ORG_FILE     && \
-	echo 2 > $TGT_FILE     && \
-	chown :cdrom $TGT_FILE    && \
+setup_origin () {
+	echo 1 >$ORIGIN/a.txt   &&
+	chgrp tty $ORIGIN/a.txt &&
+	echo 1 > $ORG_FILE
+}
+
+setup_target () {
+	echo 2 >$TARGET/a.txt   &&
+	chgrp tty $TARGET/a.txt &&
+	echo 2 > $TGT_FILE      &&
+	chown :cdrom $TGT_FILE  &&
 	chmod 707 $TGT_FILE
 }
 

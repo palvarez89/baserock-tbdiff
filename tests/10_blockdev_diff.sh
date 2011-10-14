@@ -11,8 +11,11 @@ TEST_TOOLS=$3
 
 ############# Test specific code ############
 
-setup () {
+setup_origin () {
 	mknod $ORIGIN/tochange b `stat /dev/null -c '%t %T'`
+}
+
+setup_target () {
 	mknod $TARGET/tochange b `stat /dev/full -c '%t %T'` 
 }
 

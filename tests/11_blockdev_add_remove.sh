@@ -11,10 +11,13 @@ TEST_TOOLS=$3
 
 ############# Test specific code ############
 
-setup () {
-	#make a node with the same numbers as /dev/null
-	setup_block_major_minor="`stat /dev/null -c '%t %T'`"
+setup_block_major_minor="`stat /dev/null -c '%t %T'`"
+
+setup_origin () {
 	mknod $ORIGIN/toremove b $setup_block_major_minor
+}
+
+setup_target () {
 	mknod $TARGET/toadd b $setup_block_major_minor
 }
 

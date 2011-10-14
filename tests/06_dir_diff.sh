@@ -11,8 +11,11 @@ TEST_TOOLS=$3
 
 ############# Test specific code ############
 
-setup () {
-	mkdir $ORIGIN/a $ORIGIN/sticky $ORIGIN/setgid &&
+setup_origin () {
+	mkdir $ORIGIN/a $ORIGIN/sticky $ORIGIN/setgid
+}
+
+setup_target () {
 	mkdir $TARGET/a $TARGET/sticky $TARGET/setgid &&
 	echo "1" > $TARGET/a/1 &&
 	chown -h :cdrom $TARGET/a &&
