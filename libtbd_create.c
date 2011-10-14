@@ -475,7 +475,7 @@ tbd_create_cmd_symlink_delta(FILE        *stream,
 	path_a[len_a] = path_b[len_b] = '\0';
 
 	int pathcmp = strcmp(path_a, path_b);
-	printf ("readlink %s %s - %d", path_a, path_b, pathcmp);
+	printf ("readlink %s %s - %d\n", path_a, path_b, pathcmp);
 
 	/* If both symlinks are equal, we quit */
 	if ((b->mtime == a->mtime) && (b->gid == a->gid) && (pathcmp == 0))
