@@ -11,7 +11,7 @@ CFLAGS ?=
 CFLAGS += -g
 CFLAGS += -Wall -Wextra -Werror -Wno-unused-result $(OPT)
 
-SHARED_SRC := libtbd_stat.c
+SHARED_SRC := libtbd_stat.c libtbd_xattrs.c
 DEPLOY_SRC := tbdiff_deploy.c libtbd_create.c
 CREATE_SRC := tbdiff_create.c libtbd_apply.c
 
@@ -20,10 +20,10 @@ CREATE_OBJ := $(patsubst %.c,%.o,$(SHARED_SRC) $(CREATE_SRC))
 
 all: $(DEPLOY) $(CREATE)
 
-$(DEPLOY): tbdiff_deploy.o libtbd_apply.o libtbd_stat.o
+$(DEPLOY): tbdiff_deploy.o libtbd_apply.o libtbd_stat.o libtbd_xattrs.o
 	$(CC) $(LDFLAGS) -o $@ $^
 
-$(CREATE): tbdiff_create.o libtbd_create.o libtbd_stat.o
+$(CREATE): tbdiff_create.o libtbd_create.o libtbd_stat.o libtbd_xattrs.o
 	$(CC) $(LDFLAGS) -o $@ $^
 
 %.o: %.c

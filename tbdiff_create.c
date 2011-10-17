@@ -71,7 +71,10 @@ main(int    argc,
 
 	int err;
 	if((err = tbd_create(fp, tstat[0], tstat[1])) != 0) {
-		fclose(fp);
+		fclose(fp);	
+		tbd_stat_free(tstat[0]);
+		tbd_stat_free(tstat[1]);
+
 		remove(argv[1]);
 		fprintf(stderr, "Error: Failed to create tbdiff image (err=%d).\n", err);
 		switch (err) {

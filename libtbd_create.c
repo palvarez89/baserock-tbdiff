@@ -18,6 +18,7 @@
 #include "tbdiff.h"
 #include "tbdiff-private.h"
 
+#include "libtbd_xattrs.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -49,6 +50,19 @@ tbd_create_fwrite_string(FILE       *stream,
 	    || (fwrite(string, 1, slen, stream) != slen))
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
+}
+
+static int
+tbd_create_fwrite_block(FILE *stream, void const *data, size_t size)
+{
+	if (fwrite(&size, sizeof(size), 1, stream) != 1) {
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+	}
+
+	if (fwrite(data, size, 1, stream) != 1) {
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+	}
+	return TBD_ERROR_SUCCESS;
 }
 
 static int
@@ -123,6 +137,82 @@ tbd_create_cmd_update(FILE *stream)
 	return tbd_create_fwrite_cmd(stream, TBD_CMD_UPDATE);
 }
 
+/* callback function to pass to tbx_xattrs_pairs
+ * this will write the attribute name, then the data representing that block
+ */
+static int
+_write_pair(char const *name, void const *data, size_t size, void *ud)
+{
+	FILE *stream = ud;
+	int err;
+
+	if ((err = tbd_create_fwrite_string(stream, name)) !=
+	    TBD_ERROR_SUCCESS) {
+		return err;
+	}
+
+	if ((err = tbd_create_fwrite_block(stream, data, size)) !=
+	    TBD_ERROR_SUCCESS) {
+		return err;
+	}
+
+	return TBD_ERROR_SUCCESS;
+}
+
+static int
+tbd_create_cmd_fwrite_xattrs(FILE *stream, tbd_stat_t *f)
+{
+	int err = TBD_ERROR_SUCCESS;
+	tbd_xattrs_names_t names;
+	char *path = tbd_stat_path(f);
+	if (path == NULL) {
+		return TBD_ERROR(TBD_ERROR_OUT_OF_MEMORY);
+	}
+
+	switch (err = tbd_xattrs_names(path, &names)) {
+	/* separated as ignore XATTR unspported may be added */
+	case TBD_ERROR_XATTRS_NOT_SUPPORTED:
+	default:
+		goto cleanup_path;
+	case TBD_ERROR_SUCCESS:
+		break;
+	}
+	
+	{ /* write the header */
+		int count;
+		/* if failed to count or there are no xattrs */
+		if ((err = tbd_xattrs_names_count(&names, &count)) !=
+		    TBD_ERROR_SUCCESS || count == 0) {
+			goto cleanup_names;
+		}
+
+		if ((err = tbd_create_fwrite_cmd(stream,
+						 TBD_CMD_XATTRS_UPDATE)
+		    ) != TBD_ERROR_SUCCESS) {
+			goto cleanup_names;
+		}
+
+		if ((err = tbd_create_fwrite_string(stream, f->name))!=
+		    TBD_ERROR_SUCCESS) {
+			goto cleanup_names;
+		}
+
+		if (fwrite(&count, sizeof(count), 1, stream) != 1) {
+			err = TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+			goto cleanup_names;
+		}
+	}
+
+	/* write the name:data pairs */
+	err = tbd_xattrs_pairs(&names, path, _write_pair, stream);
+
+cleanup_names:
+	tbd_xattrs_names_free(&names);
+cleanup_path:
+	free(path);
+	return err;
+}
+
 static int
 tbd_create_cmd_file_create(FILE       *stream,
                            tbd_stat_t *f)
@@ -155,7 +245,7 @@ tbd_create_cmd_file_create(FILE       *stream,
 	}
 	fclose(fp);
 
-	return 0;
+	return tbd_create_cmd_fwrite_xattrs(stream, f);
 }
 
 static uint16_t
@@ -297,10 +387,11 @@ tbd_create_cmd_file_delta(FILE        *stream,
 
 	uint32_t size = flenb - ((flena - end) + start); //(flenb - (o + start));
 
+	/* Data is identical, only alter metadata */
 	if((end == start) && (size == 0)) {
 		tbd_create_cmd_file_metadata_update(stream, a, b);
 		fclose(fpb);
-		return 0;
+		return tbd_create_cmd_fwrite_xattrs(stream, b);
 	}
 
 	uint16_t metadata_mask = tbd_metadata_mask(a, b);
@@ -341,7 +432,7 @@ tbd_create_cmd_file_delta(FILE        *stream,
 	}
 
 	fclose(fpb);
-	return 0;
+	return tbd_create_cmd_fwrite_xattrs(stream, b);
 }
 
 static int

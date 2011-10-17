@@ -41,6 +41,11 @@ check_group () {
 	test $(stat -c %G $1) = $2
 }
 
+check_xattrs () {
+	test "`getfattr -d $1 2>/dev/null | tail -n +2`" = \
+	     "`getfattr -d $2 2>/dev/null | tail -n +2`"
+}
+
 # tests whether a command exists
 is_command () {
 	type $1 >/dev/null 2>/dev/null
@@ -88,13 +93,13 @@ start () {
 		cleanup_and_exit
 	fi
 
-	if [ ! -f $1 ]
+	if [ ! -f "$1" ]
 	then
 		echo "ERROR: $1 is an invalid tbdiff-create path"  1>&2
 		cleanup_and_exit
 	fi
 
-	if [ ! -f $2 ]
+	if [ ! -f "$2" ]
 	then
 		echo "ERROR: $1 is an invalid tbdiff-deploy path" 1>&2
 		cleanup_and_exit
@@ -109,7 +114,7 @@ command_succeeded () {
 	test "$1" = "0"
 }
 main () {
-	start $@
+	start "$@"
 	echo -n "$TEST_ID Setting up $TEST_NAME test: "
 	if [ ! -d $TESTDIR ]
 	then

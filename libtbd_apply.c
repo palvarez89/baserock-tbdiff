@@ -32,6 +32,9 @@
 #include <unistd.h>
 #include <utime.h>
 
+#include <attr/xattr.h>
+#include "libtbd_xattrs.h"
+
 char*
 tbd_apply_fread_string(FILE *stream)
 {
@@ -44,6 +47,39 @@ tbd_apply_fread_string(FILE *stream)
 	dname[dlen] = '\0';
 
 	return strdup(dname);
+}
+
+/* reads a block of data into memory
+ * using the address in *data which is assumed to be able to contain *size
+ * if it needs more than *size bytes to store the data, *data is reallocated
+ * providing initial values of *data = NULL and *size = 0 will force it to
+ * allocate the required memory itself
+ * do not supply a statically or dynamically allocated buffer unless:
+ *  - you can guarantee it is not smaller than the data
+ *  - or realloc doesn't free old memory (though this will be a memory leak)
+ *  - or your allocator does nothing when asked to free non-allocated memory
+ */
+int tbd_apply_fread_block(FILE *stream, void **data, unsigned int *size)
+{
+	{
+		unsigned int _size;
+		if (fread(&_size, sizeof(_size), 1, stream) != 1) {
+			return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		}
+		if (_size > *size) {
+			void *allocres = realloc(*data, _size);
+			if (allocres == NULL) {
+				return TBD_ERROR(TBD_ERROR_OUT_OF_MEMORY);
+			}
+			*data = allocres;
+			*size = _size;
+		}
+	}
+
+	if (fread(*data, 1, *size, stream) != *size) {
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
+	}
+	return TBD_ERROR_SUCCESS;
 }
 
 static int
@@ -572,6 +608,58 @@ tbd_apply_cmd_file_mdata_update(FILE *stream)
 	return TBD_ERROR_SUCCESS;
 }
 
+static int tbd_apply_cmd_xattrs_update(FILE *stream)
+{
+	int err = TBD_ERROR_SUCCESS;
+	char *fname;
+	int count;
+	void *data = NULL;
+	size_t dsize = 0;
+	/* read the name of the file to operate on */
+	if ((fname = tbd_apply_fread_string(stream)) == NULL) {
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
+	}
+
+	/* remove all attributes in preparation for adding new ones */
+	if ((err = tbd_xattrs_removeall(fname)) != TBD_ERROR_SUCCESS) {
+		goto cleanup;
+	}
+
+	/* read how many attributes to process */
+	if (fread(&count, sizeof(count), 1, stream) != 1) {
+		err = TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		goto cleanup;
+	}
+
+	/* operate on each attribute */
+	while (count > 0) {
+		char *aname = tbd_apply_fread_string(stream);
+		if (aname == NULL) {
+			err=TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
+			goto cleanup;
+		}
+
+		/* read a block of data, reallocating if needed */
+		if ((err = tbd_apply_fread_block(stream, &data, &dsize))
+		    != TBD_ERROR_SUCCESS) {
+			free(aname);
+			goto cleanup;
+		}
+
+		if (lsetxattr(fname, aname, data, dsize, 0) == -1) {
+			free(aname);
+			goto cleanup;
+		}
+
+		count--;
+		free(aname);
+	}
+cleanup:
+	free(data);
+	free(fname);
+	return err;
+}
+
 int
 tbd_apply(FILE *stream)
 {
@@ -624,6 +712,12 @@ tbd_apply(FILE *stream)
 		case TBD_CMD_FILE_METADATA_UPDATE:
 			if((err = tbd_apply_cmd_file_mdata_update(stream)) != 0)
 				return err;
+			break;
+		case TBD_CMD_XATTRS_UPDATE:
+			if ((err = tbd_apply_cmd_xattrs_update(stream)) !=
+			    TBD_ERROR_SUCCESS) {
+				return err;
+			}
 			break;
 		case TBD_CMD_ENTITY_MOVE:
 		case TBD_CMD_ENTITY_COPY:
