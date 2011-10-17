@@ -136,24 +136,34 @@ static int
 tbd_apply_cmd_dir_leave(FILE      *stream,
                         uintptr_t *depth)
 {
-	uint8_t count;
-	if(fread(&count, 1, 1, stream) != 1)
+	int err = TBD_ERROR_SUCCESS;
+	struct utimbuf time;
+
+	if (fread(&(time.modtime), sizeof(time.modtime), 1, stream) != 1) {
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
-	uintptr_t rcount = count + 1;
-	fprintf(stderr, "cmd_dir_leave %"PRIuPTR"\n", rcount);
+	}
+	time.actime = time.modtime;/* not sure what the best atime to use is */
 
-	if((depth != NULL) && (*depth < rcount))
+	fprintf(stderr, "cmd_dir_leave\n");
+
+	/* test for leaving shallowest depth */
+	if ((depth != NULL) && (*depth < 1)) {
 		return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
-
-	uintptr_t i;
-	for(i = 0; i < rcount; i++) {
-		if(chdir("..") != 0)
-			return TBD_ERROR(TBD_ERROR_UNABLE_TO_CHANGE_DIR);
 	}
 
-	if(depth != NULL)
-		*depth -= rcount;
-	return 0;
+	if (utime(".", &time) == -1) {
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_CHANGE_DIR);
+	}
+
+	if (chdir("..") != 0) {
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_CHANGE_DIR);
+	}
+
+	if (depth != NULL) {
+		(*depth)--;
+	}
+
+	return err;
 }
 
 static int

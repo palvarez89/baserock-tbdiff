@@ -372,27 +372,15 @@ tbd_create_cmd_dir_enter(FILE       *stream,
 
 static int
 tbd_create_cmd_dir_leave(FILE      *stream,
-                         uintptr_t  count)
+                         tbd_stat_t  *dir)
 {
-	if(count == 0)
-		return 0;
 	int err;
-	if((err = tbd_create_fwrite_cmd(stream, TBD_CMD_DIR_LEAVE)) != 0)
+	if ((err = tbd_create_fwrite_cmd(stream, TBD_CMD_DIR_LEAVE)) !=
+	    TBD_ERROR_SUCCESS) {
 		return err;
-
-	uint8_t token;
-	if(count > 256) {
-		token = 255;
-		for(; count > 256; count -= 256) {
-			if(fwrite(&token, sizeof (uint8_t), 1, stream) != 1)
-				return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
-		}
 	}
 
-	token = (count - 1);
-	if(fwrite(&token, 1, 1, stream) != 1)
-		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
-	return 0;
+	return tbd_create_fwrite_mtime(stream, dir->mtime);
 }
 
 static int
@@ -587,7 +575,7 @@ tbd_create_dir(FILE        *stream,
 			return err;
 	}
 
-	return tbd_create_cmd_dir_leave(stream, 1);
+	return tbd_create_cmd_dir_leave(stream, d);
 }
 
 static int
@@ -648,7 +636,10 @@ tbd_create_impl(FILE        *stream,
 	case TBD_STAT_TYPE_DIR:
 		if(!top) {
 			fprintf(stderr, "dir delta %s\n", a->name);
-			tbd_create_cmd_dir_delta(stream, a, b);
+			if ((err = tbd_create_cmd_dir_delta(stream, a, b)) !=
+			    TBD_ERROR_SUCCESS) {
+				return err;
+			}
 		}
 		break;
 	default:
@@ -691,9 +682,11 @@ tbd_create_impl(FILE        *stream,
 			return err;
 	}
 
-	if(!top && ((err = tbd_create_cmd_dir_leave(stream, 1)) != 0))
+	if(!top && ((err = tbd_create_cmd_dir_leave(stream, b)) != 
+	            TBD_ERROR_SUCCESS)) {
 		return err;
-	return 0;
+	}
+	return TBD_ERROR_SUCCESS;
 }
 
 int
