@@ -59,10 +59,10 @@ tbd_apply_fread_string(FILE *stream)
  *  - or realloc doesn't free old memory (though this will be a memory leak)
  *  - or your allocator does nothing when asked to free non-allocated memory
  */
-int tbd_apply_fread_block(FILE *stream, void **data, unsigned int *size)
+int tbd_apply_fread_block(FILE *stream, void **data, size_t *size)
 {
 	{
-		unsigned int _size;
+		size_t _size;
 		if (fread(&_size, sizeof(_size), 1, stream) != 1) {
 			return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 		}
