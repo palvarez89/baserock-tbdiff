@@ -76,9 +76,9 @@ tbd_create_fwrite_mdata_mask(FILE    *stream,
 
 static int
 tbd_create_fwrite_mtime(FILE    *stream,
-                        uint32_t  mtime)
+                        time_t  mtime)
 {
-	if(fwrite(&mtime, sizeof(uint32_t), 1, stream) != 1)
+	if(fwrite(&mtime, sizeof(mtime), 1, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }

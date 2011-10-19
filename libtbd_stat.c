@@ -91,7 +91,7 @@ tbd_stat_from_path(const char *name,
 	ret->uid   = (uint32_t)info.st_uid;
 	ret->gid   = (uint32_t)info.st_gid;
 	ret->mode  = (uint32_t)info.st_mode;
-	ret->mtime = (uint32_t)info.st_mtime;
+	ret->mtime = (time_t)info.st_mtime;
 	return ret;
 }
 

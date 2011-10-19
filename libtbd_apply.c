@@ -117,8 +117,8 @@ tbd_apply_cmd_dir_create(FILE *stream)
 	if(strchr(dname, '/') != NULL)
 		return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
 
-	uint32_t mtime;
-	if(fread(&mtime, sizeof(uint32_t), 1, stream) != 1)
+	time_t mtime;
+	if(fread(&mtime, sizeof(mtime), 1, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	uint32_t uid;
@@ -215,13 +215,13 @@ tbd_apply_cmd_file_create(FILE *stream)
 	if((strchr(fname, '/') != NULL) || (strcmp(fname, "..") == 0))
 		return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
 
-	uint32_t mtime;
+	time_t mtime;
 	uint32_t mode;
 	uint32_t uid;
 	uint32_t gid;
 	uint32_t fsize;
 
-	if(fread(&mtime, sizeof(uint32_t), 1, stream) != 1 ||
+	if(fread(&mtime, sizeof(mtime), 1, stream) != 1 ||
 	    fread(&mode,  sizeof(uint32_t), 1, stream) != 1 ||
 	    fread(&uid, sizeof(uint32_t), 1, stream)   != 1 ||
 	    fread(&gid, sizeof(uint32_t), 1, stream)   != 1 ||
@@ -268,7 +268,7 @@ static int
 tbd_apply_cmd_file_delta(FILE *stream)
 {
 	uint16_t mdata_mask;
-	uint32_t mtime;
+	time_t mtime;
 	uint32_t uid;
 	uint32_t gid;
 	uint32_t mode;
@@ -288,7 +288,7 @@ tbd_apply_cmd_file_delta(FILE *stream)
 
 	/* Reading metadata */
 	if(fread(&mdata_mask, sizeof(uint16_t), 1, stream) != 1 ||
-	    fread(&mtime,      sizeof(uint32_t), 1, stream) != 1 ||
+	    fread(&mtime,      sizeof(mtime), 1, stream) != 1 ||
 	    fread(&uid,        sizeof(uint32_t), 1, stream) != 1 ||
 	    fread(&gid,        sizeof(uint32_t), 1, stream) != 1 ||
 	    fread(&mode,       sizeof(uint32_t), 1, stream) != 1)
@@ -458,11 +458,11 @@ static int
 tbd_apply_cmd_symlink_create(FILE *stream)
 {
 	uint16_t len;
-	uint32_t mtime;
+	time_t mtime;
 	uint32_t uid;
 	uint32_t gid;
 
-	if(fread(&mtime, sizeof(uint32_t), 1, stream) != 1 ||
+	if(fread(&mtime, sizeof(mtime), 1, stream) != 1 ||
 	    fread(&uid,   sizeof(uint32_t), 1, stream) != 1 ||
 	    fread(&gid,   sizeof(uint32_t), 1, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
@@ -505,14 +505,14 @@ static int
 tbd_apply_cmd_special_create(FILE *stream)
 {
 	char *name = tbd_apply_fread_string(stream);
-	uint32_t mtime;
+	time_t mtime;
 	uint32_t mode;
 	uint32_t uid;
 	uint32_t gid;
 	uint32_t dev;
 
 	if(name == NULL ||
-	    fread(&mtime, sizeof(uint32_t), 1, stream) != 1 ||
+	    fread(&mtime, sizeof(mtime), 1, stream) != 1 ||
 	    fread(&mode, sizeof(uint32_t), 1, stream)  != 1 ||
 	    fread(&uid, sizeof(uint32_t), 1, stream)   != 1 ||
 	    fread(&gid, sizeof(uint32_t), 1, stream)   != 1 ||
@@ -542,13 +542,13 @@ static int
 tbd_apply_cmd_dir_delta(FILE *stream)
 {
 	uint16_t metadata_mask;
-	uint32_t mtime;
+	time_t mtime;
 	uint32_t uid;
 	uint32_t gid;
 	uint32_t mode;
 
 	if(fread(&metadata_mask, sizeof(uint16_t), 1, stream) != 1 ||
-	    fread(&mtime, sizeof(uint32_t), 1, stream)         != 1 ||
+	    fread(&mtime, sizeof(mtime), 1, stream)         != 1 ||
 	    fread(&uid, sizeof(uint32_t), 1, stream)           != 1 ||
 	    fread(&gid, sizeof(uint32_t), 1, stream)           != 1 ||
 	    fread(&mode, sizeof(uint32_t), 1, stream)          != 1)
@@ -577,13 +577,13 @@ static int
 tbd_apply_cmd_file_mdata_update(FILE *stream)
 {
 	uint16_t metadata_mask;
-	uint32_t mtime;
+	time_t mtime;
 	uint32_t uid;
 	uint32_t gid;
 	uint32_t mode;
 
 	if(fread(&metadata_mask, sizeof(uint16_t), 1, stream) != 1 ||
-	    fread(&mtime, sizeof(uint32_t), 1, stream)         != 1 ||
+	    fread(&mtime, sizeof(mtime), 1, stream)         != 1 ||
 	    fread(&uid, sizeof(uint32_t), 1, stream)           != 1 ||
 	    fread(&gid, sizeof(uint32_t), 1, stream)           != 1 ||
 	    fread(&mode, sizeof(uint32_t), 1, stream)          != 1)

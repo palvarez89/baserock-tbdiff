@@ -37,7 +37,7 @@ typedef struct {
 	void*            parent;
 	char*            name;
 	tbd_stat_type_e  type;
-	uint32_t         mtime;
+	time_t           mtime;
 	uint32_t         size; // Count for directory.
 	uint32_t         uid;
 	uint32_t         gid;
