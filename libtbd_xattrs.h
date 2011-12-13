@@ -19,6 +19,7 @@
 #define _LIBTBD_XATTRS_H
 
 #include <stddef.h>
+#include <stdint.h>
 
 /* structure for names data */
 typedef struct tbd_xattrs_names {
@@ -38,7 +39,7 @@ extern int  tbd_xattrs_names_each(tbd_xattrs_names_t const *names,
                                   void *ud);
 
 /* gets how many different attributes there are in the list */
-extern int tbd_xattrs_names_count(tbd_xattrs_names_t const *names, int *count);
+extern int tbd_xattrs_names_count(tbd_xattrs_names_t const *names, uint32_t *count);
 
 /* puts the value of the attribute called name into *buf with size *bufsize
  * if *buf is NULL or *bufsize is 0 then memory will be allocated for it

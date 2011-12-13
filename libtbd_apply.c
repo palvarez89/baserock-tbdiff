@@ -34,12 +34,13 @@
 
 #include <attr/xattr.h>
 #include "libtbd_xattrs.h"
+#include "libtbd_io.h"
 
 char*
 tbd_apply_fread_string(FILE *stream)
 {
 	uint16_t dlen;
-	if(fread(&dlen, sizeof(uint16_t), 1, stream) != 1)
+	if(tbd_read_uint16_t(&dlen, stream) != 1)
 		return NULL;
 	char dname[dlen + 1];
 	if(fread(dname, 1, dlen, stream) != dlen)
@@ -63,7 +64,7 @@ int tbd_apply_fread_block(FILE *stream, void **data, size_t *size)
 {
 	{
 		size_t _size;
-		if (fread(&_size, sizeof(_size), 1, stream) != 1) {
+		if (fread(&_size, 1, sizeof(_size), stream) != sizeof(_size) ) {
 			return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 		}
 		if (_size > *size) {
@@ -91,7 +92,7 @@ tbd_apply_identify(FILE *stream)
 	if(cmd != TBD_CMD_IDENTIFY)
 		return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
 	uint16_t nlen;
-	if(fread(&nlen, 2, 1, stream) != 1)
+	if(tbd_read_uint16_t(&nlen, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	if(strlen(TB_DIFF_PROTOCOL_ID) != nlen)
 		return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
@@ -107,7 +108,7 @@ static int
 tbd_apply_cmd_dir_create(FILE *stream)
 {
 	uint16_t dlen;
-	if(fread(&dlen, sizeof(uint16_t), 1, stream) != 1)
+	if(tbd_read_uint16_t(&dlen, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	char dname[dlen + 1];
 	if(fread(dname, 1, dlen, stream) != dlen)
@@ -118,19 +119,19 @@ tbd_apply_cmd_dir_create(FILE *stream)
 		return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
 
 	time_t mtime;
-	if(fread(&mtime, sizeof(mtime), 1, stream) != 1)
+	if(tbd_read_time_t(&mtime, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
-	uint32_t uid;
-	if(fread(&uid, sizeof(uint32_t), 1, stream) != 1)
+	uid_t uid;
+	if(tbd_read_uid_t(&uid, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
-	uint32_t gid;
-	if(fread(&gid, sizeof(uint32_t), 1, stream) != 1)
+	gid_t gid;
+	if(tbd_read_gid_t(&gid, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
-	uint32_t mode;
-	if(fread(&mode, sizeof(uint32_t), 1, stream) != 1)
+	mode_t mode;
+	if(tbd_read_mode_t(&mode, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	if(mkdir(dname, (mode_t)mode) != 0)
@@ -151,7 +152,7 @@ tbd_apply_cmd_dir_enter(FILE      *stream,
                         uintptr_t *depth)
 {
 	uint16_t dlen;
-	if(fread(&dlen, 2, 1, stream) != 1)
+	if(tbd_read_uint16_t(&dlen, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	char dname[dlen + 1];
 	if(fread(dname, 1, dlen, stream) != dlen)
@@ -175,7 +176,7 @@ tbd_apply_cmd_dir_leave(FILE      *stream,
 	int err = TBD_ERROR_SUCCESS;
 	struct utimbuf time;
 
-	if (fread(&(time.modtime), sizeof(time.modtime), 1, stream) != 1) {
+	if (tbd_read_time_t(&(time.modtime), stream) != 1) {
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	}
 	time.actime = time.modtime;/* not sure what the best atime to use is */
@@ -206,7 +207,7 @@ static int
 tbd_apply_cmd_file_create(FILE *stream)
 {
 	uint16_t flen;
-	if(fread(&flen, 2, 1, stream) != 1)
+	if(tbd_read_uint16_t(&flen, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	char fname[flen + 1];
 	if(fread(fname, 1, flen, stream) != flen)
@@ -217,15 +218,15 @@ tbd_apply_cmd_file_create(FILE *stream)
 
 	time_t mtime;
 	uint32_t mode;
-	uint32_t uid;
-	uint32_t gid;
+	uid_t uid;
+	gid_t gid;
 	uint32_t fsize;
 
-	if(fread(&mtime, sizeof(mtime), 1, stream) != 1 ||
-	    fread(&mode,  sizeof(uint32_t), 1, stream) != 1 ||
-	    fread(&uid, sizeof(uint32_t), 1, stream)   != 1 ||
-	    fread(&gid, sizeof(uint32_t), 1, stream)   != 1 ||
-	    fread(&fsize, 4, 1, stream) != 1)
+	if(tbd_read_time_t(&mtime, stream) != 1 ||
+	    tbd_read_uint32_t(&mode, stream) != 1 ||
+	    tbd_read_uid_t(&uid, stream)   != 1 ||
+	    tbd_read_gid_t(&gid, stream)   != 1 ||
+	    tbd_read_uint32_t(&fsize, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	fprintf(stderr, "cmd_file_create %s:%"PRId32"\n", fname, fsize);
@@ -269,11 +270,11 @@ tbd_apply_cmd_file_delta(FILE *stream)
 {
 	uint16_t mdata_mask;
 	time_t mtime;
-	uint32_t uid;
-	uint32_t gid;
-	uint32_t mode;
+	uid_t uid;
+	gid_t gid;
+	mode_t mode;
 	uint16_t flen;
-	if(fread(&flen, 2, 1, stream) != 1)
+	if(tbd_read_uint16_t(&flen, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	char fname[flen + 1];
 	if(fread(fname, 1, flen, stream) != flen)
@@ -287,11 +288,11 @@ tbd_apply_cmd_file_delta(FILE *stream)
 		return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
 
 	/* Reading metadata */
-	if(fread(&mdata_mask, sizeof(uint16_t), 1, stream) != 1 ||
-	    fread(&mtime,      sizeof(mtime), 1, stream) != 1 ||
-	    fread(&uid,        sizeof(uint32_t), 1, stream) != 1 ||
-	    fread(&gid,        sizeof(uint32_t), 1, stream) != 1 ||
-	    fread(&mode,       sizeof(uint32_t), 1, stream) != 1)
+	if(tbd_read_uint16_t(&mdata_mask, stream) != 1 ||
+	    tbd_read_time_t(&mtime, stream) != 1 ||
+	    tbd_read_uid_t(&uid, stream) != 1 ||
+	    tbd_read_gid_t(&gid, stream) != 1 ||
+	    tbd_read_uint32_t(&mode, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	FILE *op = fopen(fname, "rb");
@@ -308,9 +309,9 @@ tbd_apply_cmd_file_delta(FILE *stream)
 	}
 
 	uint32_t dstart, dend;
-	if(fread(&dstart, 4, 1, stream) != 1)
+	if(tbd_read_uint32_t(&dstart, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
-	if(fread(&dend, 4, 1, stream) != 1)
+	if(tbd_read_uint32_t(&dend, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	uintptr_t block;
@@ -325,7 +326,7 @@ tbd_apply_cmd_file_delta(FILE *stream)
 	}
 
 	uint32_t fsize;
-	if(fread(&fsize, 4, 1, stream) != 1)
+	if(tbd_read_uint32_t(&fsize, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	for(block = 256; fsize != 0; fsize -= block) {
@@ -440,7 +441,7 @@ static int
 tbd_apply_cmd_entity_delete(FILE *stream)
 {
 	uint16_t elen;
-	if(fread(&elen, 2, 1, stream) != 1)
+	if(tbd_read_uint16_t(&elen, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	char ename[elen + 1];
 	if(fread(ename, 1, elen, stream) != elen)
@@ -459,16 +460,16 @@ tbd_apply_cmd_symlink_create(FILE *stream)
 {
 	uint16_t len;
 	time_t mtime;
-	uint32_t uid;
-	uint32_t gid;
+	uid_t uid;
+	gid_t gid;
 
-	if(fread(&mtime, sizeof(mtime), 1, stream) != 1 ||
-	    fread(&uid,   sizeof(uint32_t), 1, stream) != 1 ||
-	    fread(&gid,   sizeof(uint32_t), 1, stream) != 1)
+	if(tbd_read_time_t(&mtime, stream) != 1 ||
+	    tbd_read_uid_t(&uid, stream) != 1 ||
+	    tbd_read_gid_t(&gid, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	/* Reading link file name */
-	if(fread(&len, sizeof(uint16_t), 1, stream) != 1)
+	if(tbd_read_uint16_t(&len, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	char linkname[len + 1];
@@ -477,7 +478,7 @@ tbd_apply_cmd_symlink_create(FILE *stream)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	/* Reading target path */
-	if(fread(&len, sizeof(uint16_t), 1, stream) != 1)
+	if(tbd_read_uint16_t(&len, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	char linkpath[len+1];
 	linkpath[len] = '\0';
@@ -506,17 +507,17 @@ tbd_apply_cmd_special_create(FILE *stream)
 {
 	char *name = tbd_apply_fread_string(stream);
 	time_t mtime;
-	uint32_t mode;
-	uint32_t uid;
-	uint32_t gid;
+	mode_t mode;
+	uid_t uid;
+	gid_t gid;
 	uint32_t dev;
 
 	if(name == NULL ||
-	    fread(&mtime, sizeof(mtime), 1, stream) != 1 ||
-	    fread(&mode, sizeof(uint32_t), 1, stream)  != 1 ||
-	    fread(&uid, sizeof(uint32_t), 1, stream)   != 1 ||
-	    fread(&gid, sizeof(uint32_t), 1, stream)   != 1 ||
-	    fread(&dev, sizeof(uint32_t), 1, stream)   != 1) {
+	    tbd_read_time_t(&mtime, stream) != 1 ||
+	    tbd_read_mode_t(&mode, stream)  != 1 ||
+	    tbd_read_uid_t(&uid, stream)   != 1 ||
+	    tbd_read_gid_t(&gid, stream)   != 1 ||
+	    tbd_read_uint32_t(&dev, stream)   != 1) {
 		free(name);
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	}
@@ -543,15 +544,15 @@ tbd_apply_cmd_dir_delta(FILE *stream)
 {
 	uint16_t metadata_mask;
 	time_t mtime;
-	uint32_t uid;
-	uint32_t gid;
-	uint32_t mode;
+	uid_t uid;
+	gid_t gid;
+	mode_t mode;
 
-	if(fread(&metadata_mask, sizeof(uint16_t), 1, stream) != 1 ||
-	    fread(&mtime, sizeof(mtime), 1, stream)         != 1 ||
-	    fread(&uid, sizeof(uint32_t), 1, stream)           != 1 ||
-	    fread(&gid, sizeof(uint32_t), 1, stream)           != 1 ||
-	    fread(&mode, sizeof(uint32_t), 1, stream)          != 1)
+	if(tbd_read_uint16_t(&metadata_mask, stream) != 1 ||
+	    tbd_read_time_t(&mtime, stream)         != 1 ||
+	    tbd_read_uid_t(&uid, stream)           != 1 ||
+	    tbd_read_gid_t(&gid, stream)           != 1 ||
+	    tbd_read_uint32_t(&mode, stream)          != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	char *dname = tbd_apply_fread_string(stream);
@@ -578,15 +579,15 @@ tbd_apply_cmd_file_mdata_update(FILE *stream)
 {
 	uint16_t metadata_mask;
 	time_t mtime;
-	uint32_t uid;
-	uint32_t gid;
-	uint32_t mode;
+	uid_t uid;
+	gid_t gid;
+	mode_t mode;
 
-	if(fread(&metadata_mask, sizeof(uint16_t), 1, stream) != 1 ||
-	    fread(&mtime, sizeof(mtime), 1, stream)         != 1 ||
-	    fread(&uid, sizeof(uint32_t), 1, stream)           != 1 ||
-	    fread(&gid, sizeof(uint32_t), 1, stream)           != 1 ||
-	    fread(&mode, sizeof(uint32_t), 1, stream)          != 1)
+	if(tbd_read_uint16_t(&metadata_mask, stream) != 1 ||
+	    tbd_read_time_t(&mtime, stream)         != 1 ||
+	    tbd_read_uid_t(&uid, stream)           != 1 ||
+	    tbd_read_gid_t(&gid, stream)           != 1 ||
+	    tbd_read_uint32_t(&mode, stream)          != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	char *dname = tbd_apply_fread_string(stream);
@@ -612,7 +613,7 @@ static int tbd_apply_cmd_xattrs_update(FILE *stream)
 {
 	int err = TBD_ERROR_SUCCESS;
 	char *fname;
-	int count;
+	uint32_t count;
 	void *data = NULL;
 	size_t dsize = 0;
 	/* read the name of the file to operate on */
@@ -626,7 +627,7 @@ static int tbd_apply_cmd_xattrs_update(FILE *stream)
 	}
 
 	/* read how many attributes to process */
-	if (fread(&count, sizeof(count), 1, stream) != 1) {
+	if (tbd_read_uint32_t(&count, stream) != 1) {
 		err = TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 		goto cleanup;
 	}

@@ -39,9 +39,9 @@ typedef struct {
 	tbd_stat_type_e  type;
 	time_t           mtime;
 	uint32_t         size; // Count for directory.
-	uint32_t         uid;
-	uint32_t         gid;
-	uint32_t         mode;
+	uid_t         uid;
+	gid_t         gid;
+	mode_t         mode;
 	uint32_t         rdev;
 } tbd_stat_t;
 

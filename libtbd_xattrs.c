@@ -99,11 +99,11 @@ int tbd_xattrs_names_each(tbd_xattrs_names_t const *names,
 static int names_sum(char const *name, void *ud) {
 	if (name == NULL || ud == NULL)
 		return TBD_ERROR(TBD_ERROR_NULL_POINTER);
-	(*((uint16_t*)ud))++;
+	(*((uint32_t*)ud))++;
 	return TBD_ERROR_SUCCESS;
 }
-int tbd_xattrs_names_count(tbd_xattrs_names_t const *names, int *count) {
-	int _count = 0;
+int tbd_xattrs_names_count(tbd_xattrs_names_t const *names, uint32_t *count) {
+	uint32_t _count = 0;
 	int err;
 	if ((err = tbd_xattrs_names_each(names, &names_sum, &_count)) ==
 	    TBD_ERROR_SUCCESS) {

@@ -19,6 +19,7 @@
 #include "tbdiff-private.h"
 
 #include "libtbd_xattrs.h"
+#include "libtbd_io.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -46,7 +47,7 @@ tbd_create_fwrite_string(FILE       *stream,
                          const char *string)
 {
 	uint16_t slen = strlen(string);
-	if((fwrite(&slen, 2, 1, stream) != 1)
+	if((tbd_write_uint16_t(slen, stream) != 1)
 	    || (fwrite(string, 1, slen, stream) != slen))
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
@@ -55,11 +56,11 @@ tbd_create_fwrite_string(FILE       *stream,
 static int
 tbd_create_fwrite_block(FILE *stream, void const *data, size_t size)
 {
-	if (fwrite(&size, sizeof(size), 1, stream) != 1) {
+	if (fwrite(&size, 1, sizeof(size), stream) != sizeof(size)) {
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	}
 
-	if (fwrite(data, size, 1, stream) != 1) {
+	if (fwrite(data, 1, size, stream) != size) {
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	}
 	return TBD_ERROR_SUCCESS;
@@ -69,7 +70,7 @@ static int
 tbd_create_fwrite_mdata_mask(FILE    *stream,
                              uint16_t mask)
 {
-	if(fwrite(&mask, sizeof(uint16_t), 1, stream) != 1)
+	if(tbd_write_uint16_t(mask, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
@@ -78,16 +79,16 @@ static int
 tbd_create_fwrite_mtime(FILE    *stream,
                         time_t  mtime)
 {
-	if(fwrite(&mtime, sizeof(mtime), 1, stream) != 1)
+	if(tbd_write_time_t(mtime, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
 
 static int
 tbd_create_fwrite_mode(FILE     *stream,
-                       uint32_t  mode)
+                       mode_t  mode)
 {
-	if(fwrite(&mode, sizeof(uint32_t), 1, stream) != 1)
+	if(tbd_write_mode_t(mode, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
@@ -96,7 +97,7 @@ static int
 tbd_create_fwrite_gid(FILE     *stream,
                       gid_t     gid)
 {
-	if(fwrite(&gid, sizeof(gid_t), 1, stream) != 1)
+	if(tbd_write_gid_t(gid, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
@@ -105,7 +106,7 @@ static int
 tbd_create_fwrite_uid(FILE     *stream,
                       uid_t     uid)
 {
-	if(fwrite(&uid, sizeof(uid_t), 1, stream) != 1)
+	if(tbd_write_uid_t(uid, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
@@ -114,7 +115,7 @@ static int
 tbd_create_fwrite_dev(FILE     *stream,
                       uint32_t  dev)
 {
-	if(fwrite(&dev, sizeof(uint32_t), 1, stream) != 1)
+	if(tbd_write_uint32_t(dev, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
@@ -179,7 +180,7 @@ tbd_create_cmd_fwrite_xattrs(FILE *stream, tbd_stat_t *f)
 	}
 	
 	{ /* write the header */
-		int count;
+		uint32_t count;
 		/* if failed to count or there are no xattrs */
 		if ((err = tbd_xattrs_names_count(&names, &count)) !=
 		    TBD_ERROR_SUCCESS || count == 0) {
@@ -197,7 +198,7 @@ tbd_create_cmd_fwrite_xattrs(FILE *stream, tbd_stat_t *f)
 			goto cleanup_names;
 		}
 
-		if (fwrite(&count, sizeof(count), 1, stream) != 1) {
+		if (tbd_write_uint32_t(count, stream) != 1) {
 			err = TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 			goto cleanup_names;
 		}
@@ -227,7 +228,7 @@ tbd_create_cmd_file_create(FILE       *stream,
 		return err;
 
 	uint32_t size = f->size;
-	if(fwrite(&size, sizeof(uint32_t), 1, stream) != 1)
+	if(tbd_write_uint32_t(size, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 
 	FILE *fp = tbd_stat_fopen(f, "rb");
@@ -408,9 +409,9 @@ tbd_create_cmd_file_delta(FILE        *stream,
 		fclose(fpb);
 		return err;
 	}
-	if((fwrite(&start, sizeof(uint32_t), 1, stream) != 1) ||
-	    (fwrite(&end,   sizeof(uint32_t), 1, stream) != 1)   ||
-	    (fwrite(&size,  sizeof(uint32_t), 1, stream) != 1)) {
+	if((tbd_write_uint32_t(start, stream) != 1) ||
+	    (tbd_write_uint32_t(end, stream) != 1)   ||
+	    (tbd_write_uint32_t(size, stream) != 1)) {
 		fclose(fpb);
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	}
