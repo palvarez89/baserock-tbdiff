@@ -126,7 +126,6 @@ main () {
 	mkdir -p $ORIGIN &&
 	check_command 'setup_origin' "$TEST_ID-$TEST_NAME: creating origin" \
 	              'command_succeeded' &&
-	sleep 2s &&
 	mkdir -p $TARGET &&
 	check_command 'setup_target' "$TEST_ID-$TEST_NAME: creating target" \
 	              'command_succeeded' &&

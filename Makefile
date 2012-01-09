@@ -42,8 +42,12 @@ uninstall:
 	rm -rf /usr/local/bin/$(CREATE)
 
 test:
-	cd tests && ./run_tests.sh && cd ..
+	cd tests && ./run_tests.sh && fakeroot -- ./cross_plat.sh && cd ..
+
 .PHONY: clean
+
+check:
+	cd tests && ./run_tests.sh && cd ..
+
 clean:
 	rm  -f $(DEPLOY) $(CREATE) *.o *.d
-check: test
