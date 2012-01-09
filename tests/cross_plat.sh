@@ -84,11 +84,17 @@ diff patch1.tbd patch1prime.tbd
 if [ $? -eq 0 ]; then
     echo -n "Patch 1: "
     echo OK
+else
+    cleanup
+    exit 1
 fi
 diff patch2.tbd patch2prime.tbd
 if [ $? -eq 0 ]; then
     echo -n "Patch 2: "
     echo OK
+else
+    cleanup
+    exit 1
 fi
 
 checkmeta
