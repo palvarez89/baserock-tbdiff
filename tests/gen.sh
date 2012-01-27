@@ -51,8 +51,8 @@ for ((i=1; i<8; i++)); do
     mkdir -p ${nums[$i]}
     cd ${nums[$i]}
     insertfiles $i
-    for ((j=1; j<=$i; j++)); do
-        labelmeta ${files[$j]}
+#    for ((j=1; j<=$i; j++)); do
+#        labelmeta ${files[$j]}
     done
     cd ..
     tbdiff-create PATCHES/patch${nums[$i]}.tbd ${nums[$(($i - 1))]} ${nums[$i]}
