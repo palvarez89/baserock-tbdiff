@@ -17,6 +17,10 @@ To run each test individually:
 
 $ ./00_my_individual_test.sh ../path/to/test-create ../path/to/test-deploy
 
+To run the cross platform test:
+
+$ fakeroot -- ./cross_plat.sh
+
 Anatomy of a unit test
 ----------------------
 
@@ -77,3 +81,14 @@ then check that it is non-zero
 		create_test_return () { test $1 != 0; }
 		# create must fail with error code 1
 		create_test_return () {	test $1 = 1; }
+
+
+Cross Platform Test
+-------------------
+
+The cross-platform test is designed to make sure that patches are endian and 
+architecture independent. This is done with PATCHES generated and commited to
+begin with, and then deployed and re-created and compared to check that the
+patches are identical. This test should be run after every modification to
+ensure that tbdiff remains endian and architecture independant after any
+modifications are made.

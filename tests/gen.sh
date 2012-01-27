@@ -53,7 +53,7 @@ for ((i=1; i<8; i++)); do
     insertfiles $i
 #    for ((j=1; j<=$i; j++)); do
 #        labelmeta ${files[$j]}
-    done
+#    done
     cd ..
     tbdiff-create PATCHES/patch${nums[$i]}.tbd ${nums[$(($i - 1))]} ${nums[$i]}
 done

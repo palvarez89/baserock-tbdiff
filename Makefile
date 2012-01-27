@@ -42,9 +42,7 @@ uninstall:
 	rm -rf /usr/local/bin/$(CREATE)
 
 test:
-	cd tests && ./run_tests.sh && cd ..
-# cross platform test needs fixing
-# cd tests && ./run_tests.sh && fakeroot -- ./cross_plat.sh && cd ..
+	cd tests && ./run_tests.sh && fakeroot -- ./cross_plat.sh && cd ..
 
 .PHONY: clean
 
