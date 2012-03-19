@@ -4,6 +4,9 @@ CC := gcc
 
 OPT ?= -O2
 
+DESTDIR = /
+PREFIX  = /usr
+
 DEPLOY=tbdiff-deploy
 CREATE=tbdiff-create
 
@@ -34,12 +37,13 @@ ifeq (,$(findstring clean,$(MAKECMDGOALS)))
 endif
 
 install: $(DEPLOY) $(CREATE)
-	install $(CREATE) /usr/local/bin
-	install $(DEPLOY) /usr/local/bin
+	install -m 755 -d $(DESTDIR)$(PREFIX)/bin
+	install $(CREATE) $(DESTDIR)$(PREFIX)/bin
+	install $(DEPLOY) $(DESTDIR)$(PREFIX)/bin
 
 uninstall:
-	rm -rf /usr/local/bin/$(DEPLOY)
-	rm -rf /usr/local/bin/$(CREATE)
+	rm -rf $(DESTDIR)/$(DEPLOY)
+	rm -rf $(DESTDIR)/$(CREATE)
 
 test:
 	cd tests && ./run_tests.sh && fakeroot -- ./cross_plat.sh && cd ..
