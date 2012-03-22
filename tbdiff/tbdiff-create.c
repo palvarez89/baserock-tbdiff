@@ -1,5 +1,5 @@
 /*
- *    Copyright(C) 2011 Codethink Ltd.
+ *    Copyright (C) 2011-2012 Codethink Ltd.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License Version 2 as
@@ -15,12 +15,6 @@
  *    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "tbdiff.h"
-#include "tbdiff-private.h"
-
-#include "libtbd_xattrs.h"
-#include "libtbd_io.h"
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -30,6 +24,11 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
+
+#include <tbdiff/tbdiff-common.h>
+#include <tbdiff/tbdiff-io.h>
+#include <tbdiff/tbdiff-private.h>
+#include <tbdiff/tbdiff-xattrs.h>
 
 #define PATH_BUFFER_LENGTH 4096
 

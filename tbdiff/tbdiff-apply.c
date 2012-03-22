@@ -1,5 +1,5 @@
 /*
- *    Copyright(C) 2011 Codethink Ltd.
+ *    Copyright (C) 2011-2012 Codethink Ltd.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License Version 2 as
@@ -14,9 +14,6 @@
  *    with this program; if not, write to the Free Software Foundation, Inc.,
  *    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
-
-#include "tbdiff.h"
-#include "tbdiff-private.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -33,8 +30,11 @@
 #include <utime.h>
 
 #include <attr/xattr.h>
-#include "libtbd_xattrs.h"
-#include "libtbd_io.h"
+
+#include <tbdiff/tbdiff-common.h>
+#include <tbdiff/tbdiff-io.h>
+#include <tbdiff/tbdiff-private.h>
+#include <tbdiff/tbdiff-xattrs.h>
 
 char*
 tbd_apply_fread_string(FILE *stream)

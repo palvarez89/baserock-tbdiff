@@ -1,5 +1,5 @@
 /*
- *    Copyright (C) 2011 Codethink Ltd.
+ *    Copyright (C) 2011-2012 Codethink Ltd.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License Version 2 as
@@ -15,9 +15,13 @@
  *    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#if !defined (TBDIFF_INSIDE_TBDIFF_H) && !defined (TBDIFF_COMPILATION)
+#error "Only <tbdiff/tbdiff.h> may be included directly. This file might disappear or change contents."
+#endif
+
 #ifndef __TBDIFF_PRIVATE_H__
 #define __TBDIFF_PRIVATE_H__
 
 #define TB_DIFF_PROTOCOL_ID "Codethink:TBDIFFv0"
 
-#endif
+#endif /* !__TBDIFF_PRIVATE_H__ */

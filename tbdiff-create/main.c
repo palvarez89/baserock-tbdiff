@@ -1,5 +1,5 @@
 /*
- *    Copyright (C) 2011 Codethink Ltd.
+ *    Copyright (C) 2011-2012 Codethink Ltd.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License Version 2 as
@@ -21,8 +21,7 @@
 
 #include <unistd.h>
 
-#include "libtbd_stat.h"
-#include "tbdiff.h"
+#include <tbdiff/tbdiff.h>
 
 
 int

@@ -1,5 +1,5 @@
 /*
- *    Copyright (C) 2011 Codethink Ltd.
+ *    Copyright (C) 2011-2012 Codethink Ltd.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License Version 2 as
@@ -15,8 +15,12 @@
  *    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef __LIBTBD_STAT_H__
-#define __LIBTBD_STAT_H__
+#if !defined (TBDIFF_INSIDE_TBDIFF_H) && !defined (TBDIFF_COMPILATION)
+#error "Only <tbdiff/tbdiff.h> may be included directly. This file might disappear or change contents."
+#endif
+
+#ifndef __TBDIFF_STAT_H__
+#define __TBDIFF_STAT_H__
 
 #include <stdio.h>
 #include <stdint.h>
@@ -55,4 +59,4 @@ extern char*        tbd_stat_path(tbd_stat_t *file);
 extern int          tbd_stat_open(tbd_stat_t *file, int flags);
 extern FILE*        tbd_stat_fopen(tbd_stat_t *file, const char *mode);
 
-#endif /* __LIBTBD_STAT_H__ */
+#endif /* !__TBDIFF_STAT_H__ */

@@ -1,5 +1,5 @@
 /*
- *    Copyright (C) 2011 Codethink Ltd.
+ *    Copyright (C) 2011-2012 Codethink Ltd.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License Version 2 as
@@ -15,8 +15,6 @@
  *    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "libtbd_stat.h"
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <stddef.h>
@@ -29,7 +27,7 @@
 #include <errno.h>
 #include <fcntl.h>
 
-
+#include <tbdiff/tbdiff-stat.h>
 
 static tbd_stat_t*
 tbd_stat_from_path(const char *name,

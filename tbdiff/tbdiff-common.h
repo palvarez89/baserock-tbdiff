@@ -1,5 +1,5 @@
 /*
- *    Copyright (C) 2011 Codethink Ltd.
+ *    Copyright (C) 2011-2012 Codethink Ltd.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License Version 2 as
@@ -15,13 +15,17 @@
  *    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef __TBDIFF_H__
-#define __TBDIFF_H__
+#if !defined (TBDIFF_INSIDE_TBDIFF_H) && !defined (TBDIFF_COMPILATION)
+#error "Only <tbdiff/tbdiff.h> may be included directly. This file might disappear or change contents."
+#endif
+
+#ifndef __TBDIFF_COMMON_H__
+#define __TBDIFF_COMMON_H__
 
 #include <stdio.h>
 #include <stdint.h>
 
-#include "libtbd_stat.h"
+#include <tbdiff/tbdiff-stat.h>
 
 typedef enum {
 	TBD_CMD_IDENTIFY             = 0x00,
@@ -96,4 +100,4 @@ tbd_error(tbd_error_e e, char const *s, char const *func, int line,
 extern int         tbd_apply (FILE *stream);
 extern int         tbd_create(FILE *stream, tbd_stat_t *a, tbd_stat_t *b);
 
-#endif /* __TBDIFF_H__ */
+#endif /* !__TBDIFF_COMMON_H__ */

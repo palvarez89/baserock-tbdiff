@@ -1,5 +1,5 @@
 /*
- *    Copyright (C) 2011 Codethink Ltd.
+ *    Copyright (C) 2011-2012 Codethink Ltd.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License Version 2 as
@@ -15,8 +15,12 @@
  *    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef _LIBTBD_XATTRS_H
-#define _LIBTBD_XATTRS_H
+#if !defined (TBDIFF_INSIDE_TBDIFF_H) && !defined (TBDIFF_COMPILATION)
+#error "Only <tbdiff/tbdiff.h> may be included directly. This file might disappear or change contents."
+#endif
+
+#ifndef _TBDIFF_XATTRS_H
+#define _TBDIFF_XATTRS_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -57,4 +61,4 @@ typedef int (*tbd_xattrs_pairs_callback_t)(char const *name, void const *data,
                                            size_t size, void *ud);
 extern int  tbd_xattrs_pairs(tbd_xattrs_names_t const *names, char const *path,
                              tbd_xattrs_pairs_callback_t f, void *ud);
-#endif
+#endif /* !__TBDIFF_XATTRS_H__ */

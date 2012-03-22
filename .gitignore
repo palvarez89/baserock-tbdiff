@@ -1,5 +1,5 @@
-tbdiff-create
-tbdiff-deploy
+tbdiff-create/tbdiff-create
+tbdiff-deploy/tbdiff-deploy
 *.o
 *.log
 *.d

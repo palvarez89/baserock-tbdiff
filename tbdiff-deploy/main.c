@@ -1,5 +1,5 @@
 /*
- *    Copyright (C) 2011 Codethink Ltd.
+ *    Copyright (C) 2011-2012 Codethink Ltd.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License Version 2 as
@@ -15,14 +15,14 @@
  *    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "tbdiff.h"
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <unistd.h>
 #include <errno.h>
+
+#include <tbdiff/tbdiff.h>
 
 int
 main(int    argc,

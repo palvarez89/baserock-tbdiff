@@ -18,7 +18,7 @@ for i in [0-9][0-9]*.sh
 do
 	cd $ALLTESTSDIR
 	echo "#### Running $i"
-	fakeroot -- ./$i ../tbdiff-create ../tbdiff-deploy
+	fakeroot -- ./$i ../tbdiff-create/tbdiff-create ../tbdiff-deploy/tbdiff-deploy
 	if [ $? -ne 0 ]
 	then
 		echo "Test program $i failed" 1>&2
