@@ -41,9 +41,9 @@ if [ ! -f "$patch_file" ]; then
 fi
 
 # mount the root btrfs file system
-rootfs="$(mktemp -d)"
+rootfs="$(busybox mktemp -d)"
 mount -t btrfs "$device" "$rootfs"
-trap "cd /; umount $rootfs; rm -rf $rootfs" ERR EXIT SIGINT SIGTERM
+trap "cd /; umount $rootfs; busybox rm -rf $rootfs" EXIT SIGINT SIGTERM
 
 # switch into the root file system
 cd "$rootfs"
