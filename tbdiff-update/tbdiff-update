@@ -109,3 +109,6 @@ busybox sed -i -e "s,factory-run,$target_subvolume-run,g" "extlinux.conf"
 
 # leave the root file system
 cd /
+
+# reboot the system
+busybox reboot
