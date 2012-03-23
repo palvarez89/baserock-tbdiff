@@ -1,10 +1,5 @@
 {
   "name": "tbdiff",
   "kind": "chunk",
-  "build-commands": [
-    "make"
-  ],
-  "install-commands": [
-    "make PREFIX=\"/usr\" DESTDIR=\"$DESTDIR\" install"
-  ]
+  "build-system": "autotools"
 }
