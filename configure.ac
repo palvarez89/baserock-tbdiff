@@ -119,6 +119,7 @@ tbdiff/Makefile
 tbdiff/tbdiff-1.pc
 tbdiff-create/Makefile
 tbdiff-deploy/Makefile
+tbdiff-switch/Makefile
 tbdiff-update/Makefile
 tests/Makefile
 ])

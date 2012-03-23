@@ -1,0 +1,80 @@
+#!/bin/sh
+#
+# Copyright (c) 2011-2012 Codethink Ltd.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License Version 2 as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+# vi:set ts=8 sw=8 noet ai nocindent:
+
+set -e
+set -x
+
+# read input parameters
+device="$1"
+target_subvolume="$3"
+
+# print usage information if not all parameters are provided
+if [ -z "$device" ] ||
+   [ -z "$target_subvolume" ]
+then
+  echo "Usage: $0 <device> <target subvolume>" >&2
+  exit 1
+fi
+
+if [ ! -f "$patch_file" ]; then
+  echo "Patch file \"$patch_file\" does not exist" >&2
+  exit 1
+fi
+
+# mount the root btrfs file system
+rootfs="$(busybox mktemp -d)"
+mount -t btrfs "$device" "$rootfs"
+trap "cd /; umount $rootfs; busybox rm -rf $rootfs" EXIT SIGINT SIGTERM
+
+# switch into the root file system
+cd "$rootfs"
+
+# verify that the target subvolume exists
+if [ ! -e "$target_subvolume" ]; then
+  echo "Target subvolume \"$target_subvolume\" does not yet exist" >&2
+  exit 1
+fi
+
+# delete the target subvolume's -run snapshot if it exists
+if [ -e "$target_subvolume-run" ]; then
+  echo "Deleting existing snapshot \"$target_subvolume-run\""
+  btrfs subvolume delete "$target_subvolume-run"
+  exit 1
+fi
+
+echo "Creating snapshot \"$target_subvolume-run\" from \"$target_subvolume\""
+
+# create a a new -run snapshot for the target subvolume
+btrfs subvolume snapshot "$target_subvolume" "$target_subvolume-run"
+
+echo "Copying boot files to the root file system"
+
+# copy boot files to the root file system
+busybox cp "$target_subvolume/boot/vmlinuz" "boot/vmlinuz"
+busybox cp "$target_subvolume/boot/System.map" "boot/System.map"
+busybox cp "$target_subvolume/extlinux.conf" "extlinux.conf"
+
+echo "Configuring extlinux to boot from \"$target_subvolume-run\""
+
+busybox sed -i -e "s,factory-run,$target_subvolume-run,g" "extlinux.conf"
+
+# leave the root file system
+cd /
+
+# reboot the system
+busybox reboot

@@ -14,20 +14,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+# vi:set ts=8 sw=8 noet ai nocindent:
 
-SUBDIRS =								\
-	tbdiff								\
-	tbdiff-create							\
-	tbdiff-deploy							\
-	tbdiff-switch							\
-	tbdiff-update							\
-	tests
-
-.PHONY: ChangeLog
-
-ChangeLog: Makefile
-	(GIT_DIR=$(top_srcdir)/.git git log > .changelog.tmp \
-	&& mv .changelog.tmp ChangeLog; rm -f .changelog.tmp) \
-	|| (touch ChangeLog; echo 'Git directory not found: installing possibly empty changelog.' >&2)
-
-dist-hook: ChangeLog
+bin_SCRIPTS =								\
+	tbdiff-switch
