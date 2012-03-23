@@ -99,13 +99,13 @@ btrfs subvolume snapshot "$target_subvolume" "$target_subvolume-run"
 echo "Copying boot files to the root file system"
 
 # copy boot files to the root file system
-cp "$target_subvolume/boot/vmlinuz" "boot/vmlinuz"
-cp "$target_subvolume/boot/System.map" "boot/System.map"
-cp "$target_subvolume/extlinux.conf" "extlinux.conf"
+busybox cp "$target_subvolume/boot/vmlinuz" "boot/vmlinuz"
+busybox cp "$target_subvolume/boot/System.map" "boot/System.map"
+busybox cp "$target_subvolume/extlinux.conf" "extlinux.conf"
 
 echo "Configuring extlinux to boot from \"$target_subvolume-run\""
 
-sed -i -e "s,factory-run,$target_subvolume-run,g" "extlinux.conf"
+busybox sed -i -e "s,factory-run,$target_subvolume-run,g" "extlinux.conf"
 
 # leave the root file system
 cd /
