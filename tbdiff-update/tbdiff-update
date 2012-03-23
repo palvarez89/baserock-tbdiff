@@ -1,0 +1,111 @@
+#!/bin/sh
+#
+# Copyright (c) 2011-2012 Codethink Ltd.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License Version 2 as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+# vi:set ts=8 sw=8 noet ai nocindent:
+
+set -e
+set -x
+
+# read input parameters
+device="$1"
+source_subvolume="$2"
+target_subvolume="$3"
+patch_file="$4"
+
+# print usage information if not all parameters are provided
+if [ -z "$device" ] ||
+   [ -z "$source_subvolume" ] ||
+   [ -z "$target_subvolume" ] ||
+   [ -z "$patch_file" ]
+then
+  echo "Usage: $0 <device> <source subvolume> <target subvolume> <patch file>" >&2
+  exit 1
+fi
+
+if [ ! -f "$patch_file" ]; then
+  echo "Patch file \"$patch_file\" does not exist" >&2
+  exit 1
+fi
+
+# mount the root btrfs file system
+rootfs="$(mktemp -d)"
+mount -t btrfs "$device" "$rootfs"
+trap "cd /; umount $rootfs; rm -rf $rootfs" ERR EXIT SIGINT SIGTERM
+
+# switch into the root file system
+cd "$rootfs"
+
+# verify that the source subvolume exists
+if [ ! -e "$source_subvolume" ]; then
+  echo "Source subvolume \"$source_subvolume\" does not exist in $device" >&2
+  exit 1
+fi
+
+# verify that the source subvolume is a directory
+if [ ! -d "$source_subvolume" ]; then
+  echo "Source subvolume \"$source_subvolume\" is not a directory" >&2
+  exit 1
+fi
+
+# verify that the target subvolume does not yet exist
+if [ -e "$target_subvolume" ]; then
+  echo "Target subvolume \"$target_subvolume\" already exists" >&2
+  exit 1
+fi
+
+# verify that the target subvolume's -run snapshot does not yet exist
+if [ -e "$target_subvolume-run" ]; then
+  echo "Target subvolume's \"$target_subvolume-run\" snapshot already exists" >&2
+  exit 1
+fi
+
+echo "Creating snapshot \"$target_subvolume\" from \"$source_subvolume\""
+
+# create a snapshot for the target subvolume
+if ! btrfs subvolume snapshot "$source_subvolume" "$target_subvolume"; then
+  echo "Failed to create the target subvolume \"$target_subvolume\"" >&2
+  exit 1
+fi
+
+# switch to the target subvolume
+cd "$target_subvolume"
+
+echo "Applying the patch \"$patch_file\" to \"$target_subvolume\""
+
+# apply the patch to this subvolume
+tbdiff-deploy "$patch_file"
+
+# leave the subvolume
+cd "$rootfs"
+
+echo "Creating snapshot \"$target_subvolume-run\" from \"$target_subvolume\""
+
+# create a -run snapshot for the target subvolume
+btrfs subvolume snapshot "$target_subvolume" "$target_subvolume-run"
+
+echo "Copying boot files to the root file system"
+
+# copy boot files to the root file system
+cp "$target_subvolume/boot/vmlinuz" "boot/vmlinuz"
+cp "$target_subvolume/boot/System.map" "boot/System.map"
+cp "$target_subvolume/extlinux.conf" "extlinux.conf"
+
+echo "Configuring extlinux to boot from \"$target_subvolume-run\""
+
+sed -i -e "s,factory-run,$target_subvolume-run,g" "extlinux.conf"
+
+# leave the root file system
+cd /

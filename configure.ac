@@ -106,7 +106,7 @@ dnl AC_CHECK_FUNCS([])
 dnl ************************************
 dnl *** Check for required libraries ***
 dnl ************************************
-dnl AC_CHECK_LIBS([])
+AC_CHECK_LIB([attr], [lsetxattr])
 
 dnl ***********************************
 dnl *** Check for required packages ***
@@ -119,6 +119,7 @@ tbdiff/Makefile
 tbdiff/tbdiff-1.pc
 tbdiff-create/Makefile
 tbdiff-deploy/Makefile
+tbdiff-update/Makefile
 tests/Makefile
 ])
 
