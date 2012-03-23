@@ -21,18 +21,13 @@ set -x
 
 # read input parameters
 device="$1"
-target_subvolume="$3"
+target_subvolume="$2"
 
 # print usage information if not all parameters are provided
 if [ -z "$device" ] ||
    [ -z "$target_subvolume" ]
 then
   echo "Usage: $0 <device> <target subvolume>" >&2
-  exit 1
-fi
-
-if [ ! -f "$patch_file" ]; then
-  echo "Patch file \"$patch_file\" does not exist" >&2
   exit 1
 fi
 
@@ -54,7 +49,6 @@ fi
 if [ -e "$target_subvolume-run" ]; then
   echo "Deleting existing snapshot \"$target_subvolume-run\""
   btrfs subvolume delete "$target_subvolume-run"
-  exit 1
 fi
 
 echo "Creating snapshot \"$target_subvolume-run\" from \"$target_subvolume\""
