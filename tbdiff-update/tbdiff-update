@@ -111,7 +111,7 @@ busybox sed -i -e "s,factory-run,$target_subvolume-run,g" "extlinux.conf"
 cd /
 
 # perform a sync to make sure everything has been written
-sync
+busybox sync
 
 # reboot the system
 busybox reboot
