@@ -34,7 +34,7 @@ fi
 # mount the root btrfs file system
 rootfs="$(busybox mktemp -d)"
 mount -t btrfs "$device" "$rootfs"
-trap "cd /; umount $rootfs; busybox rm -rf $rootfs" EXIT SIGINT SIGTERM
+trap "cd /; umount $rootfs && busybox rm -rf $rootfs" EXIT SIGINT SIGTERM
 
 # switch into the root file system
 cd "$rootfs"
@@ -67,11 +67,17 @@ echo "Configuring extlinux to boot from \"$target_subvolume-run\""
 
 busybox sed -i -e "s,factory-run,$target_subvolume-run,g" "extlinux.conf"
 
+# clear the traps
+trap EXIT SIGINT SIGTERM
+
 # leave the root file system
 cd /
 
-# perform a sync to make sure everything has been written
-busybox sync
+# unmount the root file system
+umount "$rootfs"
+
+# remove the temporary directory
+rm -rf "$rootfs"
 
 # reboot the system
 busybox reboot
