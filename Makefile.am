@@ -19,7 +19,7 @@ SUBDIRS =								\
 	tbdiff								\
 	tbdiff-create							\
 	tbdiff-deploy							\
-	tbdiff-switch							\
+	tb-switch							\
 	tb-update							\
 	tests
 
