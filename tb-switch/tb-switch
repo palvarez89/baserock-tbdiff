@@ -17,7 +17,6 @@
 # vi:set ts=8 sw=8 noet ai nocindent:
 
 set -e
-set -x
 
 # read input parameters
 device="$1"
@@ -49,12 +48,14 @@ fi
 if [ -e "$target_subvolume-run" ]; then
   echo "Deleting existing snapshot \"$target_subvolume-run\""
   btrfs subvolume delete "$target_subvolume-run"
+  btrfs filesystem sync .
 fi
 
 echo "Creating snapshot \"$target_subvolume-run\" from \"$target_subvolume\""
 
 # create a a new -run snapshot for the target subvolume
 btrfs subvolume snapshot "$target_subvolume" "$target_subvolume-run"
+btrfs filesystem sync .
 
 echo "Copying boot files to the root file system"
 
@@ -62,10 +63,12 @@ echo "Copying boot files to the root file system"
 busybox cp "$target_subvolume/boot/vmlinuz" "boot/vmlinuz"
 busybox cp "$target_subvolume/boot/System.map" "boot/System.map"
 busybox cp "$target_subvolume/extlinux.conf" "extlinux.conf"
+btrfs filesystem sync .
 
 echo "Configuring extlinux to boot from \"$target_subvolume-run\""
 
 busybox sed -i -e "s,factory-run,$target_subvolume-run,g" "extlinux.conf"
+btrfs filesystem sync .
 
 # clear the traps
 trap - EXIT SIGINT SIGTERM

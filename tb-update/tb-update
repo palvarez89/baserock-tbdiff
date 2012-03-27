@@ -17,7 +17,6 @@
 # vi:set ts=8 sw=8 noet ai nocindent:
 
 set -e
-set -x
 
 # read input parameters
 device="$1"
@@ -79,6 +78,7 @@ if ! btrfs subvolume snapshot "$source_subvolume" "$target_subvolume"; then
   echo "Failed to create the target subvolume \"$target_subvolume\"" >&2
   exit 1
 fi
+btrfs filesystem sync .
 
 # switch to the target subvolume
 cd "$target_subvolume"
@@ -87,6 +87,7 @@ echo "Applying the patch \"$patch_file\" to \"$target_subvolume\""
 
 # apply the patch to this subvolume
 tbdiff-deploy "$patch_file"
+btrfs filesystem sync .
 
 # leave the subvolume
 cd "$rootfs"
@@ -95,6 +96,7 @@ echo "Creating snapshot \"$target_subvolume-run\" from \"$target_subvolume\""
 
 # create a -run snapshot for the target subvolume
 btrfs subvolume snapshot "$target_subvolume" "$target_subvolume-run"
+btrfs filesystem sync .
 
 echo "Copying boot files to the root file system"
 
@@ -102,10 +104,12 @@ echo "Copying boot files to the root file system"
 busybox cp "$target_subvolume/boot/vmlinuz" "boot/vmlinuz"
 busybox cp "$target_subvolume/boot/System.map" "boot/System.map"
 busybox cp "$target_subvolume/extlinux.conf" "extlinux.conf"
+btrfs filesystem sync .
 
 echo "Configuring extlinux to boot from \"$target_subvolume-run\""
 
 busybox sed -i -e "s,factory-run,$target_subvolume-run,g" "extlinux.conf"
+btrfs filesystem sync .
 
 # clear the traps
 trap - EXIT SIGINT SIGTERM
