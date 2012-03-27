@@ -108,7 +108,7 @@ echo "Configuring extlinux to boot from \"$target_subvolume-run\""
 busybox sed -i -e "s,factory-run,$target_subvolume-run,g" "extlinux.conf"
 
 # clear the traps
-trap EXIT SIGINT SIGTERM
+trap - EXIT SIGINT SIGTERM
 
 # leave the root file system
 cd /
@@ -117,7 +117,7 @@ cd /
 umount "$rootfs"
 
 # remove the temporary directory
-rm -rf "$rootfs"
+busybox rm -rf "$rootfs"
 
 # reboot the system
 busybox reboot

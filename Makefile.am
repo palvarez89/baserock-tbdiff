@@ -20,7 +20,7 @@ SUBDIRS =								\
 	tbdiff-create							\
 	tbdiff-deploy							\
 	tbdiff-switch							\
-	tbdiff-update							\
+	tb-update							\
 	tests
 
 .PHONY: ChangeLog
