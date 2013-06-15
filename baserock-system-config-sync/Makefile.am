@@ -1,6 +1,4 @@
-# vi:set ts=8 sw=8 noet ai nocindent:
-# -
-# Copyright (c) 2011-2013 Codethink Ltd.
+# Copyright (c) 2013 Codethink Ltd.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License Version 2 as
@@ -15,20 +13,8 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-SUBDIRS =								\
-	tbdiff								\
-	tbdiff-create							\
-	tbdiff-deploy							\
-	tb-switch							\
-	tb-update							\
-	baserock-system-config-sync					\
-	tests
+bin_SCRIPTS =								\
+	baserock-system-config-sync
 
-.PHONY: ChangeLog
-
-ChangeLog: Makefile
-	(GIT_DIR=$(top_srcdir)/.git git log > .changelog.tmp \
-	&& mv .changelog.tmp ChangeLog; rm -f .changelog.tmp) \
-	|| (touch ChangeLog; echo 'Git directory not found: installing possibly empty changelog.' >&2)
-
-dist-hook: ChangeLog
+libexec_SCRIPTS =							\
+	mount-system-versions-dir

@@ -121,6 +121,7 @@ tbdiff-create/Makefile
 tbdiff-deploy/Makefile
 tb-switch/Makefile
 tb-update/Makefile
+baserock-system-config-sync/Makefile
 tests/Makefile
 ])
 

@@ -1,0 +1,216 @@
+#!/bin/sh
+#
+# Copyright (c) 2013 Codethink Ltd.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License Version 2 as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+set -eu
+
+
+mounting_script="$(dirname "$0")/../libexec/mount-system-versions-dir"
+
+
+usage() {
+    echo "Usage: $(basename $0) test V1_DIR VU_DIR V2_DIR VT_DIR" >&2
+    echo "       $(basename $0) merge NEW_VERSION_LABEL" >&2
+    echo "       $(basename $0) sync CANONICAL_VERSION_LABEL" >&2
+    exit 1
+}
+
+
+die () {
+    echo $@ >&2
+    exit 1
+}
+
+
+merge() {
+    local vp_dir="$1" # version being processed
+    local v1_dir="$2" # factory version
+    local vu_dir="$3" # user modified version
+    local v2_dir="$4" # unmodified new deployed version
+    local vt_dir="$5" # target version where the result of the
+                      # merge should be placed
+
+    # use `find "$vp_dir/"*` instead of `find "$vp_dir"` because
+    # the last one also gives $vp_dir in the list of directories
+    find "$vp_dir/"* | while read f; do
+        # strip first component from file name
+        local stripped_filename=${f#$vp_dir/}
+
+        local vp="$vp_dir/$stripped_filename"
+        local v1="$v1_dir/$stripped_filename"
+        local vu="$vu_dir/$stripped_filename"
+        local v2="$v2_dir/$stripped_filename"
+        local vt="$vt_dir/$stripped_filename"
+
+        if [ -e "$vt" ]; then
+            # If the file already exists in the target,
+            # check if it is of the same kind
+            vp_type="$(stat -c %F "$vp")"
+            vt_type="$(stat -c %F "$vt")"
+            echo "$vp - $vt - $vp_type - $vt_type" >&2
+            if [ "$vp_type" != "$vt_type" ]; then
+               die "found two different types for '$stripped_filename':" \
+                   "$vp_type and $vt_type"
+            fi
+        elif [ -d "$vp" ] && [ ! -h "$vp" ]; then
+            mkdir "$vt"
+        elif [ -h "$vp" ]; then
+            # Discussion: what we want to do about symbolic links?
+            # I chose a symbolic link in this order of preference:
+            # Vuser, V2, V1
+            if [ -h "$vu" ]; then
+                cp -a "$vu" "$vt"
+            elif [ -h "$v2" ]; then
+                cp -a "$v2" "$vt"
+            else
+                cp -a "$v1" "$vt"
+            fi
+        elif [ -f "$vp" ]; then
+            merge_regular_file "$v1" "$vu" "$v2" "$vt"
+        else
+            die "ERROR: unexpected error"
+        fi
+    done
+}
+
+
+merge_regular_file() {
+    local v1="$1"
+    local vu="$2"
+    local v2="$3"
+    local vt="$4"
+    # Reference table for merging a regular file
+    #
+    # V1      Vuser       V2          action
+    # ------------------------------------------
+    # none    none        none        inconceivable!
+    # exists  none        none        use V1
+    # none    exists      none        use Vuser
+    # none    none        exists      use V2
+    # exists  none        exists      use V2
+    # exists  exists      none        use V2
+    # none    exists      exists      diff V2 Vuser applied to V2
+    # exists  exists      exists      diff V1 Vuser applied to V2
+
+    v1_exists=$(test -f "$v1" && echo exists || echo none)
+    vu_exists=$(test -f "$vu" && echo exists || echo none)
+    v2_exists=$(test -f "$v2" && echo exists || echo none)
+    case "$v1_exists $vu_exists $v2_exists" in
+    'exists none none')
+        cp -a "$v1" "$vt"
+        ;;
+    'none exists none')
+        cp -a "$vu" "$vt"
+        ;;
+    'none none exists')
+        cp -a "$v2" "$vt"
+        ;;
+    'exists none exists')
+        cp -a "$v2" "$vt"
+        ;;
+    'exists exists none')
+        # In the relevant mustard node it is specified that
+        # when we have v1 and vu, but not v2, we shouldn't
+        # do nothing. I changed to copy the user configuration
+        # instead
+        cp -a "$vu" "$vt"
+        ;;
+    'none exists exists')
+        # In the relevant mustard node it is specified a diff
+        # between /dev/null and vu. However this causes a
+        # complaint against reversed patches. The option
+        # "-R" didn't help.
+        if ! (diff "$v2" "$vu" | patch "$v2" -o "$vt"); then
+            cp -a "$v2" "$vt" # merge failed, use v2
+        fi
+        ;;
+    'exists exists exists')
+        if ! (diff "$v1" "$vu" | patch "$v2" -o "$vt"); then
+            cp -a "$v2" "$vt" # merge failed, use v2
+        fi
+        ;;
+    *)
+        die "ERROR: unexpected error"
+        ;;
+    esac
+}
+
+
+if [ "$#" = 0 ]; then
+    usage "$0"
+fi
+
+
+if [ "$1" = "test" ]; then
+    if [ "$#" != 5 ]; then
+        usage "$0"
+    fi
+    local v1="$2"
+    local vu="$3"
+    local v2="$4"
+    local vt="$5"
+    mkdir -p "$vt"
+    # For every pathname in V1, Vuser, or V2
+    merge "$v1" "$v1" "$vu" "$v2" "$vt"
+    merge "$vu" "$v1" "$vu" "$v2" "$vt"
+    merge "$v2" "$v1" "$vu" "$v2" "$vt"
+elif [ "$1" = "merge" ]; then
+    if [ "$#" != 2 ]; then
+        usage "$0"
+    fi
+    local new_version="$2"
+    local mounting_point=$(mktemp -d)
+    "$mounting_script" "$mounting_point"
+    trap 'umount "$mounting_point"' INT ERR EXIT
+    if [ ! -d "$mounting_point/systems/$new_version" ]; then
+        die "Error: version not found - '$new_version'"
+    fi
+    local v1_dir="$mounting_point/systems/default/orig/etc"
+    local vu_dir="$mounting_point/systems/default/run/etc"
+    local v2_dir="$mounting_point/systems/$new_version/run/etc"
+    local vt_dir="$mounting_point/systems/$new_version/run/etc.new"
+    mkdir "$vt_dir"
+
+    # For every pathname in V1, Vuser, or V2
+    merge "$v1_dir" "$v1_dir" "$vu_dir" "$v2_dir" "$vt_dir"
+    merge "$vu_dir" "$v1_dir" "$vu_dir" "$v2_dir" "$vt_dir"
+    merge "$v2_dir" "$v1_dir" "$vu_dir" "$v2_dir" "$vt_dir"
+
+    rm -rf "$v2_dir"
+    mv "$vt_dir" "$v2_dir"
+elif [ "$1" = "sync" ]; then
+    local canonical_version="$2"
+    local mounting_point=$(mktemp -d)
+    "$mounting_script" "$mounting_point"
+    trap 'umount "$mounting_point"' INT EXIT
+    if [ ! -d "$mounting_point/systems/$canonical_version" ]; then
+        die "Error: version not found - '$canonical_version'"
+    fi
+    for version_dir in "$mounting_point/systems/"*; do
+        version="$(basename "$version_dir")"
+        if [ -d "$version_dir" ] && [ ! -h "$version_dir" ] \
+                && [ $version != $canonical_version ]; then
+            cp -a "$mounting_point/systems/$canonical_version/run/etc" \
+                "$version_dir/run/etc.new"
+            mv "$version_dir/run/etc" "$version_dir/run/etc.old"
+            mv "$version_dir/run/etc.new" "$version_dir/run/etc"
+            rm -rf "$version_dir/run/etc.old"
+        fi
+    done
+else
+    usage "$0"
+fi
+
