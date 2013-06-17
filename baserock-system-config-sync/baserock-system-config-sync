@@ -35,6 +35,32 @@ die () {
 }
 
 
+file_type()
+{
+    mode=$(printf '%o\n' 0x$(stat -c %f "$1"))
+    case "$mode" in
+    140???) echo "socket" ;;
+    120???) echo "symlink" ;;
+    100???) echo "regular" ;;
+    60???) echo "block" ;;
+    40???) echo "directory" ;;
+    20???) echo "char" ;;
+    10???) echo "fifo" ;;
+    *) echo "Unknown file type $1: $mode" 1>&2; exit 1 ;;
+    esac
+}
+
+
+check_same_type() {
+    type1="$(file_type $1)"
+    type2="$(file_type $2)"
+    if [ "$type1" != "$type2" ]; then
+        die "found two different types for '$3':" \
+            "$type1 and $type2"
+    fi
+}
+
+
 merge() {
     local vp_dir="$1" # version being processed
     local v1_dir="$2" # factory version
@@ -46,6 +72,7 @@ merge() {
     # use `find "$vp_dir/"*` instead of `find "$vp_dir"` because
     # the last one also gives $vp_dir in the list of directories
     find "$vp_dir/"* | while read f; do
+        # echo "Processing $f"
         # strip first component from file name
         local stripped_filename=${f#$vp_dir/}
 
@@ -55,33 +82,33 @@ merge() {
         local v2="$v2_dir/$stripped_filename"
         local vt="$vt_dir/$stripped_filename"
 
-        if [ -e "$vt" ]; then
-            # If the file already exists in the target,
-            # check if it is of the same kind
-            vp_type="$(stat -c %F "$vp")"
-            vt_type="$(stat -c %F "$vt")"
-            echo "$vp - $vt - $vp_type - $vt_type" >&2
-            if [ "$vp_type" != "$vt_type" ]; then
-               die "found two different types for '$stripped_filename':" \
-                   "$vp_type and $vt_type"
+        if [ ! -e "$vt" ]; then
+            if [ -e "$v1" -a -e "$vu" ]; then
+                check_same_type "$v1" "$vu" "$stripped_filename"
             fi
-        elif [ -d "$vp" ] && [ ! -h "$vp" ]; then
-            mkdir "$vt"
-        elif [ -h "$vp" ]; then
-            # Discussion: what we want to do about symbolic links?
-            # I chose a symbolic link in this order of preference:
-            # Vuser, V2, V1
-            if [ -h "$vu" ]; then
-                cp -a "$vu" "$vt"
-            elif [ -h "$v2" ]; then
-                cp -a "$v2" "$vt"
+            if [ -e "$vu" -a -e "$v2" ]; then
+                check_same_type "$vu" "$v2" "$stripped_filename"
+            fi
+            if [ -e "$v1" -a -e "$v2" ]; then
+                check_same_type "$v1" "$v2" "$stripped_filename"
+            fi
+            if [ -d "$vp" -a ! -h "$vp" ]; then
+                mkdir "$vt"
+            elif [ -h "$vp" ]; then
+                # chose a symbolic link in this order
+                # of preference: Vuser, V2, V1
+                if [ -h "$vu" ]; then
+                    cp -a "$vu" "$vt"
+                elif [ -h "$v2" ]; then
+                    cp -a "$v2" "$vt"
+                else
+                    cp -a "$v1" "$vt"
+                fi
+            elif [ -f "$vp" ]; then
+                merge_regular_file "$v1" "$vu" "$v2" "$vt"
             else
-                cp -a "$v1" "$vt"
+                die "ERROR: unexpected error"
             fi
-        elif [ -f "$vp" ]; then
-            merge_regular_file "$v1" "$vu" "$v2" "$vt"
-        else
-            die "ERROR: unexpected error"
         fi
     done
 }
@@ -122,23 +149,15 @@ merge_regular_file() {
         cp -a "$v2" "$vt"
         ;;
     'exists exists none')
-        # In the relevant mustard node it is specified that
-        # when we have v1 and vu, but not v2, we shouldn't
-        # do nothing. I changed to copy the user configuration
-        # instead
         cp -a "$vu" "$vt"
         ;;
     'none exists exists')
-        # In the relevant mustard node it is specified a diff
-        # between /dev/null and vu. However this causes a
-        # complaint against reversed patches. The option
-        # "-R" didn't help.
-        if ! (diff "$v2" "$vu" | patch "$v2" -o "$vt"); then
+        if ! (diff "$v2" "$vu" | patch "$v2" -t -o "$vt"); then
             cp -a "$v2" "$vt" # merge failed, use v2
         fi
         ;;
     'exists exists exists')
-        if ! (diff "$v1" "$vu" | patch "$v2" -o "$vt"); then
+        if ! (diff "$v1" "$vu" | patch "$v2" -t -o "$vt"); then
             cp -a "$v2" "$vt" # merge failed, use v2
         fi
         ;;
@@ -174,7 +193,6 @@ elif [ "$1" = "merge" ]; then
     local new_version="$2"
     local mounting_point=$(mktemp -d)
     "$mounting_script" "$mounting_point"
-    trap 'umount "$mounting_point"' INT ERR EXIT
     if [ ! -d "$mounting_point/systems/$new_version" ]; then
         die "Error: version not found - '$new_version'"
     fi
@@ -191,18 +209,18 @@ elif [ "$1" = "merge" ]; then
 
     rm -rf "$v2_dir"
     mv "$vt_dir" "$v2_dir"
+    umount "$mounting_point"
 elif [ "$1" = "sync" ]; then
     local canonical_version="$2"
     local mounting_point=$(mktemp -d)
     "$mounting_script" "$mounting_point"
-    trap 'umount "$mounting_point"' INT EXIT
     if [ ! -d "$mounting_point/systems/$canonical_version" ]; then
         die "Error: version not found - '$canonical_version'"
     fi
     for version_dir in "$mounting_point/systems/"*; do
         version="$(basename "$version_dir")"
-        if [ -d "$version_dir" ] && [ ! -h "$version_dir" ] \
-                && [ $version != $canonical_version ]; then
+        if [ -d "$version_dir" -a ! -h "$version_dir" \
+                -a $version != $canonical_version ]; then
             cp -a "$mounting_point/systems/$canonical_version/run/etc" \
                 "$version_dir/run/etc.new"
             mv "$version_dir/run/etc" "$version_dir/run/etc.old"
@@ -210,6 +228,7 @@ elif [ "$1" = "sync" ]; then
             rm -rf "$version_dir/run/etc.old"
         fi
     done
+    umount "$mounting_point"
 else
     usage "$0"
 fi
