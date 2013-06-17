@@ -1,0 +1,6 @@
+--- file7
++++ file7
+@@ -1,2 +1,2 @@
+ whereami=v1,vu,v2
+-version=v1
++version=vu

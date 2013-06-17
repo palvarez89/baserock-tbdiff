@@ -18,7 +18,7 @@ for i in [0-9][0-9]*.sh
 do
 	cd $ALLTESTSDIR
 	echo "#### Running $i"
-	fakeroot -- ./$i ../tbdiff-create/tbdiff-create ../tbdiff-deploy/tbdiff-deploy
+	./$i ../tbdiff-create/tbdiff-create ../tbdiff-deploy/tbdiff-deploy
 	if [ $? -ne 0 ]
 	then
 		echo "Test program $i failed" 1>&2
@@ -28,3 +28,73 @@ do
 	fi
 		echo "#####################################################################"
 done
+
+
+echo "Starting baserock-system-config-sync tests"
+merge_pass_folder="bscs-merge.pass"
+merge_fail_folder="bscs-merge.fail"
+sync_folder="bscs-sync"
+bscs_script="../baserock-system-config-sync/baserock-system-config-sync"
+bscs_log="bscs.log"
+> "$bscs_log"
+
+# test merge cases that should succeed
+for folder in "$merge_pass_folder/"*.in; do
+    echo -n "#### Running ${folder%.in}"
+    echo "#### Running ${folder%.in}" >> "$bscs_log"
+    out_folder=${folder%.in}.out
+    TMPDIR=$(mktemp -d)
+    TMPDIR=$TMPDIR mounting_script="./fake_mounting_script.sh" unmount=true \
+        mounting_script_test_dir="$folder" "$bscs_script" "merge" \
+        "version2" &>> "$bscs_log"
+    exit_code="$?"
+    if [ "$exit_code" -ne 0 ]; then
+        echo ": FAILED (exit code "$exit_code")" 1>&2
+        exit 1
+    elif ! diff -r "$TMPDIR/"*/ "$out_folder/" &>> "$bscs_log"; then
+        echo ": FAILED (different diff)" 1>&2
+        exit 1
+    else
+        echo ": OK" 1>&2
+    fi
+    rm -rf $TMPDIR
+done
+
+
+# test merge changes that should fail
+for folder in "$merge_fail_folder/"*.in; do
+    echo -n "#### Running ${folder%.in}"
+    echo "#### Running ${folder%.in}" >> "$bscs_log"
+    TMPDIR=$(mktemp -d)
+    TMPDIR=$TMPDIR mounting_script="./fake_mounting_script.sh" unmount=true \
+        mounting_script_test_dir="$folder" "$bscs_script" "merge" \
+        "version2" &>> "$bscs_log"
+    if [ $? -eq 0 ]; then
+        echo ": FAILED" 1>&2
+        exit 1
+    else
+        echo ": OK" 1>&2
+    fi
+    rm -rf $TMPDIR
+done
+
+
+# test the sync mode
+echo -n "#### Running sync test on $sync_folder"
+echo "#### Running sync test on $sync_folder" >> "$bscs_log"
+out_folder=${sync_folder}.out
+TMPDIR=$(mktemp -d)
+TMPDIR=$TMPDIR mounting_script="./fake_mounting_script.sh" unmount=true \
+    mounting_script_test_dir="${sync_folder}.in" "$bscs_script" "sync" \
+    "version3" &>> "$bscs_log"
+exit_code="$?"
+if [ "$exit_code" -ne 0 ]; then
+    echo ": FAILED (exit code "$exit_code")" 1>&2
+    exit 1
+elif ! diff -r "$TMPDIR/"*/ "$out_folder/" &>> "$bscs_log"; then
+    echo ": FAILED (different diff)" 1>&2a
+    exit 1
+else
+   echo ": OK" 1>&2
+fi
+rm -rf $TMPDIR

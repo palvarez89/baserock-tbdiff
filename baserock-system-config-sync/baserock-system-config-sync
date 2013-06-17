@@ -17,13 +17,13 @@
 
 set -eu
 
+: ${mounting_script="$(dirname "$0")/../libexec/mount-system-versions-dir"}
 
-mounting_script="$(dirname "$0")/../libexec/mount-system-versions-dir"
+: ${unmount="umount"}
 
 
 usage() {
-    echo "Usage: $(basename $0) test V1_DIR VU_DIR V2_DIR VT_DIR" >&2
-    echo "       $(basename $0) merge NEW_VERSION_LABEL" >&2
+    echo "Usage: $(basename $0) merge NEW_VERSION_LABEL" >&2
     echo "       $(basename $0) sync CANONICAL_VERSION_LABEL" >&2
     exit 1
 }
@@ -35,8 +35,7 @@ die () {
 }
 
 
-file_type()
-{
+file_type() {
     mode=$(printf '%o\n' 0x$(stat -c %f "$1"))
     case "$mode" in
     140???) echo "socket" ;;
@@ -55,7 +54,7 @@ check_same_type() {
     type1="$(file_type $1)"
     type2="$(file_type $2)"
     if [ "$type1" != "$type2" ]; then
-        die "found two different types for '$3':" \
+        die "ERROR: found two different types for '$3':" \
             "$type1 and $type2"
     fi
 }
@@ -173,20 +172,7 @@ if [ "$#" = 0 ]; then
 fi
 
 
-if [ "$1" = "test" ]; then
-    if [ "$#" != 5 ]; then
-        usage "$0"
-    fi
-    local v1="$2"
-    local vu="$3"
-    local v2="$4"
-    local vt="$5"
-    mkdir -p "$vt"
-    # For every pathname in V1, Vuser, or V2
-    merge "$v1" "$v1" "$vu" "$v2" "$vt"
-    merge "$vu" "$v1" "$vu" "$v2" "$vt"
-    merge "$v2" "$v1" "$vu" "$v2" "$vt"
-elif [ "$1" = "merge" ]; then
+if [ "$1" = "merge" ]; then
     if [ "$#" != 2 ]; then
         usage "$0"
     fi
@@ -194,6 +180,7 @@ elif [ "$1" = "merge" ]; then
     local mounting_point=$(mktemp -d)
     "$mounting_script" "$mounting_point"
     if [ ! -d "$mounting_point/systems/$new_version" ]; then
+        "$unmount" "$mounting_point"
         die "Error: version not found - '$new_version'"
     fi
     local v1_dir="$mounting_point/systems/default/orig/etc"
@@ -201,7 +188,7 @@ elif [ "$1" = "merge" ]; then
     local v2_dir="$mounting_point/systems/$new_version/run/etc"
     local vt_dir="$mounting_point/systems/$new_version/run/etc.new"
     mkdir "$vt_dir"
-
+    trap 'rm -rvf "$vt_dir"; "$unmount" "$mounting_point"' EXIT
     # For every pathname in V1, Vuser, or V2
     merge "$v1_dir" "$v1_dir" "$vu_dir" "$v2_dir" "$vt_dir"
     merge "$vu_dir" "$v1_dir" "$vu_dir" "$v2_dir" "$vt_dir"
@@ -209,11 +196,11 @@ elif [ "$1" = "merge" ]; then
 
     rm -rf "$v2_dir"
     mv "$vt_dir" "$v2_dir"
-    umount "$mounting_point"
 elif [ "$1" = "sync" ]; then
     local canonical_version="$2"
     local mounting_point=$(mktemp -d)
     "$mounting_script" "$mounting_point"
+    trap '"$unmount" "$mounting_point"' EXIT
     if [ ! -d "$mounting_point/systems/$canonical_version" ]; then
         die "Error: version not found - '$canonical_version'"
     fi
@@ -228,7 +215,6 @@ elif [ "$1" = "sync" ]; then
             rm -rf "$version_dir/run/etc.old"
         fi
     done
-    umount "$mounting_point"
 else
     usage "$0"
 fi
