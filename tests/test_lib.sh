@@ -1,7 +1,9 @@
 OK=" OK"
 FAIL=" FAIL"
 
-TESTDIR=`mktemp -d`
+TESTDIR="$PWD/temp"
+rm -rf "$TESTDIR"
+mkdir "$TESTDIR"
 IMGFILE=$TESTDIR/tbdiff.img
 ORIGIN=$TESTDIR/orig
 TARGET=$TESTDIR/target
