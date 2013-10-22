@@ -1,0 +1,14 @@
+# Shell library for tbdiff yarns.
+#
+# The shell functions in this library are meant to make writing IMPLEMENTS
+# sections for yarn scenario tests easier.
+
+# Currently, yarn isn't setting $SRCDIR to point at the project source
+# directory.  We simulate this here.
+
+{
+    set +u
+    if [ -z "$SRCDIR" ]; then
+        export SRCDIR="$(pwd)"
+    fi
+}
