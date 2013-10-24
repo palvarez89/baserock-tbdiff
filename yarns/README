@@ -1,0 +1,6 @@
+Running the test suite
+----------------------
+Change to the top-level directory of the tbdiff source tree and
+execute run_yarns.sh:
+
+$ ./yarns/run_yarns.sh

@@ -1,0 +1,40 @@
+Trebuchet tests for the creating and deploying of binary deltas
+===============================================================
+
+The following scenarios test tbdiff-deploy's ability to correctly transform
+the content of a target directory, to that of a source directory, given an
+appropriate binary delta created by tbdiff-create.
+
+Simple file diff
+----------------
+
+This simple test checks that file content is as expected, if the content of
+the two text files are different, the test will fail.
+
+    SCENARIO Changing a file's content works
+    GIVEN a directory exists named 'A'
+    AND the directory 'A' contains a file named 'foo.txt' with '1' in it
+    AND a directory exists named 'B'
+    AND the directory 'B' contains a file named 'foo.txt' with '2' in it
+    WHEN tbdiff-create creates a binary delta named 'AB.tbdiff' from 'A' to 'B'
+    AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A'
+    THEN the files 'A/foo.txt' and 'B/foo.txt' have the same contents
+
+Implementations for simple file diff
+------------------------------------
+
+    IMPLEMENTS GIVEN a directory exists named '([^']+)'
+    mkdir "$DATADIR/$MATCH_1"
+
+    IMPLEMENTS GIVEN the directory '([^']+)' contains a file named '([^']+)' with '([^']+)' in it
+    echo $MATCH_3 > "$DATADIR/$MATCH_1/$MATCH_2"
+
+    IMPLEMENTS WHEN tbdiff-create creates a binary delta named '([^']+)' from '([^']+)' to '([^']+)'
+    "$SRCDIR/tbdiff-create/tbdiff-create" "$DATADIR/$MATCH_1" "$DATADIR/$MATCH_2" "$DATADIR/$MATCH_3"
+
+    IMPLEMENTS WHEN tbdiff-deploy applies the delta '([^']+)' to '([^']+)'
+    cd "$DATADIR/$MATCH_2"
+    "$SRCDIR/tbdiff-deploy/tbdiff-deploy" "$DATADIR/$MATCH_1"
+
+    IMPLEMENTS THEN the files '([^']+)' and '([^']+)' have the same contents
+    diff "$DATADIR/$MATCH_1" "$DATADIR/$MATCH_2"
