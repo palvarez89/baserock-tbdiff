@@ -5,8 +5,8 @@ The following scenarios test tbdiff-deploy's ability to correctly transform
 the content of a target directory, to that of a source directory, given an
 appropriate binary delta created by tbdiff-create.
 
-Simple file diff
-----------------
+Changing of file content
+------------------------
 
 This simple test checks that file content is as expected, if the content of
 the two text files are different, the test will fail.
@@ -20,14 +20,93 @@ the two text files are different, the test will fail.
     AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A'
     THEN the files 'A/foo.txt' and 'B/foo.txt' have the same contents
 
-Implementations for simple file diff
+Changing of file ownership
+--------------------------
+
+Trebuchet also takes into account POSIX metadata such as ownership, this
+scenario is written to test that functionality.
+
+    SCENARIO Changing a file's group ownership works
+    GIVEN a directory exists named 'C'
+    AND the directory 'C' contains a file named 'bar'
+    AND a directory exists named 'D'
+    AND the directory 'D' contains a file named 'bar'
+    AND the file 'D/bar' is owned by the group '893'
+    WHEN tbdiff-create creates a binary delta named 'CD.tbdiff' from 'C' to 'D'
+    AND tbdiff-deploy applies the delta 'CD.tbdiff' to 'C'
+    THEN the file 'C/bar' is owned by the group '893'
+
+Changing of file permissions
+----------------------------
+
+This scenario tests that file permissions are successfully changed after
+the deployment of a binary delta.
+
+    SCENARIO Changing a file's permissions works
+    GIVEN a directory exists named 'E'
+    AND the directory 'E' contains a file named 'baz'
+    AND a directory exists named 'F'
+    AND the directory 'F' contains a file named 'baz'
+    AND the file 'F/baz' has the permissions 'ugo=rw'
+    WHEN tbdiff-create creates a binary delta named 'EF.tbdiff' from 'E' to 'F'
+    AND tbdiff-deploy applies the delta 'EF.tbdiff' to 'E'
+    THEN the file 'E/baz' has the permissions '-rw-rw-rw-'
+
+Adding and removing of a file
+-----------------------------
+
+The following scenario checks that the deploying of a binary delta
+successfully removes and creates the appropriate files.
+
+    SCENARIO Adding and removing of files works
+    GIVEN a directory exists named 'G'
+    AND the directory 'G' contains a file named 'minus'
+    AND a directory exists named 'H'
+    AND the directory 'H' contains a file named 'plus'
+    WHEN tbdiff-create creates a binary delta named 'GH.tbdiff' from 'G' to 'H'
+    AND tbdiff-deploy applies the delta 'GH.tbdiff' to 'G'
+    THEN the file 'G/minus' no longer exists
+    AND the directory 'G' contains a file named 'plus'
+
+Changing modification time of a file
 ------------------------------------
+
+Here we check that modification times are correctly changed, if modification
+times are no identical, the test fails.
+
+    SCENARIO Changing a file's modification time works
+    GIVEN a directory exists named 'I'
+    AND the directory 'I' contains a file named 'hurr' with '1' in it
+    AND a directory exists named 'J'
+    AND the directory 'J' contains a file named 'hurr' with '1' in it
+    AND the file 'J/hurr' has it's modification time set to '06:39'
+    WHEN tbdiff-create creates a binary delta named 'IJ.tbdiff' from 'I' to 'J'
+    AND tbdiff-deploy applies the delta 'IJ.tbdiff' to 'I'
+    THEN the files 'I/hurr' and 'J/hurr' have the same modification time
+
+IMPLEMENTS
+==========
+
+Implementations for the creating and deploying of binary deltas
+---------------------------------------------------------------
 
     IMPLEMENTS GIVEN a directory exists named '([^']+)'
     mkdir "$DATADIR/$MATCH_1"
 
     IMPLEMENTS GIVEN the directory '([^']+)' contains a file named '([^']+)' with '([^']+)' in it
-    echo $MATCH_3 > "$DATADIR/$MATCH_1/$MATCH_2"
+    echo "$MATCH_3" > "$DATADIR/$MATCH_1/$MATCH_2"
+
+    IMPLEMENTS GIVEN the directory '([^']+)' contains a file named '([^']+)'
+    touch "$DATADIR/$MATCH_1/$MATCH_2"
+
+    IMPLEMENTS GIVEN the file '([^']+)' is owned by the group '([^']+)'
+    chgrp "$MATCH_2" "$DATADIR/$MATCH_1"
+
+    IMPLEMENTS GIVEN the file '([^']+)' has the permissions '([^']+)'
+    chmod "$MATCH_2" "$DATADIR/$MATCH_1"
+
+    IMPLEMENTS GIVEN the file '([^']+)' has it's modification time set to '([^']+)'
+    touch -md "$MATCH_2" "$DATADIR/$MATCH_1"
 
     IMPLEMENTS WHEN tbdiff-create creates a binary delta named '([^']+)' from '([^']+)' to '([^']+)'
     "$SRCDIR/tbdiff-create/tbdiff-create" "$DATADIR/$MATCH_1" "$DATADIR/$MATCH_2" "$DATADIR/$MATCH_3"
@@ -38,3 +117,18 @@ Implementations for simple file diff
 
     IMPLEMENTS THEN the files '([^']+)' and '([^']+)' have the same contents
     diff "$DATADIR/$MATCH_1" "$DATADIR/$MATCH_2"
+
+    IMPLEMENTS THEN the file '([^']+)' is owned by the group '([^']+)'
+    test "$(stat -c %g "$DATADIR/$MATCH_1")" = "$MATCH_2"
+
+    IMPLEMENTS THEN the file '([^']+)' has the permissions '([^']+)'
+    test "$(stat -c %A "$DATADIR/$MATCH_1")" = "$MATCH_2"
+
+    IMPLEMENTS THEN the file '([^']+)' no longer exists
+    test ! -e "$DATADIR/$MATCH_1"
+
+    IMPLEMENTS THEN the directory '([^']+)' contains a file named '([^']+)'
+    test -f "$DATADIR/$MATCH_1/$MATCH_2"
+
+    IMPLEMENTS THEN the files '([^']+)' and '([^']+)' have the same modification time
+    test "$(stat -c %y "$DATADIR/$MATCH_1")" = "$(stat -c %y "$DATADIR/$MATCH_2")"
