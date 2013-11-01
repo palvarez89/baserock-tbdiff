@@ -32,3 +32,8 @@ ChangeLog: Makefile
 	|| (touch ChangeLog; echo 'Git directory not found: installing possibly empty changelog.' >&2)
 
 dist-hook: ChangeLog
+
+TESTS = yarns/run_yarns.sh
+
+check_PROGRAMS = symtime
+symtime_SOURCES = yarns/symtime.c

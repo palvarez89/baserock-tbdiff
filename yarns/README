@@ -1,6 +1,20 @@
 Running the test suite
 ----------------------
-Change to the top-level directory of the tbdiff source tree and
-execute run_yarns.sh:
+Change to the top-level directory of the tbdiff source tree and run:
+
+$ make check
+
+this will run the yarns after all the old tests have passed.
+
+
+If however, you would rather not sit and wait for old tests to be run,
+compile 'yarns/symtime.c' using:
+
+$ gcc symtime -o yarns/symtime.c
+
+followed by:
 
 $ ./yarns/run_yarns.sh
+
+to run the yarns (note that the compiling of 'yarns/symtime.c' is not
+required if `make check` has run at least once successfully).
