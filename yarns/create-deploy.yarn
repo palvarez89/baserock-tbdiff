@@ -8,10 +8,10 @@ appropriate binary delta created by tbdiff-create.
 Changing of a file's content
 ----------------------------
 
-This simple test checks that file content is as expected, if the content of
-the two text files are different, the test will fail.
+The simple tests that follow check that file content is as expected; if the
+content of the given files are different, the test will fail.
 
-    SCENARIO Changing a regular file's content works
+    SCENARIO Changing the content of a regular file works
     GIVEN a directory exists named 'A_dir'
     AND the directory 'A_dir' contains a regular file named 'foo_file' with '1' in it
     AND a directory exists named 'B_dir'
@@ -20,107 +20,148 @@ the two text files are different, the test will fail.
     AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
     THEN the files 'A_dir/foo_file' and 'B_dir/foo_file' have the same contents
 
+    SCENARIO Changing the content of a directory works
+    GIVEN a directory exists named 'A_dir'
+    AND the directory 'A_dir' contains a directory named '1_dir'
+    AND the directory 'A_dir/1_dir' contains a regular file named 'foo_file'
+    AND a directory exists named 'B_dir'
+    AND the directory 'B_dir' contains a directory named '1_dir'
+    AND the directory 'B_dir/1_dir' contains a regular file named 'bar_file'
+    WHEN tbdiff-create creates a binary delta named 'AB.tbdiff' from 'A_dir' to 'B_dir'
+    AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
+    THEN the files 'A_dir/1_dir' and 'B_dir/1_dir' have the same contents
+
 Changing of a file's ownership
 ------------------------------
 
 Trebuchet also takes into account POSIX metadata such as ownership, these
 scenarios are written to test that functionality.
 
-    SCENARIO Changing a regular file's group ownership works
-    GIVEN a directory exists named 'C_dir'
-    AND the directory 'C_dir' contains a regular file named 'foo_file'
-    AND a directory exists named 'D_dir'
-    AND the directory 'D_dir' contains a regular file named 'foo_file'
-    AND the file 'D_dir/foo_file' is owned by the group '893'
-    WHEN tbdiff-create creates a binary delta named 'CD.tbdiff' from 'C_dir' to 'D_dir'
-    AND tbdiff-deploy applies the delta 'CD.tbdiff' to 'C_dir'
-    THEN the file 'C_dir/foo_file' is owned by the group '893'
+    SCENARIO Changing the group that owns a regular file works
+    GIVEN a directory exists named 'A_dir'
+    AND the directory 'A_dir' contains a regular file named 'foo_file'
+    AND a directory exists named 'B_dir'
+    AND the directory 'B_dir' contains a regular file named 'foo_file'
+    AND the file 'B_dir/foo_file' is owned by the group '893'
+    WHEN tbdiff-create creates a binary delta named 'AB.tbdiff' from 'A_dir' to 'B_dir'
+    AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
+    THEN the file 'A_dir/foo_file' is owned by the group '893'
 
-    SCENARIO Changing a named pipe's group ownership works
-    GIVEN a directory exists named 'E_dir'
-    AND the directory 'E_dir' contains the named pipe 'bar_pipe'
-    AND a directory exists named 'F_dir'
-    AND the directory 'F_dir' contains the named pipe 'bar_pipe'
-    AND the file 'F_dir/bar_pipe' is owned by the group '594'
-    WHEN tbdiff-create creates a binary delta named 'EF.tbdiff' from 'E_dir' to 'F_dir'
-    AND tbdiff-deploy applies the delta 'EF.tbdiff' to 'E_dir'
-    THEN the file 'E_dir/bar_pipe' is owned by the group '594'
+    SCENARIO Changing the group that owns a named pipe works
+    GIVEN a directory exists named 'A_dir'
+    AND the directory 'A_dir' contains the named pipe 'bar_pipe'
+    AND a directory exists named 'B_dir'
+    AND the directory 'B_dir' contains the named pipe 'bar_pipe'
+    AND the file 'B_dir/bar_pipe' is owned by the group '594'
+    WHEN tbdiff-create creates a binary delta named 'AB.tbdiff' from 'A_dir' to 'B_dir'
+    AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
+    THEN the file 'A_dir/bar_pipe' is owned by the group '594'
 
-    SCENARIO Changing a symbolic link's group ownership works
-    GIVEN a directory exists named 'G_dir'
-    AND the directory 'G_dir' contains a regular file named 'foo_file'
-    AND the directory 'G_dir' contains the symbolic link 'link_to_foo_file' referring to 'G_dir/foo_file'
-    AND a directory exists named 'H_dir'
-    AND the directory 'H_dir' contains a regular file named 'foo_file'
-    AND the directory 'H_dir' contains the symbolic link 'link_to_foo_file' referring to 'H_dir/foo_file'
-    AND the symbolic link 'H_dir/link_to_foo_file' is owned by the group '608'
-    WHEN tbdiff-create creates a binary delta named 'GH.tbdiff' from 'G_dir' to 'H_dir'
-    AND tbdiff-deploy applies the delta 'GH.tbdiff' to 'G_dir'
-    THEN the file 'G_dir/link_to_foo_file' is owned by the group '608'
+    SCENARIO Changing the group that owns a symbolic link works
+    GIVEN a directory exists named 'A_dir'
+    AND the directory 'A_dir' contains a regular file named 'foo_file'
+    AND the directory 'A_dir' contains the symbolic link 'link_to_foo_file' referring to 'A_dir/foo_file'
+    AND a directory exists named 'B_dir'
+    AND the directory 'B_dir' contains a regular file named 'foo_file'
+    AND the directory 'B_dir' contains the symbolic link 'link_to_foo_file' referring to 'B_dir/foo_file'
+    AND the symbolic link 'B_dir/link_to_foo_file' is owned by the group '608'
+    WHEN tbdiff-create creates a binary delta named 'AB.tbdiff' from 'A_dir' to 'B_dir'
+    AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
+    THEN the file 'A_dir/link_to_foo_file' is owned by the group '608'
+
+    SCENARIO Changing the group that owns a directory works
+    GIVEN a directory exists named 'A_dir'
+    AND the directory 'A_dir' contains a directory named '1_dir'
+    AND a directory exists named 'B_dir'
+    AND the directory 'B_dir' contains a directory named '1_dir'
+    AND the file 'B_dir/1_dir' is owned by the group '675'
+    WHEN tbdiff-create creates a binary delta named 'AB.tbdiff' from 'A_dir' to 'B_dir'
+    AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
+    THEN the file 'A_dir/1_dir' is owned by the group '675'
 
 Changing of a file's permissions
 --------------------------------
 
-These scenarios test that file permissions are successfully changed after
-the deployment of a binary delta.
+These scenarios test that file permissions are correctly changed upon the
+deployment of a binary delta.
 
-    SCENARIO Changing a file's permissions works
-    GIVEN a directory exists named 'I_dir'
-    AND the directory 'I_dir' contains a regular file named 'foo_file'
-    AND a directory exists named 'J_dir'
-    AND the directory 'J_dir' contains a regular file named 'foo_file'
-    AND the file 'J_dir/foo_file' has the permissions 'ugo=rw'
-    WHEN tbdiff-create creates a binary delta named 'IJ.tbdiff' from 'I_dir' to 'J_dir'
-    AND tbdiff-deploy applies the delta 'IJ.tbdiff' to 'I_dir'
-    THEN the file 'I_dir/foo_file' has the permissions '-rw-rw-rw-'
+    SCENARIO Changing a regular file's permissions works
+    GIVEN a directory exists named 'A_dir'
+    AND the directory 'A_dir' contains a regular file named 'foo_file'
+    AND a directory exists named 'B_dir'
+    AND the directory 'B_dir' contains a regular file named 'foo_file'
+    AND the file 'B_dir/foo_file' has its permissions set to 'ugo=rw'
+    WHEN tbdiff-create creates a binary delta named 'AB.tbdiff' from 'A_dir' to 'B_dir'
+    AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
+    THEN the file 'A_dir/foo_file' has the permissions '-rw-rw-rw-'
 
     SCENARIO Changing a named pipe's permissions works
-    GIVEN a directory exists named 'K_dir'
-    AND the directory 'K_dir' contains the named pipe 'bar_pipe'
-    AND a directory exists named 'L_dir'
-    AND the directory 'L_dir' contains the named pipe 'bar_pipe'
-    AND the file 'L_dir/bar_pipe' has the permissions 'ug=rw,o=r'
-    WHEN tbdiff-create creates a binary delta named 'KL.tbdiff' from 'K_dir' to 'L_dir'
-    AND tbdiff-deploy applies the delta 'KL.tbdiff' to 'K_dir'
-    THEN the file 'K_dir/bar_pipe' has the permissions 'prw-rw-r--'
+    GIVEN a directory exists named 'A_dir'
+    AND the directory 'A_dir' contains the named pipe 'bar_pipe'
+    AND a directory exists named 'B_dir'
+    AND the directory 'B_dir' contains the named pipe 'bar_pipe'
+    AND the file 'B_dir/bar_pipe' has its permissions set to 'ug=rw,o=r'
+    WHEN tbdiff-create creates a binary delta named 'AB.tbdiff' from 'A_dir' to 'B_dir'
+    AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
+    THEN the file 'A_dir/bar_pipe' has the permissions 'prw-rw-r--'
+
+    SCENARIO Changing the permissions of a directory works
+    GIVEN a directory exists named 'A_dir'
+    AND the directory 'A_dir' contains a directory named '1_dir'
+    AND a directory exists named 'B_dir'
+    AND the directory 'B_dir' contains a directory named '1_dir'
+    AND the file 'B_dir/1_dir' has its permissions set to 'g=,uo=rwx'
+    WHEN tbdiff-create creates a binary delta named 'AB.tbdiff' from 'A_dir' to 'B_dir'
+    AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
+    THEN the file 'A_dir/1_dir' has the permissions 'drwx---rwx'
 
 Adding and removing of files
 ----------------------------
 
-The following scenarios check that the deploying of a binary delta
+The following scenarios check that the deployment of a binary delta
 successfully removes and creates the appropriate files.
 
     SCENARIO Adding and removing of regular files works
-    GIVEN a directory exists named 'M_dir'
-    AND the directory 'M_dir' contains a regular file named 'minus_file'
-    AND a directory exists named 'N_dir'
-    AND the directory 'N_dir' contains a regular file named 'plus_file'
-    WHEN tbdiff-create creates a binary delta named 'MN.tbdiff' from 'M_dir' to 'N_dir'
-    AND tbdiff-deploy applies the delta 'MN.tbdiff' to 'M_dir'
-    THEN the file 'M_dir/minus_file' no longer exists
-    AND the directory 'M_dir' contains a file named 'plus_file'
+    GIVEN a directory exists named 'A_dir'
+    AND the directory 'A_dir' contains a regular file named 'minus_file'
+    AND a directory exists named 'B_dir'
+    AND the directory 'B_dir' contains a regular file named 'plus_file'
+    WHEN tbdiff-create creates a binary delta named 'AB.tbdiff' from 'A_dir' to 'B_dir'
+    AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
+    THEN the file 'A_dir/minus_file' no longer exists
+    AND the directory 'A_dir' contains a file named 'plus_file'
 
     SCENARIO Adding and removing of named pipes works
-    GIVEN a directory exists named 'O_dir'
-    AND the directory 'O_dir' contains the named pipe 'minus_pipe'
-    AND a directory exists named 'P_dir'
-    AND the directory 'P_dir' contains the named pipe 'plus_pipe'
-    WHEN tbdiff-create creates a binary delta named 'OP.tbdiff' from 'O_dir' to 'P_dir'
-    AND tbdiff-deploy applies the delta 'OP.tbdiff' to 'O_dir'
-    THEN the file 'O_dir/minus_pipe' no longer exists
-    AND the directory 'O_dir' contains the named pipe 'plus_pipe'
+    GIVEN a directory exists named 'A_dir'
+    AND the directory 'A_dir' contains the named pipe 'minus_pipe'
+    AND a directory exists named 'B_dir'
+    AND the directory 'B_dir' contains the named pipe 'plus_pipe'
+    WHEN tbdiff-create creates a binary delta named 'AB.tbdiff' from 'A_dir' to 'B_dir'
+    AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
+    THEN the file 'A_dir/minus_pipe' no longer exists
+    AND the directory 'A_dir' contains the named pipe 'plus_pipe'
 
     SCENARIO Adding and removing of symbolic links works
-    GIVEN a directory exists named 'Q_dir'
-    AND the directory 'Q_dir' contains a regular file named 'minus_file'
-    AND the directory 'Q_dir' contains the symbolic link 'link_to_minus_file' referring to 'Q_dir/minus_file'
-    AND a directory exists named 'R_dir'
-    AND the directory 'R_dir' contains a regular file named 'plus_file'
-    AND the directory 'R_dir' contains the symbolic link 'link_to_plus_file' referring to 'R_dir/plus_file'
-    WHEN tbdiff-create creates a binary delta named 'QR.tbdiff' from 'Q_dir' to 'R_dir'
-    AND tbdiff-deploy applies the delta 'QR.tbdiff' to 'Q_dir'
-    THEN the file 'Q_dir/link_to_minus_file' no longer exists
-    AND the directory 'Q_dir' contains the symbolic link 'link_to_plus_file'
+    GIVEN a directory exists named 'A_dir'
+    AND the directory 'A_dir' contains a regular file named 'minus_file'
+    AND the directory 'A_dir' contains the symbolic link 'link_to_minus_file' referring to 'A_dir/minus_file'
+    AND a directory exists named 'B_dir'
+    AND the directory 'B_dir' contains a regular file named 'plus_file'
+    AND the directory 'B_dir' contains the symbolic link 'link_to_plus_file' referring to 'B_dir/plus_file'
+    WHEN tbdiff-create creates a binary delta named 'AB.tbdiff' from 'A_dir' to 'B_dir'
+    AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
+    THEN the file 'A_dir/link_to_minus_file' no longer exists
+    AND the directory 'A_dir' contains the symbolic link 'link_to_plus_file'
+
+    SCENARIO Adding and removing of directories works
+    GIVEN a directory exists named 'A_dir'
+    AND the directory 'A_dir' contains a directory named 'minus_dir'
+    AND a directory exists named 'B_dir'
+    AND the directory 'B_dir' contains a directory named 'plus_dir'
+    WHEN tbdiff-create creates a binary delta named 'AB.tbdiff' from 'A_dir' to 'B_dir'
+    AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
+    THEN the file 'A_dir/minus_dir' no longer exists
+    THEN the directory 'A_dir' contains the directory 'plus_dir'
 
 Changing modification time of a file
 ------------------------------------
@@ -128,57 +169,95 @@ Changing modification time of a file
 In the following scenarios we check that modification times are correctly
 changed, if modification times are not identical, the test fails.
 
-    SCENARIO Changing a file's modification time works
-    GIVEN a directory exists named 'S_dir'
-    AND the directory 'S_dir' contains a regular file named 'foo_file' with '1' in it
-    AND the file 'S_dir/foo_file' has its modification time set to '@1381758015'
-    AND a directory exists named 'T_dir'
-    AND the directory 'T_dir' contains a regular file named 'foo_file' with '1' in it
-    AND the file 'T_dir/foo_file' has its modification time set to '@683074800'
-    WHEN tbdiff-create creates a binary delta named 'ST.tbdiff' from 'S_dir' to 'T_dir'
-    AND tbdiff-deploy applies the delta 'ST.tbdiff' to 'S_dir'
-    THEN the files 'S_dir/foo_file' and 'T_dir/foo_file' have the same modification time
+    SCENARIO Changing the modification time of a regular file works
+    GIVEN a directory exists named 'A_dir'
+    AND the directory 'A_dir' contains a regular file named 'foo_file' with '1' in it
+    AND the file 'A_dir/foo_file' has its modification time set to '@1381758015'
+    AND a directory exists named 'B_dir'
+    AND the directory 'B_dir' contains a regular file named 'foo_file' with '1' in it
+    AND the file 'B_dir/foo_file' has its modification time set to '@683074800'
+    WHEN tbdiff-create creates a binary delta named 'AB.tbdiff' from 'A_dir' to 'B_dir'
+    AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
+    THEN the files 'A_dir/foo_file' and 'B_dir/foo_file' have the same modification time
 
-    SCENARIO Changing a named pipe's modification time works
-    GIVEN a directory exists named 'U_dir'
-    AND the directory 'U_dir' contains the named pipe 'bar_pipe'
-    AND the file 'U_dir/bar_pipe' has its modification time set to '@1381758015'
-    AND a directory exists named 'V_dir'
-    AND the directory 'V_dir' contains the named pipe 'bar_pipe'
-    AND the file 'V_dir/bar_pipe' has its modification time set to '@683074800'
-    WHEN tbdiff-create creates a binary delta named 'UV.tbdiff' from 'U_dir' to 'V_dir'
-    AND tbdiff-deploy applies the delta 'UV.tbdiff' to 'U_dir'
-    THEN the files 'U_dir/bar_pipe' and 'V_dir/bar_pipe' have the same modification time
+    SCENARIO Changing the modification time of a named pipe works
+    GIVEN a directory exists named 'A_dir'
+    AND the directory 'A_dir' contains the named pipe 'bar_pipe'
+    AND the file 'A_dir/bar_pipe' has its modification time set to '@1381758015'
+    AND a directory exists named 'B_dir'
+    AND the directory 'B_dir' contains the named pipe 'bar_pipe'
+    AND the file 'B_dir/bar_pipe' has its modification time set to '@683074800'
+    WHEN tbdiff-create creates a binary delta named 'AB.tbdiff' from 'A_dir' to 'B_dir'
+    AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
+    THEN the files 'A_dir/bar_pipe' and 'B_dir/bar_pipe' have the same modification time
 
-    SCENARIO Changing a symbolic links modification time works
-    GIVEN a directory exists named 'W_dir'
-    AND the directory 'W_dir' contains a regular file named 'foo_file'
-    AND the directory 'W_dir' contains the symbolic link 'link_to_foo_file' referring to 'W_dir/foo_file'
-    AND the symbolic link 'W_dir/link_to_foo_file' has its modification time set to '1381758015'
-    AND a directory exists named 'X_dir'
-    AND the directory 'X_dir' contains a regular file named 'foo_file'
-    AND the directory 'X_dir' contains the symbolic link 'link_to_foo_file' referring to 'X_dir/foo_file'
-    AND the symbolic link 'X_dir/link_to_foo_file' has its modification time set to '683074800'
-    WHEN tbdiff-create creates a binary delta named 'WX.tbdiff' from 'W_dir' to 'X_dir'
-    AND tbdiff-deploy applies the delta 'WX.tbdiff' to 'W_dir'
-    THEN the files 'W_dir/link_to_foo_file' and 'X_dir/link_to_foo_file' have the same modification time
+    SCENARIO Changing the modification time of a symbolic link works
+    GIVEN a directory exists named 'A_dir'
+    AND the directory 'A_dir' contains a regular file named 'foo_file'
+    AND the directory 'A_dir' contains the symbolic link 'link_to_foo_file' referring to 'A_dir/foo_file'
+    AND the symbolic link 'A_dir/link_to_foo_file' has its modification time set to '1381758015'
+    AND a directory exists named 'B_dir'
+    AND the directory 'B_dir' contains a regular file named 'foo_file'
+    AND the directory 'B_dir' contains the symbolic link 'link_to_foo_file' referring to 'B_dir/foo_file'
+    AND the symbolic link 'B_dir/link_to_foo_file' has its modification time set to '683074800'
+    WHEN tbdiff-create creates a binary delta named 'AB.tbdiff' from 'A_dir' to 'B_dir'
+    AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
+    THEN the files 'A_dir/link_to_foo_file' and 'B_dir/link_to_foo_file' have the same modification time
+
+    SCENARIO Changing the modification time of a directory works
+    GIVEN a directory exists named 'A_dir'
+    AND the directory 'A_dir' contains a directory named '1_dir'
+    AND the file 'A_dir/1_dir' has its modification time set to '@1381758015'
+    AND a directory exists named 'B_dir'
+    AND the directory 'B_dir' contains a directory named '1_dir'
+    AND the file 'B_dir/1_dir' has its modification time set to '@683074800'
+    WHEN tbdiff-create creates a binary delta named 'AB.tbdiff' from 'A_dir' to 'B_dir'
+    AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
+    THEN the files 'A_dir/1_dir' and 'B_dir/1_dir' have the same modification time
 
 Changing what a symbolic link refers to
 ---------------------------------------
 
-This scenario checks that referenced files of symbolic links are correctly
-transformed.
+Here we check that referenced files of symbolic links are correctly transformed.
 
     SCENARIO Changing what a symbolic link refers to works
-    GIVEN a directory exists named 'Y_dir'
-    AND the directory 'Y_dir' contains a regular file named 'foo_file'
-    AND the directory 'Y_dir' contains the symbolic link 'link_to_foo_file' referring to 'Y_dir/foo_file'
-    AND a directory exists named 'Z_dir'
-    AND the directory 'Z_dir' contains a regular file named 'foo_file'
-    AND the directory 'Z_dir' contains the symbolic link 'link_to_foo_file' referring to 'Z_dir/foo_file'
-    WHEN tbdiff-create creates a binary delta named 'YZ.tbdiff' from 'Y_dir' to 'Z_dir'
-    AND tbdiff-deploy applies the delta 'YZ.tbdiff' to 'Y_dir'
-    THEN the symbolic links 'Y_dir/link_to_foo_file' and 'Z_dir/link_to_foo_file' refer to the same thing
+    GIVEN a directory exists named 'A_dir'
+    AND the directory 'A_dir' contains a regular file named 'foo_file'
+    AND the directory 'A_dir' contains the symbolic link 'link_to_foo_file' referring to 'A_dir/foo_file'
+    AND a directory exists named 'B_dir'
+    AND the directory 'B_dir' contains a regular file named 'foo_file'
+    AND the directory 'B_dir' contains the symbolic link 'link_to_foo_file' referring to 'B_dir/foo_file'
+    WHEN tbdiff-create creates a binary delta named 'AB.tbdiff' from 'A_dir' to 'B_dir'
+    AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
+    THEN the symbolic links 'A_dir/link_to_foo_file' and 'B_dir/link_to_foo_file' refer to the same thing
+
+Setting special file permissions for directories
+------------------------------------------------
+
+This scenario checks that the sticky bit of a directory has been changed
+appropriately upon the deployment of a binary delta.
+
+    SCENARIO Setting the sticky bit of a directory works
+    GIVEN a directory exists named 'A_dir'
+    AND the directory 'A_dir' contains a directory named '1_dir'
+    AND a directory exists named 'B_dir'
+    AND the directory 'B_dir' contains a directory named '1_dir'
+    AND the file 'B_dir/1_dir' has its permissions set to '+t'
+    WHEN tbdiff-create creates a binary delta named 'AB.tbdiff' from 'A_dir' to 'B_dir'
+    AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
+    THEN the directory 'A_dir/1_dir' has its sticky bit set
+
+And this scenario checks that the setgid bit of a directory is set accordingly. 
+
+    SCENARIO Setting the setgid bit of a directory works
+    GIVEN a directory exists named 'A_dir'
+    AND the directory 'A_dir' contains a directory named '1_dir'
+    AND a directory exists named 'B_dir'
+    AND the directory 'B_dir' contains a directory named '1_dir'
+    AND the file 'B_dir/1_dir' has its permissions set to 'g+s'
+    WHEN tbdiff-create creates a binary delta named 'AB.tbdiff' from 'A_dir' to 'B_dir'
+    AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
+    THEN the directory 'A_dir/1_dir' has its setgid bit set
 
 IMPLEMENTS
 ==========
@@ -201,7 +280,7 @@ Implementations for the creating and deploying of binary deltas
     IMPLEMENTS GIVEN the symbolic link '([^']+)' is owned by the group '([^']+)'
     chgrp -h "$MATCH_2" "$DATADIR/$MATCH_1"
 
-    IMPLEMENTS GIVEN the file '([^']+)' has the permissions '([^']+)'
+    IMPLEMENTS GIVEN the file '([^']+)' has its permissions set to '([^']+)'
     chmod "$MATCH_2" "$DATADIR/$MATCH_1"
 
     IMPLEMENTS GIVEN the file '([^']+)' has its modification time set to '([^']+)'
@@ -215,6 +294,9 @@ Implementations for the creating and deploying of binary deltas
 
     IMPLEMENTS GIVEN the directory '([^']+)' contains the symbolic link '([^']+)' referring to '([^']+)'
     ln -s "$DATADIR/$MATCH_3" "$DATADIR/$MATCH_1/$MATCH_2"
+
+    IMPLEMENTS GIVEN the directory '([^']+)' contains a directory named '([^']+)'
+    mkdir "$DATADIR/$MATCH_1/$MATCH_2"
 
     IMPLEMENTS WHEN tbdiff-create creates a binary delta named '([^']+)' from '([^']+)' to '([^']+)'
     "$SRCDIR/tbdiff-create/tbdiff-create" "$DATADIR/$MATCH_1" "$DATADIR/$MATCH_2" "$DATADIR/$MATCH_3"
@@ -249,3 +331,12 @@ Implementations for the creating and deploying of binary deltas
 
     IMPLEMENTS THEN the symbolic links '([^']+)' and '([^']+)' refer to the same thing
     test "$(readlink "$DATADIR/$MATCH_1")" = "$(readlink "$DATADIR/$MATCH_2")"
+
+    IMPLEMENTS THEN the directory '([^']+)' contains the directory '([^']+)'
+    test -d "$DATADIR/$MATCH_1/$MATCH_2"
+
+    IMPLEMENTS THEN the directory '([^']+)' has its sticky bit set
+    test -k "$DATADIR/$MATCH_1"
+
+    IMPLEMENTS THEN the directory '([^']+)' has its setgid bit set 
+    test -g "$DATADIR/$MATCH_1"
