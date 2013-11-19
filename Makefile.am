@@ -35,5 +35,6 @@ dist-hook: ChangeLog
 
 TESTS = yarns/run_yarns.sh
 
-noinst_PROGRAMS = symtime
+noinst_PROGRAMS = symtime sockbind
 symtime_SOURCES = yarns/symtime.c
+sockbind_SOURCES = yarns/sockbind.c
