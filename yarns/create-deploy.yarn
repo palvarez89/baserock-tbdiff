@@ -303,6 +303,36 @@ are appropriately changed when a patch has been generated and deployed.
     AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
     THEN the block devices 'A_dir/foo_blockdev' and 'B_dir/foo_blockdev' have the same device numbers
 
+Changing, adding and removing of sockets
+----------------------------------------
+
+Sockets can only be moved, linked or removed by the file system, creation is
+only performed by the program that acts as the server, tbdiff won't be doing
+that so the only sensible operation is removal.
+
+    SCENARIO Removing of a socket works
+    GIVEN a directory called 'A_dir'
+    AND a socket called 'minus_socket' in directory 'A_dir'
+    AND a directory called 'B_dir'
+    WHEN tbdiff-create creates a binary delta between directories 'A_dir' and 'B_dir', called 'AB.tbdiff'
+    AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
+    THEN the socket 'A_dir/minus_socket' no longer exists
+
+    SCENARIO Creation of a socket doesn't work
+    GIVEN a directory called 'A_dir'
+    AND a directory called 'B_dir'
+    AND a socket called 'minus_socket' in directory 'B_dir'
+    WHEN tbdiff-create attempts to create a binary delta between directories 'A_dir' and 'B_dir', called 'AB.tbdiff'
+    THEN stderr contains "tbdiff-create cannot create sockets"
+
+    SCENARIO Changing a socket doesn't work
+    GIVEN a directory called 'A_dir'
+    AND a socket called 'foo_socket' in directory 'A_dir'
+    AND a directory called 'B_dir'
+    AND a socket called 'foo_socket' in directory 'B_dir'
+    WHEN tbdiff-create attempts to create a binary delta between directories 'A_dir' and 'B_dir', called 'AB.tbdiff'
+    THEN stderr contains "tbdiff-create cannot create sockets"
+
 IMPLEMENTS
 ==========
 
@@ -342,8 +372,16 @@ Implementations for the creating and deploying of binary deltas
     [ -n "$MATCH_5" ] && mkdir -p "$DATADIR/$MATCH_5"
     mknod "$DATADIR/$MATCH_5/$MATCH_2" "$(echo "$MATCH_1" | head -c 1)" "$MATCH_3" "$MATCH_4"
 
-    IMPLEMENTS WHEN tbdiff-create creates a binary delta between directories '([^']+)' and '([^']+)', called '([^']+)'
-    "$SRCDIR/tbdiff-create/tbdiff-create" "$DATADIR/$MATCH_3" "$DATADIR/$MATCH_1" "$DATADIR/$MATCH_2"
+    IMPLEMENTS GIVEN a socket called '([^']+)'(?: in directory '([^']+)')?
+    [ -n "$MATCH_2" ] && mkdir -p "$DATADIR/$MATCH_2"
+    "$SRCDIR/sockbind" "$DATADIR/$MATCH_2/$MATCH_1"
+
+    IMPLEMENTS WHEN tbdiff-create (attempts to create|creates) a binary delta between directories '([^']+)' and '([^']+)', called '([^']+)'
+    set "$SRCDIR/tbdiff-create/tbdiff-create" "$DATADIR/$MATCH_4" "$DATADIR/$MATCH_2" "$DATADIR/$MATCH_3"
+    if [ $MATCH_1 == creates ]; then "$@"
+    else
+    set +e; "$@" 2> "$DATADIR/stderr"; set -e
+    fi
 
     IMPLEMENTS WHEN tbdiff-deploy applies the delta '([^']+)' to '([^']+)'
     cd "$DATADIR/$MATCH_2"
@@ -358,7 +396,7 @@ Implementations for the creating and deploying of binary deltas
     IMPLEMENTS THEN the (?:file|directory|named pipe) '([^']+)' has the permissions '([^']+)'
     test "$(stat -c %A "$DATADIR/$MATCH_1")" = "$MATCH_2"
 
-    IMPLEMENTS THEN the (?:file|directory|named pipe|symbolic link|(?:character|block) device) '([^']+)' no longer exists
+    IMPLEMENTS THEN the (?:file|directory|named pipe|symbolic link|(?:character|block) device|socket) '([^']+)' no longer exists
     test ! -e "$DATADIR/$MATCH_1"
 
     IMPLEMENTS THEN the (?:files|directories|named pipes|symbolic links) '([^']+)' and '([^']+)' have the same modification time
@@ -381,3 +419,6 @@ Implementations for the creating and deploying of binary deltas
 
     IMPLEMENTS THEN the (?:block|character) devices '([^']+)' and '([^']+)' have the same device numbers
     test "$(stat -c '%t %T' "$DATADIR/$MATCH_1")" = "$(stat -c '%t %T' "$DATADIR/$MATCH_2")"
+
+    IMPLEMENTS THEN (\S+) contains "([^"]+)"
+    grep "$MATCH_2" "$DATADIR/$MATCH_1"
