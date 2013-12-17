@@ -370,6 +370,57 @@ that so the only sensible operation is removal.
     WHEN tbdiff-create attempts to create a binary delta between directories 'A_dir' and 'B_dir', called 'AB.tbdiff'
     THEN stderr contains "tbdiff-create cannot create sockets"
 
+
+Changing, adding and removing of extended attributes
+----------------------------------------------------
+
+These scenarios test that, on a file system that supports them, extended
+attributes are correctly set when a patch has been deployed.
+
+
+    SCENARIO Changing of a file's extended attributes works
+    ASSUMING DATADIR supports extended attributes
+    GIVEN a directory called 'A_dir'
+    AND a regular file called 'foo_file' in directory 'A_dir'
+    AND the file 'A_dir/foo_file' has the value of the extended attribute 'user.change' set to 'false'
+    AND a directory called 'B_dir'
+    AND a regular file called 'foo_file' in directory 'B_dir'
+    AND the file 'B_dir/foo_file' has the value of the extended attribute 'user.change' set to 'true'
+    WHEN tbdiff-create creates a binary delta between directories 'A_dir' and 'B_dir', called 'AB.tbdiff'
+    AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
+    THEN the files 'A_dir/foo_file' and 'B_dir/foo_file' have the same extended attributes
+
+
+    SCENARIO Adding of a file's extended attributes works
+    ASSUMING DATADIR supports extended attributes
+    GIVEN a directory called 'A_dir'
+    AND a regular file called 'foo_file' in directory 'A_dir'
+    AND a directory called 'B_dir'
+    AND a regular file called 'foo_file' in directory 'B_dir'
+    AND the file 'B_dir/foo_file' has the value of the extended attribute 'user.plus' set to 'true'
+    WHEN tbdiff-create creates a binary delta between directories 'A_dir' and 'B_dir', called 'AB.tbdiff'
+    AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
+    THEN the files 'A_dir/foo_file' and 'B_dir/foo_file' have the same extended attributes
+
+
+    SCENARIO Removing of a file's extended attributes works
+
+Currently, tbdiff doesn't remove extended attributes from a file if the target
+of the diff has none, this is not intended behaviour.
+
+    ASSUMING FIXME has been done
+
+    ASSUMING DATADIR supports extended attributes
+    GIVEN a directory called 'A_dir'
+    AND a regular file called 'foo_file' in directory 'A_dir'
+    AND the file 'A_dir/foo_file' has the value of the extended attribute 'user.minus' set to 'true'
+    AND a directory called 'B_dir'
+    AND a regular file called 'foo_file' in directory 'B_dir'
+    WHEN tbdiff-create creates a binary delta between directories 'A_dir' and 'B_dir', called 'AB.tbdiff'
+    AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
+    THEN the files 'A_dir/foo_file' and 'B_dir/foo_file' have the same extended attributes
+
+
 IMPLEMENTS
 ==========
 
@@ -380,6 +431,19 @@ Implementations for the creating and deploying of binary deltas
     IMPLEMENTS GIVEN a regular file called '([^']+)' containing '([^']+)'(?: in directory '([^']+)')?
     [ -n "$MATCH_3" ] && mkdir -p "$DATADIR/$MATCH_3"
     echo "$MATCH_2" > "$DATADIR/$MATCH_3/$MATCH_1"
+
+
+    IMPLEMENTS ASSUMING DATADIR supports extended attributes
+    {
+        set +e
+        setfattr -x user.test "$DATADIR" 2> "$DATADIR/stderr"
+    }
+    grep -Fq "No such attribute" "$DATADIR/stderr"
+
+
+    IMPLEMENTS ASSUMING FIXME has been done
+    false
+
 
     IMPLEMENTS GIVEN a regular file called '([^']+)'(?: in directory '([^']+)')?
     [ -n "$MATCH_2" ] && mkdir -p "$DATADIR/$MATCH_2"
@@ -421,6 +485,11 @@ Implementations for the creating and deploying of binary deltas
     IMPLEMENTS GIVEN a socket called '([^']+)'(?: in directory '([^']+)')?
     [ -n "$MATCH_2" ] && mkdir -p "$DATADIR/$MATCH_2"
     "$SRCDIR/sockbind" "$DATADIR/$MATCH_2/$MATCH_1"
+
+
+    IMPLEMENTS GIVEN the file '([^']+)' has the value of the extended attribute '([^']+)' set to '([^']+)'
+    setfattr -n "$MATCH_2" -v "$MATCH_3" "$DATADIR/$MATCH_1"
+
 
     IMPLEMENTS WHEN tbdiff-create (attempts to create|creates) a binary delta between directories '([^']+)' and '([^']+)', called '([^']+)'
     set "$SRCDIR/tbdiff-create/tbdiff-create" "$DATADIR/$MATCH_4" "$DATADIR/$MATCH_2" "$DATADIR/$MATCH_3"
@@ -481,3 +550,7 @@ Implementations for the creating and deploying of binary deltas
 
     IMPLEMENTS THEN (\S+) contains "([^"]+)"
     grep "$MATCH_2" "$DATADIR/$MATCH_1"
+
+
+    IMPLEMENTS THEN the files '([^']+)' and '([^']+)' have the same extended attributes
+    compare_xattrs "$DATADIR/$MATCH_1" "$DATADIR/$MATCH_2"
