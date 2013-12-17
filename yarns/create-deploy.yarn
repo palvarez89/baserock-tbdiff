@@ -5,11 +5,13 @@ The following scenarios test tbdiff-deploy's ability to correctly transform
 the content of a target directory, to that of a source directory, given an
 appropriate binary delta created by tbdiff-create.
 
+
 Changing of a file's contents
 -----------------------------
 
 The simple tests that follow check that file contents is as expected; if the
 contents of the given files are different, the test will fail.
+
 
     SCENARIO Changing the contents of a regular file works
     GIVEN a directory called 'A_dir'
@@ -19,6 +21,7 @@ contents of the given files are different, the test will fail.
     WHEN tbdiff-create creates a binary delta between directories 'A_dir' and 'B_dir', called 'AB.tbdiff'
     AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
     THEN the files 'A_dir/foo_file' and 'B_dir/foo_file' have the same contents
+
 
     SCENARIO Changing the contents of a directory works
     GIVEN a directory called 'A_dir'
@@ -31,11 +34,13 @@ contents of the given files are different, the test will fail.
     AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
     THEN the directories 'A_dir/1_dir' and 'B_dir/1_dir' have the same contents
 
+
 Changing of a file's ownership
 ------------------------------
 
 Trebuchet also takes into account POSIX metadata such as ownership, these
 scenarios are written to test that functionality.
+
 
     SCENARIO Changing the group that owns a regular file works
     GIVEN a directory called 'A_dir'
@@ -47,6 +52,7 @@ scenarios are written to test that functionality.
     AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
     THEN the file 'A_dir/foo_file' is owned by the group '893'
 
+
     SCENARIO Changing the group that owns a named pipe works
     GIVEN a directory called 'A_dir'
     AND a named pipe called 'foo_pipe' in directory 'A_dir'
@@ -56,6 +62,7 @@ scenarios are written to test that functionality.
     WHEN tbdiff-create creates a binary delta between directories 'A_dir' and 'B_dir', called 'AB.tbdiff'
     AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
     THEN the named pipe 'A_dir/foo_pipe' is owned by the group '594'
+
 
     SCENARIO Changing the group that owns a symbolic link works
     GIVEN a directory called 'A_dir'
@@ -69,6 +76,7 @@ scenarios are written to test that functionality.
     AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
     THEN the symbolic link 'A_dir/link_to_foo_file' is owned by the group '608'
 
+
     SCENARIO Changing the group that owns a directory works
     GIVEN a directory called 'A_dir'
     AND a directory called '1_dir' in directory 'A_dir'
@@ -79,11 +87,13 @@ scenarios are written to test that functionality.
     AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
     THEN the directory 'A_dir/1_dir' is owned by the group '675'
 
+
 Changing of a file's permissions
 --------------------------------
 
 These scenarios test that file permissions are correctly changed upon the
 deployment of a binary delta.
+
 
     SCENARIO Changing the permissions of a regular file works
     GIVEN a directory called 'A_dir'
@@ -95,6 +105,7 @@ deployment of a binary delta.
     AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
     THEN the file 'A_dir/foo_file' has the permissions '-rw-rw-rw-'
 
+
     SCENARIO Changing the permissions of a named pipe works
     GIVEN a directory called 'A_dir'
     AND a named pipe called 'foo_pipe' in directory 'A_dir'
@@ -104,6 +115,7 @@ deployment of a binary delta.
     WHEN tbdiff-create creates a binary delta between directories 'A_dir' and 'B_dir', called 'AB.tbdiff'
     AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
     THEN the named pipe 'A_dir/foo_pipe' has the permissions 'prw-rw-r--'
+
 
     SCENARIO Changing the permissions of a directory works
     GIVEN a directory called 'A_dir'
@@ -115,11 +127,13 @@ deployment of a binary delta.
     AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
     THEN the directory 'A_dir/1_dir' has the permissions 'drwx---rwx'
 
+
 Adding and removing of files
 ----------------------------
 
 The following scenarios check that the deployment of a binary delta
 successfully removes and creates the appropriate files.
+
 
     SCENARIO Adding and removing of regular files works
     GIVEN a directory called 'A_dir'
@@ -131,6 +145,7 @@ successfully removes and creates the appropriate files.
     THEN the file 'A_dir/minus_file' no longer exists
     AND the directory 'A_dir' contains the regular file 'plus_file'
 
+
     SCENARIO Adding and removing of named pipes works
     GIVEN a directory called 'A_dir'
     AND a named pipe called 'minus_pipe' in directory 'A_dir'
@@ -140,6 +155,7 @@ successfully removes and creates the appropriate files.
     AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
     THEN the named pipe 'A_dir/minus_pipe' no longer exists
     AND the directory 'A_dir' contains the named pipe 'plus_pipe'
+
 
     SCENARIO Adding and removing of symbolic links works
     GIVEN a directory called 'A_dir'
@@ -153,6 +169,7 @@ successfully removes and creates the appropriate files.
     THEN the symbolic link 'A_dir/link_to_minus_file' no longer exists
     AND the directory 'A_dir' contains the symbolic link 'link_to_plus_file'
 
+
     SCENARIO Adding and removing of directories works
     GIVEN a directory called 'A_dir'
     AND a directory called 'minus_dir' in directory 'A_dir'
@@ -162,6 +179,7 @@ successfully removes and creates the appropriate files.
     AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
     THEN the directory 'A_dir/minus_dir' no longer exists
     AND the directory 'A_dir' contains the directory 'plus_dir'
+
 
     SCENARIO Adding and removing of character devices works
     GIVEN a directory called 'A_dir'
@@ -173,6 +191,7 @@ successfully removes and creates the appropriate files.
     THEN the character device 'A_dir/minus_chardev' no longer exists
     AND the directory 'A_dir' contains the character device 'plus_chardev'
 
+
     SCENARIO Adding and removing of block devices works
     GIVEN a directory called 'A_dir'
     AND a block device called 'minus_blockdev' with major number '1' and minor number '3' in directory 'A_dir' 
@@ -183,11 +202,13 @@ successfully removes and creates the appropriate files.
     THEN the block device 'A_dir/minus_blockdev' no longer exists
     AND the directory 'A_dir' contains the block device 'plus_blockdev'
 
+
 Changing modification time of a file
 ------------------------------------
 
 In the following scenarios we check that modification times are correctly
 changed, if modification times are not identical, the test fails.
+
 
     SCENARIO Changing the modification time of a regular file works
     GIVEN a directory called 'A_dir'
@@ -200,6 +221,7 @@ changed, if modification times are not identical, the test fails.
     AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
     THEN the files 'A_dir/foo_file' and 'B_dir/foo_file' have the same modification time
 
+
     SCENARIO Changing the modification time of a named pipe works
     GIVEN a directory called 'A_dir'
     AND a named pipe called 'foo_pipe' in directory 'A_dir'
@@ -210,6 +232,7 @@ changed, if modification times are not identical, the test fails.
     WHEN tbdiff-create creates a binary delta between directories 'A_dir' and 'B_dir', called 'AB.tbdiff'
     AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
     THEN the named pipes 'A_dir/foo_pipe' and 'B_dir/foo_pipe' have the same modification time
+
 
     SCENARIO Changing the modification time of a symbolic link works
     GIVEN a directory called 'A_dir'
@@ -224,6 +247,7 @@ changed, if modification times are not identical, the test fails.
     AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
     THEN the symbolic links 'A_dir/link_to_foo_file' and 'B_dir/link_to_foo_file' have the same modification time
 
+
     SCENARIO Changing the modification time of a directory works
     GIVEN a directory called 'A_dir'
     AND a directory called '1_dir' in directory 'A_dir'
@@ -235,10 +259,12 @@ changed, if modification times are not identical, the test fails.
     AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
     THEN the directories 'A_dir/1_dir' and 'B_dir/1_dir' have the same modification time
 
+
 Changing what a symbolic link refers to
 ---------------------------------------
 
 Here we check that referenced files of symbolic links are correctly transformed.
+
 
     SCENARIO Changing what a symbolic link refers to works
     GIVEN a directory called 'A_dir'
@@ -251,11 +277,13 @@ Here we check that referenced files of symbolic links are correctly transformed.
     AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
     THEN the symbolic links 'A_dir/link_to_foo_file' and 'B_dir/link_to_foo_file' refer to the same thing
 
+
 Setting special file permissions for directories
 ------------------------------------------------
 
 This scenario checks that the sticky bit of a directory has been changed
 appropriately upon the deployment of a binary delta.
+
 
     SCENARIO Setting the sticky bit of a directory works
     GIVEN a directory called 'A_dir'
@@ -267,7 +295,9 @@ appropriately upon the deployment of a binary delta.
     AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
     THEN the directory 'A_dir/1_dir' has its sticky bit set
 
+
 And this scenario checks that the setgid bit of a directory is set accordingly. 
+
 
     SCENARIO Setting the setgid bit of a directory works
     GIVEN a directory called 'A_dir'
@@ -279,11 +309,13 @@ And this scenario checks that the setgid bit of a directory is set accordingly.
     AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
     THEN the directory 'A_dir/1_dir' has its setgid bit set
 
+
 Changing the device numbers of special files
 --------------------------------------------
 
 These scenarios check that the minor and major device numbers of special files
 are appropriately changed when a patch has been generated and deployed. 
+
 
     SCENARIO Changing a character special file's device numbers works
     GIVEN a directory called 'A_dir'
@@ -294,6 +326,7 @@ are appropriately changed when a patch has been generated and deployed.
     AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
     THEN the character devices 'A_dir/foo_chardev' and 'B_dir/foo_chardev' have the same device numbers
 
+
     SCENARIO Changing a block special file's device numbers works
     GIVEN a directory called 'A_dir'
     AND a block device called 'foo_blockdev' with major number '2' and minor number '7' in directory 'A_dir'
@@ -303,12 +336,14 @@ are appropriately changed when a patch has been generated and deployed.
     AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
     THEN the block devices 'A_dir/foo_blockdev' and 'B_dir/foo_blockdev' have the same device numbers
 
+
 Changing, adding and removing of sockets
 ----------------------------------------
 
 Sockets can only be moved, linked or removed by the file system, creation is
 only performed by the program that acts as the server, tbdiff won't be doing
 that so the only sensible operation is removal.
+
 
     SCENARIO Removing of a socket works
     GIVEN a directory called 'A_dir'
@@ -318,12 +353,14 @@ that so the only sensible operation is removal.
     AND tbdiff-deploy applies the delta 'AB.tbdiff' to 'A_dir'
     THEN the socket 'A_dir/minus_socket' no longer exists
 
+
     SCENARIO Creation of a socket doesn't work
     GIVEN a directory called 'A_dir'
     AND a directory called 'B_dir'
     AND a socket called 'minus_socket' in directory 'B_dir'
     WHEN tbdiff-create attempts to create a binary delta between directories 'A_dir' and 'B_dir', called 'AB.tbdiff'
     THEN stderr contains "tbdiff-create cannot create sockets"
+
 
     SCENARIO Changing a socket doesn't work
     GIVEN a directory called 'A_dir'
@@ -339,6 +376,7 @@ IMPLEMENTS
 Implementations for the creating and deploying of binary deltas
 ---------------------------------------------------------------
 
+
     IMPLEMENTS GIVEN a regular file called '([^']+)' containing '([^']+)'(?: in directory '([^']+)')?
     [ -n "$MATCH_3" ] && mkdir -p "$DATADIR/$MATCH_3"
     echo "$MATCH_2" > "$DATADIR/$MATCH_3/$MATCH_1"
@@ -347,30 +385,38 @@ Implementations for the creating and deploying of binary deltas
     [ -n "$MATCH_2" ] && mkdir -p "$DATADIR/$MATCH_2"
     touch "$DATADIR/$MATCH_2/$MATCH_1"
 
+
     IMPLEMENTS GIVEN the (?:file|directory|named pipe|symbolic link) '([^']+)' is owned by the group '([^']+)'
     chgrp -h "$MATCH_2" "$DATADIR/$MATCH_1"
+
 
     IMPLEMENTS GIVEN the (?:file|directory|named pipe) '([^']+)' has its permissions set to '([^']+)'
     chmod "$MATCH_2" "$DATADIR/$MATCH_1"
 
+
     IMPLEMENTS GIVEN the (?:file|directory|named pipe|symbolic link) '([^']+)' has its modification time set to '([^']+)'
     "$SRCDIR/symtime" "$DATADIR/$MATCH_1" "$MATCH_2"
+
 
     IMPLEMENTS GIVEN a named pipe called '([^']+)'(?: in directory '([^']+)')?
     [ -n "$MATCH_2" ] && mkdir -p "$DATADIR/$MATCH_2"
     mkfifo "$DATADIR/$MATCH_2/$MATCH_1"
 
+
     IMPLEMENTS GIVEN a symbolic link called '([^']+)' referring to '([^']+)'(?: in directory '([^']+)')?
     [ -n "$MATCH_3" ] && mkdir -p "$DATADIR/$MATCH_3"
     ln -s "$DATADIR/$MATCH_2" "$DATADIR/$MATCH_3/$MATCH_1"
+
 
     IMPLEMENTS GIVEN a directory called '([^']+)'(?: in directory '([^']+)')?
     [ -n "$MATCH_2" ] && mkdir -p "$DATADIR/$MATCH_2"
     mkdir "$DATADIR/$MATCH_2/$MATCH_1"
 
+
     IMPLEMENTS GIVEN a (character|block) device called '([^']+)' with major number '([0-9]+)' and minor number '([0-9]+)'(?: in directory '([^']+)')?
     [ -n "$MATCH_5" ] && mkdir -p "$DATADIR/$MATCH_5"
     mknod "$DATADIR/$MATCH_5/$MATCH_2" "$(echo "$MATCH_1" | head -c 1)" "$MATCH_3" "$MATCH_4"
+
 
     IMPLEMENTS GIVEN a socket called '([^']+)'(?: in directory '([^']+)')?
     [ -n "$MATCH_2" ] && mkdir -p "$DATADIR/$MATCH_2"
@@ -383,42 +429,55 @@ Implementations for the creating and deploying of binary deltas
     set +e; "$@" 2> "$DATADIR/stderr"; set -e
     fi
 
+
     IMPLEMENTS WHEN tbdiff-deploy applies the delta '([^']+)' to '([^']+)'
     cd "$DATADIR/$MATCH_2"
     "$SRCDIR/tbdiff-deploy/tbdiff-deploy" "$DATADIR/$MATCH_1"
 
+
     IMPLEMENTS THEN the (?:files|directories) '([^']+)' and '([^']+)' have the same contents
     diff "$DATADIR/$MATCH_1" "$DATADIR/$MATCH_2"
+
 
     IMPLEMENTS THEN the (?:file|directory|named pipe|symbolic link) '([^']+)' is owned by the group '([^']+)'
     test "$(stat -c %g "$DATADIR/$MATCH_1")" = "$MATCH_2"
 
+
     IMPLEMENTS THEN the (?:file|directory|named pipe) '([^']+)' has the permissions '([^']+)'
     test "$(stat -c %A "$DATADIR/$MATCH_1")" = "$MATCH_2"
+
 
     IMPLEMENTS THEN the (?:file|directory|named pipe|symbolic link|(?:character|block) device|socket) '([^']+)' no longer exists
     test ! -e "$DATADIR/$MATCH_1"
 
+
     IMPLEMENTS THEN the (?:files|directories|named pipes|symbolic links) '([^']+)' and '([^']+)' have the same modification time
     test "$(stat -c %y "$DATADIR/$MATCH_1")" = "$(stat -c %y "$DATADIR/$MATCH_2")"
+
 
     IMPLEMENTS THEN the directory '([^']+)' contains the symbolic link '([^']+)'
     test -h "$DATADIR/$MATCH_1/$MATCH_2"
 
+
     IMPLEMENTS THEN the symbolic links '([^']+)' and '([^']+)' refer to the same thing
     test "$(readlink "$DATADIR/$MATCH_1")" = "$(readlink "$DATADIR/$MATCH_2")"
+
 
     IMPLEMENTS THEN the directory '([^']+)' has its sticky bit set
     test -k "$DATADIR/$MATCH_1"
 
+
     IMPLEMENTS THEN the directory '([^']+)' has its setgid bit set 
     test -g "$DATADIR/$MATCH_1"
+
 
     IMPLEMENTS THEN the directory '([^']+)' contains the ((?:character|block) device|named pipe|directory|regular file) '([^']+)'
     test -"$(echo "$MATCH_2" | sed -r 's/(named|regular) //' | head -c 1)" "$DATADIR/$MATCH_1/$MATCH_3"
 
+
     IMPLEMENTS THEN the (?:block|character) devices '([^']+)' and '([^']+)' have the same device numbers
     test "$(stat -c '%t %T' "$DATADIR/$MATCH_1")" = "$(stat -c '%t %T' "$DATADIR/$MATCH_2")"
+
 
     IMPLEMENTS THEN (\S+) contains "([^"]+)"
     grep "$MATCH_2" "$DATADIR/$MATCH_1"
