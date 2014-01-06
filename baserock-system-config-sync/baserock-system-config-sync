@@ -151,12 +151,12 @@ merge_regular_file() {
         cp -a "$vu" "$vt"
         ;;
     'none exists exists')
-        if ! (diff "$v2" "$vu" | patch "$v2" -t -o "$vt"); then
+        if ! (diff -u "$v2" --label="$v2" "$vu" --label="$vu" | patch "$v2" -t -o "$vt"); then
             cp -a "$v2" "$vt" # merge failed, use v2
         fi
         ;;
     'exists exists exists')
-        if ! (diff "$v1" "$vu" | patch "$v2" -t -o "$vt"); then
+        if ! (diff -u "$v1" --label="$v1" "$vu" --label="$vu" | patch "$v2" -t -o "$vt"); then
             cp -a "$v2" "$vt" # merge failed, use v2
         fi
         ;;
@@ -176,17 +176,17 @@ if [ "$1" = "merge" ]; then
     if [ "$#" != 2 ]; then
         usage "$0"
     fi
-    local new_version="$2"
-    local mounting_point=$(mktemp -d)
+    new_version="$2"
+    mounting_point=$(mktemp -d)
     "$mounting_script" "$mounting_point"
     if [ ! -d "$mounting_point/systems/$new_version" ]; then
         "$unmount" "$mounting_point"
         die "Error: version not found - '$new_version'"
     fi
-    local v1_dir="$mounting_point/systems/default/orig/etc"
-    local vu_dir="$mounting_point/systems/default/run/etc"
-    local v2_dir="$mounting_point/systems/$new_version/run/etc"
-    local vt_dir="$mounting_point/systems/$new_version/run/etc.new"
+    v1_dir="$mounting_point/systems/default/orig/etc"
+    vu_dir="$mounting_point/systems/default/run/etc"
+    v2_dir="$mounting_point/systems/$new_version/run/etc"
+    vt_dir="$mounting_point/systems/$new_version/run/etc.new"
     mkdir "$vt_dir"
     trap 'rm -rvf "$vt_dir"; "$unmount" "$mounting_point"' EXIT
     # For every pathname in V1, Vuser, or V2
@@ -197,8 +197,8 @@ if [ "$1" = "merge" ]; then
     rm -rf "$v2_dir"
     mv "$vt_dir" "$v2_dir"
 elif [ "$1" = "sync" ]; then
-    local canonical_version="$2"
-    local mounting_point=$(mktemp -d)
+    canonical_version="$2"
+    mounting_point=$(mktemp -d)
     "$mounting_script" "$mounting_point"
     trap '"$unmount" "$mounting_point"' EXIT
     if [ ! -d "$mounting_point/systems/$canonical_version" ]; then
