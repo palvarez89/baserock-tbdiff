@@ -12,3 +12,13 @@
         export SRCDIR="$(pwd)"
     fi
 }
+
+# Test that the extended attributes of two files are the same by comparing the
+# output of `getfattr -d` on each file, which has been piped to `tail -n +2` in
+# order to skip the first line of output, being the file name.
+
+compare_xattrs()
+{
+    test \
+    "$(getfattr -d "$1" | tail -n +2)" = "$(getfattr -d "$2" | tail -n +2)"
+}

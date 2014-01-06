@@ -12,24 +12,6 @@ then
 	exit 1
 fi
 
-ALLTESTSDIR=`pwd`
-
-for i in [0-9][0-9]*.sh
-do
-	cd $ALLTESTSDIR
-	echo "#### Running $i"
-	./$i ../tbdiff-create/tbdiff-create ../tbdiff-deploy/tbdiff-deploy
-	if [ $? -ne 0 ]
-	then
-		echo "Test program $i failed" 1>&2
-		cd $ALLTESTSDIR
-		echo "-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^-"
-		exit 1
-	fi
-		echo "#####################################################################"
-done
-
-
 echo "Starting baserock-system-config-sync tests"
 merge_pass_folder="bscs-merge.pass"
 merge_fail_folder="bscs-merge.fail"
