@@ -151,12 +151,12 @@ merge_regular_file() {
         cp -a "$vu" "$vt"
         ;;
     'none exists exists')
-        if ! (diff "$v2" "$vu" | patch "$v2" -t -o "$vt"); then
+        if ! (diff -u "$v2" --label="$v2" "$vu" --label="$vu" | patch "$v2" -t -o "$vt"); then
             cp -a "$v2" "$vt" # merge failed, use v2
         fi
         ;;
     'exists exists exists')
-        if ! (diff "$v1" "$vu" | patch "$v2" -t -o "$vt"); then
+        if ! (diff -u "$v1" --label="$v1" "$vu" --label="$vu" | patch "$v2" -t -o "$vt"); then
             cp -a "$v2" "$vt" # merge failed, use v2
         fi
         ;;
