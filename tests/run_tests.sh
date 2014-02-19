@@ -12,6 +12,34 @@ then
 	exit 1
 fi
 
+compare_dirs() {
+
+    # Temporary files used to compare the file permissions
+    file1=$(mktemp)
+    file2=$(mktemp)
+
+    set +e
+    (
+        set -e
+        # Getting the file permissions
+        (cd "$1" && busybox find * -exec busybox stat -c '%n %a' {} + | sort) > "$file1"
+        (cd "$2" && busybox find * -exec busybox stat -c '%n %a' {} + | sort) > "$file2"
+
+        # Compare file contents
+        diff -r "$1" "$2"
+
+        # Compare permissions
+        diff "$file1" "$file2"
+    )
+    local ret="$?"
+
+    # Clean temporary files
+    rm "$file1"
+    rm "$file2"
+
+    return $ret
+}
+
 echo "Starting baserock-system-config-sync tests"
 merge_pass_folder="bscs-merge.pass"
 merge_fail_folder="bscs-merge.fail"
@@ -33,7 +61,7 @@ for folder in "$merge_pass_folder/"*.in; do
     if [ "$exit_code" -ne 0 ]; then
         echo ": FAILED (exit code "$exit_code")" 1>&2
         exit 1
-    elif ! diff -r "$TMPDIR/"*/ "$out_folder/" &>> "$bscs_log"; then
+    elif ! compare_dirs "$TMPDIR/"*/ "$out_folder/" &>> "$bscs_log"; then
         echo ": FAILED (different diff)" 1>&2
         exit 1
     else
@@ -73,7 +101,7 @@ exit_code="$?"
 if [ "$exit_code" -ne 0 ]; then
     echo ": FAILED (exit code "$exit_code")" 1>&2
     exit 1
-elif ! diff -r "$TMPDIR/"*/ "$out_folder/" &>> "$bscs_log"; then
+elif ! compare_dirs "$TMPDIR/"*/ "$out_folder/" &>> "$bscs_log"; then
     echo ": FAILED (different diff)" 1>&2a
     exit 1
 else
