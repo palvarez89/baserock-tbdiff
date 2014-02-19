@@ -151,13 +151,17 @@ merge_regular_file() {
         cp -a "$vu" "$vt"
         ;;
     'none exists exists')
-        if ! (diff -u "$v2" --label="$v2" "$vu" --label="$vu" | patch "$v2" -t -o "$vt"); then
+        cp -a "$v2" "$vt"
+        if ! (diff -u "$v2" --label="$v2" "$vu" --label="$vu" | patch "$vt" -t); then
             cp -a "$v2" "$vt" # merge failed, use v2
+	    # 'patch' creates a file '.rej' with the diff that did not apply
         fi
         ;;
     'exists exists exists')
-        if ! (diff -u "$v1" --label="$v1" "$vu" --label="$vu" | patch "$v2" -t -o "$vt"); then
+        cp -a "$v2" "$vt"
+        if ! (diff -u "$v1" --label="$v1" "$vu" --label="$vu" | patch "$vt" -t); then
             cp -a "$v2" "$vt" # merge failed, use v2
+	    # 'patch' creates a file '.rej' with the diff that did not apply
         fi
         ;;
     *)
