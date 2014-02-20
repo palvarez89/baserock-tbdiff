@@ -53,7 +53,7 @@ for folder in "$merge_pass_folder/"*.in; do
     TMPDIR=$(mktemp -d)
     TMPDIR=$TMPDIR mounting_script="./fake_mounting_script.sh" unmount=true \
         mounting_script_test_dir="$folder" "$bscs_script" "merge" \
-        "version2" &>> "$bscs_log"
+        "default" "version2" &>> "$bscs_log"
     exit_code="$?"
     if [ "$exit_code" -ne 0 ]; then
         echo ": FAILED (exit code "$exit_code")" 1>&2
@@ -75,7 +75,7 @@ for folder in "$merge_fail_folder/"*.in; do
     TMPDIR=$(mktemp -d)
     TMPDIR=$TMPDIR mounting_script="./fake_mounting_script.sh" unmount=true \
         mounting_script_test_dir="$folder" "$bscs_script" "merge" \
-        "version2" &>> "$bscs_log"
+        "default" "version2" &>> "$bscs_log"
     if [ $? -eq 0 ]; then
         echo ": FAILED" 1>&2
         exit 1

@@ -23,7 +23,7 @@ set -eu
 
 
 usage() {
-    echo "Usage: $(basename $0) merge NEW_VERSION_LABEL" >&2
+    echo "Usage: $(basename $0) merge OLD_VERSION_LABEL NEW_VERSION_LABEL" >&2
     echo "       $(basename $0) sync CANONICAL_VERSION_LABEL" >&2
     exit 1
 }
@@ -187,18 +187,19 @@ fi
 
 
 if [ "$1" = "merge" ]; then
-    if [ "$#" != 2 ]; then
+    if [ "$#" != 3 ]; then
         usage "$0"
     fi
-    new_version="$2"
+    old_version="$2"
+    new_version="$3"
     mounting_point=$(mktemp -d)
     "$mounting_script" "$mounting_point"
     if [ ! -d "$mounting_point/systems/$new_version" ]; then
         "$unmount" "$mounting_point"
         die "Error: version not found - '$new_version'"
     fi
-    v1_dir="$mounting_point/systems/default/orig/etc"
-    vu_dir="$mounting_point/systems/default/run/etc"
+    v1_dir="$mounting_point/systems/$old_version/orig/etc"
+    vu_dir="$mounting_point/systems/$old_version/run/etc"
     v2_dir="$mounting_point/systems/$new_version/run/etc"
     vt_dir="$mounting_point/systems/$new_version/run/etc.new"
     mkdir "$vt_dir"
