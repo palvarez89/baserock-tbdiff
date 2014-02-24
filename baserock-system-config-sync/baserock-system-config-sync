@@ -134,6 +134,7 @@ merge_regular_file() {
     v1_exists=$(test -f "$v1" && echo exists || echo none)
     vu_exists=$(test -f "$vu" && echo exists || echo none)
     v2_exists=$(test -f "$v2" && echo exists || echo none)
+
     case "$v1_exists $vu_exists $v2_exists" in
     'exists none none')
         cp -a "$v1" "$vt"
@@ -152,16 +153,24 @@ merge_regular_file() {
         ;;
     'none exists exists')
         cp -a "$v2" "$vt"
-        if ! (diff -u "$v2" --label="$v2" "$vu" --label="$vu" | patch "$vt" -t); then
-            cp -a "$v2" "$vt" # merge failed, use v2
-	    # 'patch' creates a file '.rej' with the diff that did not apply
+
+        # If v2 == vu, then use v2
+        if ! cmp -s "$v2" "$vu"; then
+            if ! (diff -u "$v2" --label="$v2" "$vu" --label="$vu" | patch "$vt" -f); then
+                cp -a "$v2" "$vt" # merge failed, use v2
+	        # 'patch' creates a file '.rej' with the diff that did not apply
+            fi
         fi
         ;;
     'exists exists exists')
         cp -a "$v2" "$vt"
-        if ! (diff -u "$v1" --label="$v1" "$vu" --label="$vu" | patch "$vt" -t); then
-            cp -a "$v2" "$vt" # merge failed, use v2
-	    # 'patch' creates a file '.rej' with the diff that did not apply
+
+        # If v2 == vu, then use v2
+        if ! cmp -s "$v2" "$vu"; then
+            if ! (diff -u "$v1" --label="$v1" "$vu" --label="$vu" | patch "$vt" -f); then
+                cp -a "$v2" "$vt" # merge failed, use v2
+	        # 'patch' creates a file '.rej' with the diff that did not apply
+            fi
         fi
         ;;
     *)
