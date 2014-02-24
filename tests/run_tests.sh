@@ -25,11 +25,8 @@ compare_dirs() {
         (cd "$1" && busybox find * -exec busybox stat -c '%n %a' {} + | sort) > "$file1"
         (cd "$2" && busybox find * -exec busybox stat -c '%n %a' {} + | sort) > "$file2"
 
-        # Compare file contents
-        diff -r "$1" "$2"
-
-        # Compare permissions
-        diff "$file1" "$file2"
+        # Compare file contents then permissions
+        diff -r "$1" "$2" && diff "$file1" "$file2"
     )
     local ret="$?"
 
