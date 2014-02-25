@@ -192,9 +192,13 @@ class SystemVersionManager(object):
             self.status(msg='Updating system configuration')
             log = os.path.join('/var', 'log', 'baserock-system-config-sync.log')
 
+            baserock_system_config_sync = os.environ.get(
+                    'BASEROCK_SYSTEM_CONFIG_SYNC',
+                    'baserock-system-config-sync')
+
             with open(log, 'w') as f:
                 subprocess.check_call(
-                        ['baserock-system-config-sync', 'merge',
+                        [baserock_system_config_sync, 'merge',
                          self.current_system, label], stdout=f)
 
             # Copy the content of /var of the system deployed.
