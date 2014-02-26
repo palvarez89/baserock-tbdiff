@@ -139,18 +139,23 @@ merge_regular_file() {
     'exists none none')
         # Do nothing, if the file was removed in vu and v2 doesn't have it,
         # then the file is not longer needed
+        echo "File $v1 was removed by the user, no longer exists"
         ;;
     'none exists none')
         cp -a "$vu" "$vt"
+        echo "File $vu created by the user, copied to $vt"
         ;;
     'none none exists')
         cp -a "$v2" "$vt"
+        echo "File $v2 only present in the new version, copied to $vt"
         ;;
     'exists none exists')
         cp -a "$v2" "$vt"
+        echo "File $v2, removed by the user, copied to $vt"
         ;;
     'exists exists none')
         cp -a "$vu" "$vt"
+        echo "File $vu, not present in the new version, copied to $vt"
         ;;
     'none exists exists')
         cp -a "$v2" "$vt"
@@ -160,7 +165,12 @@ merge_regular_file() {
             if ! (diff -u "$v2" --label="$v2" "$vu" --label="$vu" | patch "$vt" -f); then
                 cp -a "$v2" "$vt" # merge failed, use v2
 	        # 'patch' creates a file '.rej' with the diff that did not apply
+                echo "File $vt left as it was in $v2 as merging failed"
+            else
+                echo "File $vt was pached with diff between $v2 and $vu"
             fi
+        else
+            echo "Files $vu and $v2 are the same, not patching"
         fi
         ;;
     'exists exists exists')
@@ -171,7 +181,12 @@ merge_regular_file() {
             if ! (diff -u "$v1" --label="$v1" "$vu" --label="$vu" | patch "$vt" -f); then
                 cp -a "$v2" "$vt" # merge failed, use v2
 	        # 'patch' creates a file '.rej' with the diff that did not apply
+                echo "File $vt left as it was in $v2 as merging failed"
+            else
+                echo "File $vt was pached with diff between $v1 and $vu"
             fi
+        else
+            echo "Files $vu and $v2 are the same, not patching"
         fi
         ;;
     *)
