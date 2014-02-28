@@ -224,6 +224,14 @@ if [ "$1" = "merge" ]; then
     merge "$vu_dir" "$v1_dir" "$vu_dir" "$v2_dir" "$vt_dir"
     merge "$v2_dir" "$v1_dir" "$vu_dir" "$v2_dir" "$vt_dir"
 
+    if [ -f "$vu_dir/passwd" ]; then
+        cp "$vu_dir/passwd" "$vt_dir/passwd"
+    fi
+    if [ -f "$vu_dir/group" ]; then
+        cp "$vu_dir/group" "$vt_dir/group"
+    fi
+
+
     rm -rf "$v2_dir"
     mv "$vt_dir" "$v2_dir"
 elif [ "$1" = "sync" ]; then
