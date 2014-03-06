@@ -1,0 +1,318 @@
+#!/usr/bin/python
+#
+# Copyright (C) 2014  Codethink Limited
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+
+import argparse
+import subprocess
+import tempfile
+import os
+import sys
+import shutil
+
+
+class AppException(Exception):
+
+    pass
+
+
+class SystemNotCompatibleError(Exception):
+
+    pass
+
+
+class SystemVersionManager(object):
+
+    def __init__(self, args, mount_dir):
+        self.device, self.current_system = self._get_mount_info()
+        self.mount_dir = mount_dir
+
+        # create the top-level parser
+        parser = argparse.ArgumentParser(prog='system-version-manager')
+        subparsers = parser.add_subparsers(help='sub-command help')
+
+        # create the parser for the "list" command
+        parser_list = subparsers.add_parser('list',
+            help='list show you a list of systems')
+        parser_list.set_defaults(action='list')
+
+        # create the parser for the "deploy" command
+        parser_deploy= subparsers.add_parser('deploy',
+            help='deploy an updated base OS version to the running Baserock system')
+        parser_deploy.set_defaults(action='deploy')
+        parser_deploy.add_argument('location')
+
+        # create the parser for the "get-default" command
+        parser_get_default = subparsers.add_parser('get-default',
+            help='prints the default system')
+        parser_get_default.set_defaults(action='get-default')
+
+        # create the parser for the "get-running" command
+        parser_get_running = subparsers.add_parser('get-running',
+            help='prints the running system')
+        parser_get_running.set_defaults(action='get-running')
+
+        # create the parser for the "remove" command
+        parser_remove = subparsers.add_parser('remove', help='remove a system')
+        parser_remove.add_argument('system_name', help='name of the system to remove')
+        parser_remove.set_defaults(action='remove')
+
+        # create the parser for the "set-default" command
+        parser_set_default = subparsers.add_parser('set-default',
+            help='set a system as default')
+        parser_set_default.add_argument('system_name', help='name of the system to set')
+        parser_set_default.set_defaults(action='set-default')
+
+        self.args = parser.parse_args(args[1:])
+
+    def status(self, msg, *args):
+        print msg % args
+
+    def _check_system_exists(self, system_name):
+        systems_list = self._get_systems()
+
+        if system_name not in systems_list:
+            sys.stderr.write("ERROR: the system %s doesn't exist\n" % system_name)
+            sys.exit(1)
+
+    # To get the systems the script lists the systems under the 'systems'
+    # folder which are directories and are not symlinks
+    def _get_systems(self):
+        systems = os.path.join(self.mount_dir, 'systems')
+        return [filename for filename in os.listdir(systems)
+            if os.path.isdir(os.path.join(systems, filename))
+            and not os.path.islink(os.path.join(systems, filename))]
+
+    # To check which system is the default one, it checks the 'ontimeout'
+    # value in the extlinux.conf file. If it's not present, then pick
+    # the first of the present systems.
+    def _get_default(self):
+        extlinux = os.path.join(self.mount_dir, 'extlinux.conf')
+        with open(extlinux, 'r') as f:
+            for line in f:
+                line = line.rstrip('\n')
+                key, value= line.split(' ', 1)
+                if key == "ontimeout":
+                    return value
+                if key == "label":
+                    break
+
+        return self.current_system
+
+    def _atomic_symlink_update(self, source, link_name):
+        dirname = os.path.dirname(link_name)
+        temp_dir = tempfile.mkdtemp(dir=dirname)
+        temp_link = os.path.join(temp_dir, 'temp_link')
+        try:
+            os.symlink(source, temp_link)
+            os.rename(temp_link, link_name)
+        except (OSError, IOError):
+            shutil.rmtree(temp_dir)
+            raise
+        # By this time, temp_dir will be empty.
+        os.rmdir(temp_dir)
+
+    def _rewrite_boot_menu(self, device, default, systems):
+        # Logic copied from morphlib.SaveFile to not create
+        # a morphlib dependency.
+        fd, temp_config = tempfile.mkstemp(dir=self.mount_dir)
+        os.close(fd)
+        config = os.path.join(self.mount_dir, 'extlinux.conf')
+        with open(temp_config, 'w') as f:
+            f.write('default menu.c32\n')
+            f.write('timeout 50\n')
+            f.write('prompt 0\n')
+            f.write('ontimeout ' + default +'\n')
+            for system in systems:
+                f.write('label ' + system +'\n')
+                f.write('kernel /systems/'+ system +'/kernel\n')
+                f.write('append root='+ device +' '
+                        'rootflags=subvol=systems/'+ system +'/run '
+                        'init=/sbin/init rw\n')
+        os.rename(temp_config, config)
+
+        default_path = os.path.join(self.mount_dir, 'systems', 'default')
+        default_path_tmp = os.path.join(self.mount_dir, 'systems', 'default-tmp')
+        if os.path.islink(default_path):
+            os.symlink(default, default_path_tmp)
+            os.rename(default_path_tmp, default_path)
+
+    def cmd_list(self):
+        for system in self._get_systems():
+            print system
+
+    def cmd_get_default(self):
+        print self._get_default()
+
+    def cmd_get_running(self):
+        print self.current_system
+
+    def _parse_deploy_location(self, location):
+        label, snapshot = os.path.split(location)
+        root, label = os.path.split(label)
+        if root != '/systems' or snapshot != 'orig':
+            raise AppException(
+                    "Invalid deploy location %s. Upgrades should be deployed "
+                    "from a Btrfs snapshot following the pattern: "
+                    "/systems/$LABEL/orig" % location)
+        return label
+
+    def cmd_deploy(self, location):
+        '''Client-side deployment of a new base OS version.
+
+        This code assumes that the 'orig' subvolume has been correctly created
+        already. In future it could be extended to receive a delta of the
+        upgraded version over network somehow.
+
+        '''
+
+        label = self._parse_deploy_location(location)
+        version_root = os.path.join(self.mount_dir, 'systems', label)
+
+        orig_dir = os.path.join(version_root, 'orig')
+        run_dir = os.path.join(version_root, 'run')
+        try:
+            self.status(msg="Creating 'run' subvolume")
+            subprocess.check_call(
+                    ['btrfs', 'subvolume', 'snapshot', orig_dir, run_dir])
+
+            self.status(msg='Updating system configuration')
+            log = os.path.join('/var', 'log', 'baserock-system-config-sync.log')
+
+            baserock_system_config_sync = os.environ.get(
+                    'BASEROCK_SYSTEM_CONFIG_SYNC',
+                    'baserock-system-config-sync')
+
+            with open(log, 'w') as f:
+                subprocess.check_call(
+                        [baserock_system_config_sync, 'merge',
+                         self.current_system, label], stdout=f)
+
+            # Copy the content of /var of the system deployed.
+            state_dir = os.path.join(self.mount_dir, 'state')
+            shared_var = os.path.join(state_dir, 'var')
+            new_var=os.path.join(run_dir, 'var')
+
+            for file in os.listdir(new_var):
+                subprocess.call(['cp', '-a', os.path.join(new_var, file), shared_var])
+
+            self.status(msg="Installing the kernel")
+            self._install_kernel(version_root)
+
+        except Exception as e:
+            # We are not controlling if deleting the suvolume fails
+            subprocess.call(['btrfs', 'subvolume', 'delete', run_dir])
+            raise
+
+        self._rewrite_boot_menu(self.device, self._get_default(), self._get_systems())
+
+    def _install_kernel(self, version_root):
+        '''Install the kernel outside of 'orig' or 'run' subvolumes
+
+        This code is kind of duplicated in morphlib/writeexts.py.
+
+        '''
+        image_names = ['vmlinuz', 'zImage', 'uImage']
+        kernel_dest = os.path.join(version_root, 'kernel')
+        for name in image_names:
+            try_path = os.path.join(version_root, 'run', 'boot', name)
+            if os.path.exists(try_path):
+                shutil.copy2(try_path, kernel_dest)
+                break
+
+    def _get_mount_info(self):
+        mountpoint = subprocess.check_output(
+            ['findmnt', '/', '-l', '-n', '-o', 'SOURCE'])
+        device, subvolume = mountpoint.split('[', 1)
+        subvolume = subvolume.split('/run', 1)[0]
+        current_system = os.path.basename(subvolume)
+
+        # Following the symlink of the device.
+        device = os.path.realpath(device)
+        return device, current_system
+
+    def cmd_remove (self, system_name):
+        self._check_system_exists(system_name)
+
+        default_system = self._get_default()
+
+        if system_name == default_system:
+            sys.stderr.write("ERROR: you can't remove the default system\n")
+            sys.exit(1)
+        if system_name == self.current_system:
+            sys.stderr.write("ERROR: you can't remove the running system\n")
+            sys.exit(1)
+
+        self.status(msg="Removing system: %s" % system_name)
+        system_root = os.path.join(self.mount_dir, 'systems', system_name)
+
+        # We are not controlling if deleting the suvolume fails
+        subprocess.call(['btrfs', 'subvolume', 'delete',
+            os.path.join(system_root, 'run')])
+        subprocess.call(['btrfs', 'subvolume', 'delete',
+            os.path.join(system_root, 'orig')])
+        shutil.rmtree(system_root)
+
+        self._rewrite_boot_menu(self.device, default_system, self._get_systems())
+
+    def cmd_set_default (self, system_name):
+        self._check_system_exists(system_name)
+        self._rewrite_boot_menu(self.device, system_name, self._get_systems())
+
+    def mount_fs(self):
+        subprocess.check_call(['mount', self.device, self.mount_dir])
+
+    def umount_fs(self):
+        subprocess.call(['umount', self.mount_dir])
+
+    def _check_system_compatibility(self):
+        menu_file = os.path.join(self.mount_dir, 'menu.c32')
+        if not os.path.isfile(menu_file):
+            raise SystemNotCompatibleError("menu.c32 not found")
+
+    def run(self):
+        args = self.args
+        action = args.action
+
+        self.mount_fs()
+        try:
+            self._check_system_compatibility()
+
+            if action == "list":
+                self.cmd_list()
+            elif action == "deploy":
+                self.cmd_deploy(args.location)
+            elif action == "remove":
+                self.cmd_remove(args.system_name)
+            elif action == "set-default":
+                self.cmd_set_default(args.system_name)
+            elif action == "get-default":
+                self.cmd_get_default()
+            elif action == "get-running":
+                self.cmd_get_running()
+            else:
+                raise NotImplementedError("Unknown command %s" % action)
+        except SystemNotCompatibleError, e:
+            sys.stderr.write("ERROR, system not compatible: %s\n" % e.args[0])
+            raise
+        finally:
+            self.umount_fs()
+
+mount_dir = tempfile.mkdtemp()
+try:
+    SystemVersionManager(sys.argv, mount_dir).run()
+finally:
+    os.rmdir(mount_dir)

@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (c) 2013 Codethink Ltd.
+# Copyright (c) 2013-2014 Codethink Ltd.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License Version 2 as
@@ -23,7 +23,7 @@ set -eu
 
 
 usage() {
-    echo "Usage: $(basename $0) merge NEW_VERSION_LABEL" >&2
+    echo "Usage: $(basename $0) merge OLD_VERSION_LABEL NEW_VERSION_LABEL" >&2
     echo "       $(basename $0) sync CANONICAL_VERSION_LABEL" >&2
     exit 1
 }
@@ -123,11 +123,11 @@ merge_regular_file() {
     # V1      Vuser       V2          action
     # ------------------------------------------
     # none    none        none        inconceivable!
-    # exists  none        none        use V1
+    # exists  none        none        do nothing
     # none    exists      none        use Vuser
     # none    none        exists      use V2
     # exists  none        exists      use V2
-    # exists  exists      none        use V2
+    # exists  exists      none        use Vuser
     # none    exists      exists      diff V2 Vuser applied to V2
     # exists  exists      exists      diff V1 Vuser applied to V2
 
@@ -137,19 +137,25 @@ merge_regular_file() {
 
     case "$v1_exists $vu_exists $v2_exists" in
     'exists none none')
-        cp -a "$v1" "$vt"
+        # Do nothing, if the file was removed in vu and v2 doesn't have it,
+        # then the file is not longer needed
+        echo "File $v1 was removed by the user, no longer exists"
         ;;
     'none exists none')
         cp -a "$vu" "$vt"
+        echo "File $vu created by the user, copied to $vt"
         ;;
     'none none exists')
         cp -a "$v2" "$vt"
+        echo "File $v2 only present in the new version, copied to $vt"
         ;;
     'exists none exists')
         cp -a "$v2" "$vt"
+        echo "File $v2, removed by the user, copied to $vt"
         ;;
     'exists exists none')
         cp -a "$vu" "$vt"
+        echo "File $vu, not present in the new version, copied to $vt"
         ;;
     'none exists exists')
         cp -a "$v2" "$vt"
@@ -159,7 +165,12 @@ merge_regular_file() {
             if ! (diff -u "$v2" --label="$v2" "$vu" --label="$vu" | patch "$vt" -f); then
                 cp -a "$v2" "$vt" # merge failed, use v2
 	        # 'patch' creates a file '.rej' with the diff that did not apply
+                echo "File $vt left as it was in $v2 as merging failed"
+            else
+                echo "File $vt was pached with diff between $v2 and $vu"
             fi
+        else
+            echo "Files $vu and $v2 are the same, not patching"
         fi
         ;;
     'exists exists exists')
@@ -170,7 +181,12 @@ merge_regular_file() {
             if ! (diff -u "$v1" --label="$v1" "$vu" --label="$vu" | patch "$vt" -f); then
                 cp -a "$v2" "$vt" # merge failed, use v2
 	        # 'patch' creates a file '.rej' with the diff that did not apply
+                echo "File $vt left as it was in $v2 as merging failed"
+            else
+                echo "File $vt was pached with diff between $v1 and $vu"
             fi
+        else
+            echo "Files $vu and $v2 are the same, not patching"
         fi
         ;;
     *)
@@ -186,18 +202,19 @@ fi
 
 
 if [ "$1" = "merge" ]; then
-    if [ "$#" != 2 ]; then
+    if [ "$#" != 3 ]; then
         usage "$0"
     fi
-    new_version="$2"
+    old_version="$2"
+    new_version="$3"
     mounting_point=$(mktemp -d)
     "$mounting_script" "$mounting_point"
     if [ ! -d "$mounting_point/systems/$new_version" ]; then
         "$unmount" "$mounting_point"
         die "Error: version not found - '$new_version'"
     fi
-    v1_dir="$mounting_point/systems/default/orig/etc"
-    vu_dir="$mounting_point/systems/default/run/etc"
+    v1_dir="$mounting_point/systems/$old_version/orig/etc"
+    vu_dir="$mounting_point/systems/$old_version/run/etc"
     v2_dir="$mounting_point/systems/$new_version/run/etc"
     vt_dir="$mounting_point/systems/$new_version/run/etc.new"
     mkdir "$vt_dir"
@@ -206,6 +223,14 @@ if [ "$1" = "merge" ]; then
     merge "$v1_dir" "$v1_dir" "$vu_dir" "$v2_dir" "$vt_dir"
     merge "$vu_dir" "$v1_dir" "$vu_dir" "$v2_dir" "$vt_dir"
     merge "$v2_dir" "$v1_dir" "$vu_dir" "$v2_dir" "$vt_dir"
+
+    if [ -f "$vu_dir/passwd" ]; then
+        cp "$vu_dir/passwd" "$vt_dir/passwd"
+    fi
+    if [ -f "$vu_dir/group" ]; then
+        cp "$vu_dir/group" "$vt_dir/group"
+    fi
+
 
     rm -rf "$v2_dir"
     mv "$vt_dir" "$v2_dir"

@@ -1,6 +1,6 @@
 # vi:set et ai sw=2 sts=2 ts=2: */
 # -
-# Copyright (c) 2011-2012 Codethink Ltd.
+# Copyright (c) 2011-2014 Codethink Ltd.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License Version 2 as
@@ -122,6 +122,7 @@ tbdiff-deploy/Makefile
 tb-switch/Makefile
 tb-update/Makefile
 baserock-system-config-sync/Makefile
+system-version-manager/Makefile
 tests/Makefile
 ])
 
