@@ -24,6 +24,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdarg.h>
 
 #include <tbdiff/tbdiff-stat.h>
 
@@ -85,16 +86,42 @@ typedef enum {
 } tbd_error_e;
 
 #ifdef NDEBUG
+#define TBD_DEBUG(d)
+#define TBD_WARN(w)
 #define TBD_ERROR(e) (e)
+#define TBD_DEBUGF(d, ...)
+#define TBD_WARNF(w, ...)
 #else
+#define TBD_DEBUG(d) \
+	tbd_log("debug", "%s", __func__, __LINE__, __FILE__, d)
+#define TBD_WARN(w) \
+	tbd_log("warning", "%s", __func__, __LINE__, __FILE__, w)
+#define TBD_DEBUGF(d, ...) \
+	tbd_log("debug", d, __func__, __LINE__, __FILE__, __VA_ARGS__)
+#define TBD_WARNF(w, ...) \
+	tbd_log("warning", w, __func__, __LINE__, __FILE__, __VA_ARGS__)
+static inline
+tbd_log(char const *t, char const *s, char const *func, int line,
+                                            char const *file, ...)
+{
+	va_list args;
+	va_start(args, file);
+
+	fprintf(stderr, "TBDiff %s '", t);
+	vfprintf(stderr, s, args);
+	fprintf(stderr, "' in function '%s' at line %d of file '%s'.\n",
+            func, line, file);
+
+	va_end(args);
+}
+
 #define TBD_ERROR(e) tbd_error(e, #e, __func__, __LINE__, __FILE__)
 static inline tbd_error_e
 tbd_error(tbd_error_e e, char const *s, char const *func, int line,
                                                    char const* file)
 {
 	if (e != TBD_ERROR_SUCCESS)
-		fprintf(stderr, "TBDiff error '%s' in function '%s' at line %d "
-		                        "of file '%s'.\n", s, func, line, file);
+		tbd_log("error", "%s", func, line, file, s);
 	return e;
 }
 #endif
