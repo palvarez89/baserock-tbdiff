@@ -1,5 +1,5 @@
 /*
- *    Copyright (C) 2011-2012 Codethink Ltd.
+ *    Copyright (C) 2011-2014 Codethink Ltd.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License Version 2 as
@@ -303,7 +303,7 @@ tbd_create_cmd_file_delta(FILE        *stream,
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_READING);
 	}
 
-	// Calculate start.
+	/* Calculate start. */
 	uintptr_t blks[2] = { 256, 256 };
 	uint8_t   buff[2][256];
 
@@ -332,7 +332,7 @@ tbd_create_cmd_file_delta(FILE        *stream,
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_SEEK_THROUGH_STREAM);
 	}
 
-	// Find length.
+	/* Find length. */
 	long flena = ftell(fpa);
 	long flenb = ftell(fpb);
 
@@ -342,7 +342,7 @@ tbd_create_cmd_file_delta(FILE        *stream,
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_DETECT_STREAM_POSITION);
 	}
 
-	// Find end.
+	/* Find end. */
 	blks[0] = 256;
 	blks[1] = 256;
 	for(o = 0; true; o += blks[1]) {
@@ -377,7 +377,7 @@ tbd_create_cmd_file_delta(FILE        *stream,
 	}
 	fclose(fpa);
 
-	// Ensure that the start and end don't overlap for the new file.
+	/* Ensure that the start and end don't overlap for the new file. */
 	if((flenb - o) < start)
 		o = (flenb - start);
 
@@ -385,7 +385,7 @@ tbd_create_cmd_file_delta(FILE        *stream,
 	if(end < start)
 		end = start;
 
-	uint32_t size = flenb - ((flena - end) + start); //(flenb - (o + start));
+	uint32_t size = flenb - ((flena - end) + start); /* (flenb - (o + start)); */
 
 	/* Data is identical, only alter metadata */
 	if((end == start) && (size == 0)) {
@@ -740,7 +740,7 @@ tbd_create_impl(FILE        *stream,
 	if(!top && ((err = tbd_create_cmd_dir_enter(stream, b->name)) != 0))
 		return err;
 
-	// Handle changes/additions.
+	/* Handle changes/additions. */
 	uintptr_t i;
 	for(i = 0; i < b->size; i++) {
 		tbd_stat_t *_b = tbd_stat_entry(b, i);
@@ -754,7 +754,7 @@ tbd_create_impl(FILE        *stream,
 			return err;
 	}
 
-	// Handle deletions.
+	/* Handle deletions. */
 	for(i = 0; i < a->size; i++) {
 		err = 0;
 		

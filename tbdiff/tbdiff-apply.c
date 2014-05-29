@@ -143,9 +143,9 @@ tbd_apply_cmd_dir_create(FILE *stream)
 	if(mkdir(dname, (mode_t)mode) != 0)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_CREATE_DIR);
 
-	// Apply metadata.
+	/* Apply metadata. */
 	struct utimbuf timebuff = { time(NULL), mtime };
-	utime(dname, &timebuff); // Don't care if it succeeds right now.
+	utime(dname, &timebuff); /* Don't care if it succeeds right now. */
 
 	chown(dname, (uid_t)uid, (gid_t)gid);
 	chmod (dname, mode);
@@ -263,10 +263,10 @@ tbd_apply_cmd_file_create(FILE *stream)
 	}
 	fclose(fp);
 
-	// Apply metadata.
+	/* Apply metadata. */
 	struct utimbuf timebuff = { time(NULL), mtime };
 
-	// Don't care if it succeeds right now.
+	/* Don't care if it succeeds right now. */
 	utime(fname, &timebuff);
 	/* Chown ALWAYS have to be done before chmod */
 	chown(fname, (uid_t)uid, (gid_t)gid);
@@ -380,7 +380,7 @@ tbd_apply_cmd_file_delta(FILE *stream)
 	fclose(np);
 	fclose(op);
 
-	// Apply metadata.
+	/* Apply metadata. */
 	/* file was removed so old permissions were lost
 	 * all permissions need to be reapplied, all were sent in this protocol
 	 * if only changed sent will have to save mdata from file before it is
@@ -529,7 +529,7 @@ tbd_apply_cmd_symlink_create(FILE *stream)
 	tv[1].tv_sec = (long) mtime;
 	tv[1].tv_usec = 0;
 
-	lutimes(linkname, tv); // Don't care if it succeeds right now.
+	lutimes(linkname, tv); /* Don't care if it succeeds right now. */
 	lchown(linkname, (uid_t)uid, (uid_t)gid);
 
 	return TBD_ERROR_SUCCESS;
@@ -563,7 +563,7 @@ tbd_apply_cmd_special_create(FILE *stream)
 	}
 
 	struct utimbuf timebuff = { time(NULL), mtime };
-	utime(name, &timebuff); // Don't care if it succeeds right now.
+	utime(name, &timebuff); /* Don't care if it succeeds right now. */
 
 	chown(name, (uid_t)uid, (gid_t)gid);
 	chmod(name, mode);
@@ -596,7 +596,7 @@ tbd_apply_cmd_dir_delta(FILE *stream)
 
 	if(metadata_mask & TBD_METADATA_MTIME) {
 		struct utimbuf timebuff = { time(NULL), mtime };
-		utime(dname, &timebuff); // Don't care if it succeeds right now.
+		utime(dname, &timebuff); /* Don't care if it succeeds right now. */
 	}
 	if(metadata_mask & TBD_METADATA_UID || metadata_mask & TBD_METADATA_GID)
 		chown(dname, (uid_t)uid, (gid_t)gid);
@@ -631,7 +631,7 @@ tbd_apply_cmd_file_mdata_update(FILE *stream)
 
 	if(metadata_mask & TBD_METADATA_MTIME) {
 		struct utimbuf timebuff = { time(NULL), mtime };
-		utime(dname, &timebuff); // Don't care if it succeeds right now.
+		utime(dname, &timebuff); /* Don't care if it succeeds right now. */
 	}
 	if(metadata_mask & TBD_METADATA_UID || metadata_mask & TBD_METADATA_GID)
 		chown(dname, (uid_t)uid, (gid_t)gid);
@@ -755,7 +755,7 @@ tbd_apply(FILE *stream)
 			break;
 		case TBD_CMD_ENTITY_MOVE:
 		case TBD_CMD_ENTITY_COPY:
-			return TBD_ERROR(TBD_ERROR_FEATURE_NOT_IMPLEMENTED); // TODO - Implement.
+			return TBD_ERROR(TBD_ERROR_FEATURE_NOT_IMPLEMENTED); /* TODO - Implement. */
 		case TBD_CMD_ENTITY_DELETE:
 			if((err = tbd_apply_cmd_entity_delete(stream)) != 0)
 				return err;

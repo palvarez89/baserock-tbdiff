@@ -1,5 +1,5 @@
 /*
- *    Copyright (C) 2011-2012 Codethink Ltd.
+ *    Copyright (C) 2011-2014 Codethink Ltd.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License Version 2 as
@@ -42,7 +42,7 @@ typedef struct {
 	char*            name;
 	tbd_stat_type_e  type;
 	time_t           mtime;
-	uint32_t         size; // Count for directory.
+	uint32_t         size; /* Count for directory. */
 	uid_t         uid;
 	gid_t         gid;
 	mode_t         mode;

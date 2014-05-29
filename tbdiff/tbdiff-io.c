@@ -1,5 +1,5 @@
 /*
- *    Copyright (C) 2011-2012 Codethink Ltd.
+ *    Copyright (C) 2011-2014 Codethink Ltd.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License Version 2 as
@@ -22,7 +22,7 @@
 #include <tbdiff/tbdiff-stat.h>
 
 #if __BYTE_ORDER == __BIG_ENDIAN
-//inverts the indices of an array of bytes.
+/*inverts the indices of an array of bytes. */
 static void byteswap (char* value, int size) {
     char tmp;
     int i;
