@@ -37,8 +37,10 @@ typedef enum {
 	TBD_STAT_TYPE_SOCKET  = 's'
 } tbd_stat_type_e;
 
-typedef struct {
-	void*            parent;
+typedef struct tbd_stat_s tbd_stat_t;
+
+struct tbd_stat_s {
+	tbd_stat_t*      parent;
 	char*            name;
 	tbd_stat_type_e  type;
 	time_t           mtime;
@@ -47,7 +49,7 @@ typedef struct {
 	gid_t            gid;
 	mode_t           mode;
 	uint32_t         rdev;
-} tbd_stat_t;
+};
 
 extern tbd_stat_t*  tbd_stat(const char *path);
 extern void         tbd_stat_free(tbd_stat_t *file);
