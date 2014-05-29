@@ -124,7 +124,7 @@ static int name_remove(char const *name, void *ud) {
 	char const *path = ud;
 	if (lremovexattr(path, name) < 0) {
 		switch (errno) {
-		case ENOATTR:
+		case ENODATA:
 			return TBD_ERROR(TBD_ERROR_XATTRS_MISSING_ATTR);
 		case ENOTSUP:
 			return TBD_ERROR(TBD_ERROR_XATTRS_NOT_SUPPORTED);
