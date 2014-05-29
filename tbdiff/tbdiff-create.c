@@ -143,26 +143,26 @@ tbd_create_cmd_update(FILE *stream)
  * this will write the attribute name, then the data representing that block
  */
 static int
-_write_pair(char const *name, void const *data, size_t size, void *ud)
+tbd_create_cmd_write_xattr_pair(char const *name,
+                                void const *data,
+                                size_t      size,
+                                void       *stream)
 {
-	FILE *stream = ud;
 	int err;
 
 	if ((err = tbd_create_write_string(stream, name)) !=
-	    TBD_ERROR_SUCCESS) {
+	    TBD_ERROR_SUCCESS)
 		return err;
-	}
 
 	if ((err = tbd_create_write_block(stream, data, size)) !=
-	    TBD_ERROR_SUCCESS) {
+	    TBD_ERROR_SUCCESS)
 		return err;
-	}
 
 	return TBD_ERROR_SUCCESS;
 }
 
 static int
-tbd_create_cmd_fwrite_xattrs(FILE *stream, tbd_stat_t *f)
+tbd_create_cmd_write_xattrs(FILE *stream, tbd_stat_t *f)
 {
 	int err = TBD_ERROR_SUCCESS;
 	tbd_xattrs_names_t names;
@@ -206,7 +206,10 @@ tbd_create_cmd_fwrite_xattrs(FILE *stream, tbd_stat_t *f)
 	}
 
 	/* write the name:data pairs */
-	err = tbd_xattrs_pairs(&names, path, _write_pair, stream);
+	err = tbd_xattrs_pairs(&names,
+	                        path,
+	                        tbd_create_cmd_write_xattr_pair,
+	                        stream);
 
 cleanup_names:
 	tbd_xattrs_names_free(&names);
@@ -247,7 +250,7 @@ tbd_create_cmd_file_create(FILE       *stream,
 	}
 	fclose(fp);
 
-	return tbd_create_cmd_fwrite_xattrs(stream, f);
+	return tbd_create_cmd_write_xattrs(stream, f);
 }
 
 static uint16_t
@@ -393,7 +396,7 @@ tbd_create_cmd_file_delta(FILE        *stream,
 	if((end == start) && (size == 0)) {
 		tbd_create_cmd_file_metadata_update(stream, a, b);
 		fclose(fpb);
-		return tbd_create_cmd_fwrite_xattrs(stream, b);
+		return tbd_create_cmd_write_xattrs(stream, b);
 	}
 
 	uint16_t metadata_mask = tbd_metadata_mask(a, b);
@@ -434,7 +437,7 @@ tbd_create_cmd_file_delta(FILE        *stream,
 	}
 
 	fclose(fpb);
-	return tbd_create_cmd_fwrite_xattrs(stream, b);
+	return tbd_create_cmd_write_xattrs(stream, b);
 }
 
 static int
