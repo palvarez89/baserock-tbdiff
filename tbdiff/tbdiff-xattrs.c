@@ -1,5 +1,5 @@
 /*
- *    Copyright (C) 2011-2012 Codethink Ltd.
+ *    Copyright (C) 2011-2014 Codethink Ltd.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License Version 2 as
@@ -18,7 +18,14 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "config.h"
+
+#if HAVE_ATTR_XATTR_H
 #include <attr/xattr.h>
+#else
+#include <sys/xattr.h>
+#endif
+
 #include <errno.h>
 
 #include <tbdiff/tbdiff-common.h>
