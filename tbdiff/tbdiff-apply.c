@@ -769,7 +769,7 @@ tbd_apply(FILE *stream)
 			flush = true;
 			break;
 		default:
-			fprintf(stderr, "Error: Invalid command 0x%02"PRIx8".\n", cmd);
+			TBD_DEBUGF("Invalid command 0x%02"PRIx8".\n", cmd);
 			return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
 		}
 	}
