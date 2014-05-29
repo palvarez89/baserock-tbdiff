@@ -121,7 +121,7 @@ tbd_apply_cmd_dir_create(FILE *stream)
 	if(fread(dname, 1, dlen, stream) != dlen)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	dname[dlen] = '\0';
-	fprintf(stderr, "cmd_dir_create %s\n", dname);
+	TBD_DEBUGF("cmd_dir_create %s\n", dname);
 	if(strchr(dname, '/') != NULL)
 		return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
 
@@ -165,7 +165,7 @@ tbd_apply_cmd_dir_enter(FILE      *stream,
 	if(fread(dname, 1, dlen, stream) != dlen)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	dname[dlen] = '\0';
-	fprintf(stderr, "cmd_dir_enter %s\n", dname);
+	TBD_DEBUGF("cmd_dir_enter %s\n", dname);
 	if((strchr(dname, '/') != NULL) || (strcmp(dname, "..") == 0))
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_CHANGE_DIR);
 	if(depth != NULL)
@@ -188,7 +188,7 @@ tbd_apply_cmd_dir_leave(FILE      *stream,
 	}
 	time.actime = time.modtime;/* not sure what the best atime to use is */
 
-	fprintf(stderr, "cmd_dir_leave\n");
+	TBD_DEBUG("cmd_dir_leave\n");
 
 	/* test for leaving shallowest depth */
 	if ((depth != NULL) && (*depth < 1)) {
@@ -236,7 +236,7 @@ tbd_apply_cmd_file_create(FILE *stream)
 	   tbd_read_uint32(&fsize, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
-	fprintf(stderr, "cmd_file_create %s:%"PRId32"\n", fname, fsize);
+	TBD_DEBUGF("cmd_file_create %s:%"PRId32"\n", fname, fsize);
 
 	FILE *fp = fopen(fname, "rb");
 	if(fp != NULL) {
@@ -294,7 +294,7 @@ tbd_apply_cmd_file_delta(FILE *stream)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	fname[flen] = '\0';
 
-	fprintf(stderr, "cmd_file_delta %s\n", fname);
+	TBD_DEBUGF("cmd_file_delta %s\n", fname);
 
 	if((strchr(fname, '/') != NULL) ||
 	    (strcmp(fname, "..") == 0))
@@ -485,7 +485,7 @@ tbd_apply_cmd_entity_delete(FILE *stream)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	ename[elen] = '\0';
 
-	fprintf(stderr, "cmd_entity_delete %s\n", ename);
+	TBD_DEBUGF("cmd_entity_delete %s\n", ename);
 
 	if((strchr(ename, '/') != NULL) || (strcmp(ename, "..") == 0))
 		return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
@@ -523,7 +523,7 @@ tbd_apply_cmd_symlink_create(FILE *stream)
 	if(fread(linkpath, sizeof(char), len, stream) != len)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
-	fprintf(stderr, "cmd_symlink_create %s -> %s\n", linkname, linkpath);
+	TBD_DEBUGF("cmd_symlink_create %s -> %s\n", linkname, linkpath);
 
 	if(symlink(linkpath, linkname))
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_CREATE_SYMLINK);
@@ -559,7 +559,7 @@ tbd_apply_cmd_special_create(FILE *stream)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	}
 
-	fprintf(stderr, "cmd_special_create %s\n", name);
+	TBD_DEBUGF("cmd_special_create %s\n", name);
 
 	if(mknod(name, mode, (dev_t)dev) != 0) {
 		free(name);
@@ -596,7 +596,7 @@ tbd_apply_cmd_dir_delta(FILE *stream)
 	if(dname == NULL)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
-	fprintf(stderr, "cmd_dir_delta %s\n", dname);
+	TBD_DEBUGF("cmd_dir_delta %s\n", dname);
 
 	if(metadata_mask & TBD_METADATA_MTIME) {
 		struct utimbuf timebuff = { time(NULL), mtime };
@@ -631,7 +631,7 @@ tbd_apply_cmd_file_mdata_update(FILE *stream)
 	if(dname == NULL)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
-	fprintf(stderr, "cmd_metadata_update %s\n", dname);
+	TBD_DEBUGF("cmd_metadata_update %s\n", dname);
 
 	if(metadata_mask & TBD_METADATA_MTIME) {
 		struct utimbuf timebuff = { time(NULL), mtime };

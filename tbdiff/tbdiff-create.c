@@ -685,7 +685,7 @@ tbd_create_impl(FILE       *stream,
 
 	int err;
 	if(((b == NULL) || ((a != NULL) && (a->type != b->type)))) {
-		fprintf(stderr, "file delete %s\n", a->name);
+		TBD_DEBUGF("file delete %s\n", a->name);
 		if((err = tbd_create_cmd_entity_delete(stream, a->name)) != 0)
 			return err;
 	}
@@ -693,21 +693,21 @@ tbd_create_impl(FILE       *stream,
 	if((a == NULL) || ((b != NULL) && (a->type != b->type))) {
 		switch(b->type) {
 		case TBD_STAT_TYPE_FILE:
-			fprintf(stderr, "file new %s\n", b->name);
+			TBD_DEBUGF("file new %s\n", b->name);
 			return tbd_create_cmd_file_create(stream, b);
 		case TBD_STAT_TYPE_DIR:
-			fprintf(stderr, "dir new %s\n", b->name);
+			TBD_DEBUGF("dir new %s\n", b->name);
 			return tbd_create_dir(stream, b);
 		case TBD_STAT_TYPE_SYMLINK:
-			fprintf(stderr, "symlink new %s\n", b->name);
+			TBD_DEBUGF("symlink new %s\n", b->name);
 			return tbd_create_cmd_symlink_create(stream, b);
 		case TBD_STAT_TYPE_CHRDEV:
 		case TBD_STAT_TYPE_BLKDEV:
 		case TBD_STAT_TYPE_FIFO:
-			fprintf(stderr, "special new %s\n", b->name);
+			TBD_DEBUGF("special new %s\n", b->name);
 			return tbd_create_cmd_special_create(stream, b);
 		case TBD_STAT_TYPE_SOCKET:
-			fprintf(stderr, "socket new %s\n", b->name);
+			TBD_DEBUGF("socket new %s\n", b->name);
 			return tbd_create_cmd_socket_create(stream, b);
 		default:
 			return TBD_ERROR(TBD_ERROR_FEATURE_NOT_IMPLEMENTED);
@@ -716,22 +716,22 @@ tbd_create_impl(FILE       *stream,
 
 	switch(b->type) {
 	case TBD_STAT_TYPE_FILE:
-		fprintf(stderr, "file delta %s\n", a->name);
+		TBD_DEBUGF("file delta %s\n", a->name);
 		return tbd_create_cmd_file_delta(stream, a, b);
 	case TBD_STAT_TYPE_SYMLINK:
-		fprintf(stderr, "symlink delta %s\n", a->name);
+		TBD_DEBUGF("symlink delta %s\n", a->name);
 		return tbd_create_cmd_symlink_delta(stream, a, b);
 	case TBD_STAT_TYPE_CHRDEV:
 	case TBD_STAT_TYPE_BLKDEV:
 	case TBD_STAT_TYPE_FIFO:
-		fprintf(stderr, "special delta %s\n", a->name);
+		TBD_DEBUGF("special delta %s\n", a->name);
 		return tbd_create_cmd_special_delta(stream, a, b);
 	case TBD_STAT_TYPE_SOCKET:
-		fprintf(stderr, "socket delta %s\n", a->name);
+		TBD_DEBUGF("socket delta %s\n", a->name);
 		return tbd_create_cmd_socket_delta(stream, a, b);
 	case TBD_STAT_TYPE_DIR:
 		if(!top) {
-			fprintf(stderr, "dir delta %s\n", a->name);
+			TBD_DEBUGF("dir delta %s\n", a->name);
 			if ((err = tbd_create_cmd_dir_delta(stream, a, b)) !=
 			    TBD_ERROR_SUCCESS) {
 				return err;
