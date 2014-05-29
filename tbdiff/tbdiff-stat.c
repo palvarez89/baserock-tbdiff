@@ -1,5 +1,5 @@
 /*
- *    Copyright (C) 2011-2012 Codethink Ltd.
+ *    Copyright (C) 2011-2014 Codethink Ltd.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License Version 2 as
@@ -144,8 +144,10 @@ tbd_stat_entry(tbd_stat_t *file, uint32_t entry)
 	closedir (dp);
 
 	char *spath = tbd_stat_subpath(file, name);
-	if(spath == NULL)
+	if(spath == NULL) {
+		free(name);
 		return NULL;
+    }
 
 	tbd_stat_t *ret = tbd_stat_from_path(name, (const char*)spath);
 
