@@ -45,6 +45,8 @@ typedef enum {
 	TBD_CMD_XATTRS_UPDATE        = 0x60,
 } tbd_cmd_e;
 
+typedef uint8_t tbd_cmd_t;
+
 typedef enum {
 	TBD_METADATA_NONE  = 0x0,
 	TBD_METADATA_MTIME = 0x1,

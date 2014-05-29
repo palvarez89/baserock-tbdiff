@@ -93,8 +93,8 @@ tbd_apply_fread_block(FILE *stream, void **data, size_t *size)
 static int
 tbd_apply_identify(FILE *stream)
 {
-	uint8_t cmd;
-	if(fread(&cmd, 1, 1, stream) != 1)
+	tbd_cmd_t cmd;
+	if(fread(&cmd, sizeof(tbd_cmd_t), 1, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	if(cmd != TBD_CMD_IDENTIFY)
 		return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
@@ -712,8 +712,8 @@ tbd_apply(FILE *stream)
 	uintptr_t depth = 0;
 	bool flush = false;
 	while(!flush) {
-		uint8_t cmd;
-		if(fread(&cmd, 1, 1, stream) != 1)
+		tbd_cmd_t cmd;
+		if(fread(&cmd, sizeof(tbd_cmd_t), 1, stream) != 1)
 			return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 		switch(cmd) {
 		case TBD_CMD_DIR_CREATE:

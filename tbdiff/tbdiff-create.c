@@ -33,10 +33,10 @@
 #define PATH_BUFFER_LENGTH 4096
 
 static int
-tbd_create_fwrite_cmd(FILE    *stream,
-                      uint8_t  cmd)
+tbd_create_fwrite_cmd(FILE     *stream,
+                      tbd_cmd_t cmd)
 {
-	if(fwrite(&cmd, 1, 1, stream) != 1)
+	if(fwrite(&cmd, sizeof(tbd_cmd_t), 1, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
