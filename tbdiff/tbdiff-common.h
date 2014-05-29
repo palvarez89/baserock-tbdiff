@@ -1,5 +1,5 @@
 /*
- *    Copyright (C) 2011-2012 Codethink Ltd.
+ *    Copyright (C) 2011-2014 Codethink Ltd.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License Version 2 as
@@ -55,31 +55,31 @@ typedef enum {
 } tbd_metadata_type_e;
 
 typedef enum {
-	TBD_ERROR_SUCCESS =  0,
-	TBD_ERROR_FAILURE = -1,
-	TBD_ERROR_OUT_OF_MEMORY = -2,
-	TBD_ERROR_NULL_POINTER = -3,
-	TBD_ERROR_INVALID_PARAMETER = -4,
-	TBD_ERROR_UNABLE_TO_READ_STREAM  = -5,
-	TBD_ERROR_UNABLE_TO_WRITE_STREAM = -6,
-	TBD_ERROR_UNABLE_TO_CREATE_DIR = -7,
-	TBD_ERROR_UNABLE_TO_CHANGE_DIR = -8,
-	TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_READING = -9,
-	TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_WRITING = -10,
-	TBD_ERROR_FILE_ALREADY_EXISTS = -11,
-	TBD_ERROR_UNABLE_TO_REMOVE_FILE = -12,
-	TBD_ERROR_UNABLE_TO_SEEK_THROUGH_STREAM = -13,
-	TBD_ERROR_FEATURE_NOT_IMPLEMENTED = -14,
-	TBD_ERROR_FILE_DOES_NOT_EXIST = -15,
+	TBD_ERROR_SUCCESS                          =   0,
+	TBD_ERROR_FAILURE                          =  -1,
+	TBD_ERROR_OUT_OF_MEMORY                    =  -2,
+	TBD_ERROR_NULL_POINTER                     =  -3,
+	TBD_ERROR_INVALID_PARAMETER                =  -4,
+	TBD_ERROR_UNABLE_TO_READ_STREAM            =  -5,
+	TBD_ERROR_UNABLE_TO_WRITE_STREAM           =  -6,
+	TBD_ERROR_UNABLE_TO_CREATE_DIR             =  -7,
+	TBD_ERROR_UNABLE_TO_CHANGE_DIR             =  -8,
+	TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_READING  =  -9,
+	TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_WRITING  = -10,
+	TBD_ERROR_FILE_ALREADY_EXISTS              = -11,
+	TBD_ERROR_UNABLE_TO_REMOVE_FILE            = -12,
+	TBD_ERROR_UNABLE_TO_SEEK_THROUGH_STREAM    = -13,
+	TBD_ERROR_FEATURE_NOT_IMPLEMENTED          = -14,
+	TBD_ERROR_FILE_DOES_NOT_EXIST              = -15,
 	TBD_ERROR_UNABLE_TO_DETECT_STREAM_POSITION = -16,
-	TBD_ERROR_UNABLE_TO_STAT_FILE = -17,
-	TBD_ERROR_UNABLE_TO_READ_SYMLINK = -18,
-	TBD_ERROR_UNABLE_TO_CREATE_SYMLINK = -19,
-	TBD_ERROR_UNABLE_TO_READ_SPECIAL_FILE = -20,
-	TBD_ERROR_UNABLE_TO_CREATE_SPECIAL_FILE = -21,
-	TBD_ERROR_UNABLE_TO_CREATE_SOCKET_FILE = -22,
-	TBD_ERROR_XATTRS_NOT_SUPPORTED = -23,
-	TBD_ERROR_XATTRS_MISSING_ATTR = -24,
+	TBD_ERROR_UNABLE_TO_STAT_FILE              = -17,
+	TBD_ERROR_UNABLE_TO_READ_SYMLINK           = -18,
+	TBD_ERROR_UNABLE_TO_CREATE_SYMLINK         = -19,
+	TBD_ERROR_UNABLE_TO_READ_SPECIAL_FILE      = -20,
+	TBD_ERROR_UNABLE_TO_CREATE_SPECIAL_FILE    = -21,
+	TBD_ERROR_UNABLE_TO_CREATE_SOCKET_FILE     = -22,
+	TBD_ERROR_XATTRS_NOT_SUPPORTED             = -23,
+	TBD_ERROR_XATTRS_MISSING_ATTR              = -24,
 } tbd_error_e;
 
 #ifdef NDEBUG
@@ -97,7 +97,7 @@ tbd_error(tbd_error_e e, char const *s, char const *func, int line,
 }
 #endif
 
-extern int         tbd_apply (FILE *stream);
-extern int         tbd_create(FILE *stream, tbd_stat_t *a, tbd_stat_t *b);
+extern int tbd_apply (FILE *stream);
+extern int tbd_create(FILE *stream, tbd_stat_t *a, tbd_stat_t *b);
 
 #endif /* !__TBDIFF_COMMON_H__ */
