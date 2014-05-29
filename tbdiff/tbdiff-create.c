@@ -33,8 +33,8 @@
 #define PATH_BUFFER_LENGTH 4096
 
 static int
-tbd_create_fwrite_cmd(FILE     *stream,
-                      tbd_cmd_t cmd)
+tbd_create_write_cmd(FILE     *stream,
+                     tbd_cmd_t cmd)
 {
 	if(fwrite(&cmd, sizeof(tbd_cmd_t), 1, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
@@ -42,8 +42,8 @@ tbd_create_fwrite_cmd(FILE     *stream,
 }
 
 static int
-tbd_create_fwrite_string(FILE       *stream,
-                         const char *string)
+tbd_create_write_string(FILE       *stream,
+                        const char *string)
 {
 	uint16_t slen = strlen(string);
 	if((tbd_write_uint16(slen, stream) != 1)
@@ -53,9 +53,9 @@ tbd_create_fwrite_string(FILE       *stream,
 }
 
 static int
-tbd_create_fwrite_block(FILE       *stream,
-                        void const *data,
-                        size_t      size)
+tbd_create_write_block(FILE       *stream,
+                       void const *data,
+                       size_t      size)
 {
 	if (fwrite(&size, 1, sizeof(size), stream) != sizeof(size)) {
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
@@ -68,8 +68,8 @@ tbd_create_fwrite_block(FILE       *stream,
 }
 
 static int
-tbd_create_fwrite_mdata_mask(FILE    *stream,
-                             uint16_t mask)
+tbd_create_write_mdata_mask(FILE    *stream,
+                            uint16_t mask)
 {
 	if(tbd_write_uint16(mask, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
@@ -77,8 +77,8 @@ tbd_create_fwrite_mdata_mask(FILE    *stream,
 }
 
 static int
-tbd_create_fwrite_mtime(FILE  *stream,
-                        time_t mtime)
+tbd_create_write_mtime(FILE  *stream,
+                       time_t mtime)
 {
 	if(tbd_write_time(mtime, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
@@ -86,8 +86,8 @@ tbd_create_fwrite_mtime(FILE  *stream,
 }
 
 static int
-tbd_create_fwrite_mode(FILE  *stream,
-                       mode_t mode)
+tbd_create_write_mode(FILE  *stream,
+                      mode_t mode)
 {
 	if(tbd_write_mode(mode, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
@@ -95,8 +95,8 @@ tbd_create_fwrite_mode(FILE  *stream,
 }
 
 static int
-tbd_create_fwrite_gid(FILE *stream,
-                      gid_t gid)
+tbd_create_write_gid(FILE *stream,
+                     gid_t gid)
 {
 	if(tbd_write_gid(gid, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
@@ -104,8 +104,8 @@ tbd_create_fwrite_gid(FILE *stream,
 }
 
 static int
-tbd_create_fwrite_uid(FILE *stream,
-                      uid_t uid)
+tbd_create_write_uid(FILE *stream,
+                     uid_t uid)
 {
 	if(tbd_write_uid(uid, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
@@ -113,8 +113,8 @@ tbd_create_fwrite_uid(FILE *stream,
 }
 
 static int
-tbd_create_fwrite_dev(FILE    *stream,
-                      uint32_t dev)
+tbd_create_write_dev(FILE    *stream,
+                     uint32_t dev)
 {
 	if(tbd_write_uint32(dev, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
@@ -126,9 +126,9 @@ tbd_create_cmd_ident(FILE *stream)
 {
 	int err;
 
-	if((err = tbd_create_fwrite_cmd(stream, TBD_CMD_IDENTIFY)) != 0)
+	if((err = tbd_create_write_cmd(stream, TBD_CMD_IDENTIFY)) != 0)
 		return err;
-	if((err = tbd_create_fwrite_string(stream, TB_DIFF_PROTOCOL_ID)) != 0)
+	if((err = tbd_create_write_string(stream, TB_DIFF_PROTOCOL_ID)) != 0)
 		return err;
 	return 0;
 }
@@ -136,7 +136,7 @@ tbd_create_cmd_ident(FILE *stream)
 static int
 tbd_create_cmd_update(FILE *stream)
 {
-	return tbd_create_fwrite_cmd(stream, TBD_CMD_UPDATE);
+	return tbd_create_write_cmd(stream, TBD_CMD_UPDATE);
 }
 
 /* callback function to pass to tbx_xattrs_pairs
@@ -148,12 +148,12 @@ _write_pair(char const *name, void const *data, size_t size, void *ud)
 	FILE *stream = ud;
 	int err;
 
-	if ((err = tbd_create_fwrite_string(stream, name)) !=
+	if ((err = tbd_create_write_string(stream, name)) !=
 	    TBD_ERROR_SUCCESS) {
 		return err;
 	}
 
-	if ((err = tbd_create_fwrite_block(stream, data, size)) !=
+	if ((err = tbd_create_write_block(stream, data, size)) !=
 	    TBD_ERROR_SUCCESS) {
 		return err;
 	}
@@ -188,13 +188,13 @@ tbd_create_cmd_fwrite_xattrs(FILE *stream, tbd_stat_t *f)
 			goto cleanup_names;
 		}
 
-		if ((err = tbd_create_fwrite_cmd(stream,
+		if ((err = tbd_create_write_cmd(stream,
 						 TBD_CMD_XATTRS_UPDATE)
 		    ) != TBD_ERROR_SUCCESS) {
 			goto cleanup_names;
 		}
 
-		if ((err = tbd_create_fwrite_string(stream, f->name))!=
+		if ((err = tbd_create_write_string(stream, f->name))!=
 		    TBD_ERROR_SUCCESS) {
 			goto cleanup_names;
 		}
@@ -220,12 +220,12 @@ tbd_create_cmd_file_create(FILE       *stream,
                            tbd_stat_t *f)
 {
 	int err;
-	if((err = tbd_create_fwrite_cmd(stream, TBD_CMD_FILE_CREATE)) != 0 ||
-	   (err = tbd_create_fwrite_string(stream, f->name))          != 0 ||
-	   (err = tbd_create_fwrite_mtime (stream, f->mtime))         != 0 ||
-	   (err = tbd_create_fwrite_mode  (stream, f->mode))          != 0 ||
-	   (err = tbd_create_fwrite_uid   (stream, f->uid))           != 0 ||
-	   (err = tbd_create_fwrite_gid   (stream, f->gid))           != 0)
+	if((err = tbd_create_write_cmd(stream, TBD_CMD_FILE_CREATE)) != 0 ||
+	   (err = tbd_create_write_string(stream, f->name))          != 0 ||
+	   (err = tbd_create_write_mtime (stream, f->mtime))         != 0 ||
+	   (err = tbd_create_write_mode  (stream, f->mode))          != 0 ||
+	   (err = tbd_create_write_uid   (stream, f->uid))           != 0 ||
+	   (err = tbd_create_write_gid   (stream, f->gid))           != 0)
 		return err;
 
 	uint32_t size = f->size;
@@ -280,15 +280,15 @@ tbd_create_cmd_file_metadata_update(FILE       *stream,
 	if(metadata_mask == TBD_METADATA_NONE)
 		return 0;
 	/* TODO: Optimize protocol by only sending useful metadata */
-	if((err = tbd_create_fwrite_cmd(stream, TBD_CMD_FILE_METADATA_UPDATE)) != 0 ||
-	   (err = tbd_create_fwrite_mdata_mask(stream, metadata_mask))         != 0 ||
-	   (err = tbd_create_fwrite_mtime     (stream, b->mtime))              != 0 ||
-	   (err = tbd_create_fwrite_uid       (stream, b->uid))                != 0 ||
-	   (err = tbd_create_fwrite_gid       (stream, b->gid))                != 0 ||
-	   (err = tbd_create_fwrite_mode      (stream, b->mode))               != 0)
+	if((err = tbd_create_write_cmd(stream, TBD_CMD_FILE_METADATA_UPDATE)) != 0 ||
+	   (err = tbd_create_write_mdata_mask(stream, metadata_mask))         != 0 ||
+	   (err = tbd_create_write_mtime     (stream, b->mtime))              != 0 ||
+	   (err = tbd_create_write_uid       (stream, b->uid))                != 0 ||
+	   (err = tbd_create_write_gid       (stream, b->gid))                != 0 ||
+	   (err = tbd_create_write_mode      (stream, b->mode))               != 0)
 		return err;
 
-	return tbd_create_fwrite_string(stream, b->name);
+	return tbd_create_write_string(stream, b->name);
 }
 
 static int
@@ -400,13 +400,13 @@ tbd_create_cmd_file_delta(FILE        *stream,
 
 	/* TODO: Optimize protocol by only sending useful metadata */
 	int err;
-	if(((err = tbd_create_fwrite_cmd(stream, TBD_CMD_FILE_DELTA))    != 0) ||
-	    ((err = tbd_create_fwrite_string(stream, b->name))           != 0) ||
-	    ((err = tbd_create_fwrite_mdata_mask(stream, metadata_mask)) != 0) ||
-	    ((err = tbd_create_fwrite_mtime (stream, b->mtime))          != 0) ||
-	    ((err = tbd_create_fwrite_uid   (stream, b->uid))            != 0) ||
-	    ((err = tbd_create_fwrite_gid   (stream, b->gid))            != 0) ||
-	    ((err = tbd_create_fwrite_mode  (stream, b->mode))           != 0)) {
+	if(((err = tbd_create_write_cmd(stream, TBD_CMD_FILE_DELTA))    != 0) ||
+	    ((err = tbd_create_write_string(stream, b->name))           != 0) ||
+	    ((err = tbd_create_write_mdata_mask(stream, metadata_mask)) != 0) ||
+	    ((err = tbd_create_write_mtime (stream, b->mtime))          != 0) ||
+	    ((err = tbd_create_write_uid   (stream, b->uid))            != 0) ||
+	    ((err = tbd_create_write_gid   (stream, b->gid))            != 0) ||
+	    ((err = tbd_create_write_mode  (stream, b->mode))           != 0)) {
 		fclose(fpb);
 		return err;
 	}
@@ -443,14 +443,14 @@ tbd_create_cmd_dir_create(FILE       *stream,
 {
 	int err;
 
-	if((err = tbd_create_fwrite_cmd(stream, TBD_CMD_DIR_CREATE)) != 0 ||
-	   (err = tbd_create_fwrite_string(stream, d->name))         != 0 ||
-	   (err = tbd_create_fwrite_mtime(stream, d->mtime))         != 0 ||
-	   (err = tbd_create_fwrite_uid(stream, d->uid))             != 0 ||
-	   (err = tbd_create_fwrite_gid(stream, d->gid))             != 0)
+	if((err = tbd_create_write_cmd(stream, TBD_CMD_DIR_CREATE)) != 0 ||
+	   (err = tbd_create_write_string(stream, d->name))         != 0 ||
+	   (err = tbd_create_write_mtime(stream, d->mtime))         != 0 ||
+	   (err = tbd_create_write_uid(stream, d->uid))             != 0 ||
+	   (err = tbd_create_write_gid(stream, d->gid))             != 0)
 		return err;
 
-	return tbd_create_fwrite_mode(stream, d->mode);
+	return tbd_create_write_mode(stream, d->mode);
 }
 
 static int
@@ -458,9 +458,9 @@ tbd_create_cmd_dir_enter(FILE       *stream,
                          const char *name)
 {
 	int err;
-	if((err = tbd_create_fwrite_cmd(stream, TBD_CMD_DIR_ENTER)) != 0)
+	if((err = tbd_create_write_cmd(stream, TBD_CMD_DIR_ENTER)) != 0)
 		return err;
-	return tbd_create_fwrite_string(stream, name);
+	return tbd_create_write_string(stream, name);
 }
 
 static int
@@ -468,12 +468,12 @@ tbd_create_cmd_dir_leave(FILE       *stream,
                          tbd_stat_t *dir)
 {
 	int err;
-	if ((err = tbd_create_fwrite_cmd(stream, TBD_CMD_DIR_LEAVE)) !=
+	if ((err = tbd_create_write_cmd(stream, TBD_CMD_DIR_LEAVE)) !=
 	    TBD_ERROR_SUCCESS) {
 		return err;
 	}
 
-	return tbd_create_fwrite_mtime(stream, dir->mtime);
+	return tbd_create_write_mtime(stream, dir->mtime);
 }
 
 static int
@@ -481,9 +481,9 @@ tbd_create_cmd_entity_delete(FILE       *stream,
                              const char *name)
 {
 	int err;
-	if((err = tbd_create_fwrite_cmd(stream, TBD_CMD_ENTITY_DELETE)) != 0)
+	if((err = tbd_create_write_cmd(stream, TBD_CMD_ENTITY_DELETE)) != 0)
 		return err;
-	return tbd_create_fwrite_string(stream, name);
+	return tbd_create_write_string(stream, name);
 }
 
 static int
@@ -497,15 +497,15 @@ tbd_create_cmd_dir_delta(FILE        *stream,
 	if(metadata_mask == TBD_METADATA_NONE)
 		return 0;
 
-	if((err = tbd_create_fwrite_cmd(stream, TBD_CMD_DIR_DELTA))     != 0 ||
-	   (err = tbd_create_fwrite_mdata_mask (stream, metadata_mask)) != 0 ||
-	   (err = tbd_create_fwrite_mtime      (stream, b->mtime))      != 0 ||
-	   (err = tbd_create_fwrite_uid        (stream, b->uid))        != 0 ||
-	   (err = tbd_create_fwrite_gid        (stream, b->gid))        != 0 ||
-	   (err = tbd_create_fwrite_mode       (stream, b->mode))       != 0)
+	if((err = tbd_create_write_cmd(stream, TBD_CMD_DIR_DELTA))     != 0 ||
+	   (err = tbd_create_write_mdata_mask (stream, metadata_mask)) != 0 ||
+	   (err = tbd_create_write_mtime      (stream, b->mtime))      != 0 ||
+	   (err = tbd_create_write_uid        (stream, b->uid))        != 0 ||
+	   (err = tbd_create_write_gid        (stream, b->gid))        != 0 ||
+	   (err = tbd_create_write_mode       (stream, b->mode))       != 0)
 		return err;
 
-	return tbd_create_fwrite_string(stream, b->name);
+	return tbd_create_write_string(stream, b->name);
 }
 
 static int
@@ -522,14 +522,14 @@ tbd_create_cmd_symlink_create(FILE       *stream,
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_SYMLINK);
 	path[len] = '\0';
 
-	if((err = tbd_create_fwrite_cmd(stream, TBD_CMD_SYMLINK_CREATE)) != 0 ||
-	   (err = tbd_create_fwrite_mtime (stream, symlink->mtime))      != 0 ||
-	   (err = tbd_create_fwrite_uid   (stream, symlink->uid))        != 0 ||
-	   (err = tbd_create_fwrite_gid   (stream, symlink->gid))        != 0 ||
-	   (err = tbd_create_fwrite_string(stream, symlink->name))       != 0)
+	if((err = tbd_create_write_cmd(stream, TBD_CMD_SYMLINK_CREATE)) != 0 ||
+	   (err = tbd_create_write_mtime (stream, symlink->mtime))      != 0 ||
+	   (err = tbd_create_write_uid   (stream, symlink->uid))        != 0 ||
+	   (err = tbd_create_write_gid   (stream, symlink->gid))        != 0 ||
+	   (err = tbd_create_write_string(stream, symlink->name))       != 0)
 		return err;
 
-	return tbd_create_fwrite_string(stream, path);
+	return tbd_create_write_string(stream, path);
 }
 
 static int
@@ -576,14 +576,14 @@ tbd_create_cmd_special_create(FILE       *stream,
 {
 	int err;
 
-	if((err = tbd_create_fwrite_cmd(stream, TBD_CMD_SPECIAL_CREATE)) != 0 ||
-	   (err = tbd_create_fwrite_string(stream, nod->name))           != 0 ||
-	   (err = tbd_create_fwrite_mtime (stream, nod->mtime))          != 0 ||
-	   (err = tbd_create_fwrite_mode  (stream, nod->mode))           != 0 ||
-	   (err = tbd_create_fwrite_uid   (stream, nod->uid))            != 0 ||
-	   (err = tbd_create_fwrite_gid   (stream, nod->gid))            != 0)
+	if((err = tbd_create_write_cmd(stream, TBD_CMD_SPECIAL_CREATE)) != 0 ||
+	   (err = tbd_create_write_string(stream, nod->name))           != 0 ||
+	   (err = tbd_create_write_mtime (stream, nod->mtime))          != 0 ||
+	   (err = tbd_create_write_mode  (stream, nod->mode))           != 0 ||
+	   (err = tbd_create_write_uid   (stream, nod->uid))            != 0 ||
+	   (err = tbd_create_write_gid   (stream, nod->gid))            != 0)
 		return err;
-	return tbd_create_fwrite_dev(stream, nod->rdev);
+	return tbd_create_write_dev(stream, nod->rdev);
 }
 
 static int

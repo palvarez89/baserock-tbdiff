@@ -43,7 +43,7 @@
 #include <tbdiff/tbdiff-xattrs.h>
 
 char*
-tbd_apply_fread_string(FILE *stream)
+tbd_apply_read_string(FILE *stream)
 {
 	uint16_t dlen;
 	if(tbd_read_uint16(&dlen, stream) != 1)
@@ -67,7 +67,7 @@ tbd_apply_fread_string(FILE *stream)
  *  - or your allocator does nothing when asked to free non-allocated memory
  */
 int
-tbd_apply_fread_block(FILE *stream, void **data, size_t *size)
+tbd_apply_read_block(FILE *stream, void **data, size_t *size)
 {
 	{
 		size_t _size;
@@ -542,7 +542,7 @@ tbd_apply_cmd_symlink_create(FILE *stream)
 static int
 tbd_apply_cmd_special_create(FILE *stream)
 {
-	char *name = tbd_apply_fread_string(stream);
+	char *name = tbd_apply_read_string(stream);
 	time_t mtime;
 	mode_t mode;
 	uid_t uid;
@@ -592,7 +592,7 @@ tbd_apply_cmd_dir_delta(FILE *stream)
 	   tbd_read_uint32(&mode         , stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
-	char *dname = tbd_apply_fread_string(stream);
+	char *dname = tbd_apply_read_string(stream);
 	if(dname == NULL)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
@@ -627,7 +627,7 @@ tbd_apply_cmd_file_mdata_update(FILE *stream)
 	   tbd_read_uint32(&mode         , stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
-	char *dname = tbd_apply_fread_string(stream);
+	char *dname = tbd_apply_read_string(stream);
 	if(dname == NULL)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
@@ -655,7 +655,7 @@ tbd_apply_cmd_xattrs_update(FILE *stream)
 	void *data = NULL;
 	size_t dsize = 0;
 	/* read the name of the file to operate on */
-	if ((fname = tbd_apply_fread_string(stream)) == NULL) {
+	if ((fname = tbd_apply_read_string(stream)) == NULL) {
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	}
 
@@ -672,14 +672,14 @@ tbd_apply_cmd_xattrs_update(FILE *stream)
 
 	/* operate on each attribute */
 	while (count > 0) {
-		char *aname = tbd_apply_fread_string(stream);
+		char *aname = tbd_apply_read_string(stream);
 		if (aname == NULL) {
 			err=TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 			goto cleanup;
 		}
 
 		/* read a block of data, reallocating if needed */
-		if ((err = tbd_apply_fread_block(stream, &data, &dsize))
+		if ((err = tbd_apply_read_block(stream, &data, &dsize))
 		    != TBD_ERROR_SUCCESS) {
 			free(aname);
 			goto cleanup;
