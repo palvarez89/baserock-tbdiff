@@ -148,7 +148,8 @@ tbd_apply_cmd_dir_create(FILE *stream)
 	struct utimbuf timebuff = { time(NULL), mtime };
 	utime(dname, &timebuff); /* Don't care if it succeeds right now. */
 
-	chown(dname, (uid_t)uid, (gid_t)gid);
+	if (chown(dname, (uid_t)uid, (gid_t)gid) < 0)
+		TBD_WARN("Failed to change ownership of directory");
 	chmod (dname, mode);
 
 	return 0;
@@ -270,7 +271,8 @@ tbd_apply_cmd_file_create(FILE *stream)
 	/* Don't care if it succeeds right now. */
 	utime(fname, &timebuff);
 	/* Chown ALWAYS have to be done before chmod */
-	chown(fname, (uid_t)uid, (gid_t)gid);
+	if (chown(fname, (uid_t)uid, (gid_t)gid) < 0)
+		TBD_WARN("Failed to change ownership of file");
 	chmod(fname, mode);
 
 	return 0;
@@ -534,7 +536,8 @@ tbd_apply_cmd_symlink_create(FILE *stream)
 	tv[1].tv_usec = 0;
 
 	lutimes(linkname, tv); /* Don't care if it succeeds right now. */
-	lchown(linkname, (uid_t)uid, (uid_t)gid);
+	if (lchown(linkname, (uid_t)uid, (uid_t)gid) < 0)
+		TBD_WARN("Failed to change ownership of symlink");
 
 	return TBD_ERROR_SUCCESS;
 }
@@ -569,7 +572,8 @@ tbd_apply_cmd_special_create(FILE *stream)
 	struct utimbuf timebuff = { time(NULL), mtime };
 	utime(name, &timebuff); /* Don't care if it succeeds right now. */
 
-	chown(name, (uid_t)uid, (gid_t)gid);
+	if (chown(name, (uid_t)uid, (gid_t)gid) < 0)
+		TBD_WARN("Failed to change ownership of node");
 	chmod(name, mode);
 
 	free(name);
@@ -602,8 +606,10 @@ tbd_apply_cmd_dir_delta(FILE *stream)
 		struct utimbuf timebuff = { time(NULL), mtime };
 		utime(dname, &timebuff); /* Don't care if it succeeds right now. */
 	}
-	if(metadata_mask & TBD_METADATA_UID || metadata_mask & TBD_METADATA_GID)
-		chown(dname, (uid_t)uid, (gid_t)gid);
+	if(metadata_mask & TBD_METADATA_UID || metadata_mask & TBD_METADATA_GID) {
+		if (chown(dname, (uid_t)uid, (gid_t)gid) < 0)
+			TBD_WARN("Failed to change ownership during file modification");
+	}
 	if(metadata_mask | TBD_METADATA_MODE)
 		chmod(dname, mode);
 
@@ -637,8 +643,11 @@ tbd_apply_cmd_file_mdata_update(FILE *stream)
 		struct utimbuf timebuff = { time(NULL), mtime };
 		utime(dname, &timebuff); /* Don't care if it succeeds right now. */
 	}
-	if(metadata_mask & TBD_METADATA_UID || metadata_mask & TBD_METADATA_GID)
-		chown(dname, (uid_t)uid, (gid_t)gid);
+	if(metadata_mask & TBD_METADATA_UID || metadata_mask & TBD_METADATA_GID) {
+		if (chown(dname, (uid_t)uid, (gid_t)gid) < 0)
+			TBD_WARN("Failed to change ownership"
+			         " during file attribute modification");
+	}
 	if(metadata_mask | TBD_METADATA_MODE)
 		chmod(dname, mode);
 
