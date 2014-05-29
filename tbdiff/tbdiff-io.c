@@ -88,11 +88,6 @@ size_t tbd_write_gid(gid_t value, FILE *stream) {
 	return fwrite(&value, sizeof(value), 1, stream);
 }
 
-size_t tbd_write_size(size_t value, FILE *stream) {
-	ENDIANSWAP(&value);
-	return fwrite(&value, sizeof(value), 1, stream);
-}
-
 size_t tbd_read_uint16(uint16_t *value, FILE *stream) {
 	assert(value != NULL);
 	size_t rval = fread(value, sizeof(*value), 1, stream);
@@ -138,13 +133,6 @@ size_t tbd_read_uid(uid_t *value, FILE *stream) {
 }
 
 size_t tbd_read_gid(gid_t *value, FILE *stream) {
-	assert(value != NULL);
-	size_t rval = fread(value, sizeof(*value), 1, stream);
-	ENDIANSWAP(value);
-	return rval;
-}
-
-size_t tbd_read_size(size_t *value, FILE *stream) {
 	assert(value != NULL);
 	size_t rval = fread(value, sizeof(*value), 1, stream);
 	ENDIANSWAP(value);
