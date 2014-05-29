@@ -46,7 +46,7 @@ tbd_create_fwrite_string(FILE       *stream,
                          const char *string)
 {
 	uint16_t slen = strlen(string);
-	if((tbd_write_uint16_t(slen, stream) != 1)
+	if((tbd_write_uint16(slen, stream) != 1)
 	    || (fwrite(string, 1, slen, stream) != slen))
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
@@ -71,7 +71,7 @@ static int
 tbd_create_fwrite_mdata_mask(FILE    *stream,
                              uint16_t mask)
 {
-	if(tbd_write_uint16_t(mask, stream) != 1)
+	if(tbd_write_uint16(mask, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
@@ -80,7 +80,7 @@ static int
 tbd_create_fwrite_mtime(FILE  *stream,
                         time_t mtime)
 {
-	if(tbd_write_time_t(mtime, stream) != 1)
+	if(tbd_write_time(mtime, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
@@ -89,7 +89,7 @@ static int
 tbd_create_fwrite_mode(FILE  *stream,
                        mode_t mode)
 {
-	if(tbd_write_mode_t(mode, stream) != 1)
+	if(tbd_write_mode(mode, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
@@ -98,7 +98,7 @@ static int
 tbd_create_fwrite_gid(FILE *stream,
                       gid_t gid)
 {
-	if(tbd_write_gid_t(gid, stream) != 1)
+	if(tbd_write_gid(gid, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
@@ -107,7 +107,7 @@ static int
 tbd_create_fwrite_uid(FILE *stream,
                       uid_t uid)
 {
-	if(tbd_write_uid_t(uid, stream) != 1)
+	if(tbd_write_uid(uid, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
@@ -116,7 +116,7 @@ static int
 tbd_create_fwrite_dev(FILE    *stream,
                       uint32_t dev)
 {
-	if(tbd_write_uint32_t(dev, stream) != 1)
+	if(tbd_write_uint32(dev, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
@@ -199,7 +199,7 @@ tbd_create_cmd_fwrite_xattrs(FILE *stream, tbd_stat_t *f)
 			goto cleanup_names;
 		}
 
-		if (tbd_write_uint32_t(count, stream) != 1) {
+		if (tbd_write_uint32(count, stream) != 1) {
 			err = TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 			goto cleanup_names;
 		}
@@ -229,7 +229,7 @@ tbd_create_cmd_file_create(FILE       *stream,
 		return err;
 
 	uint32_t size = f->size;
-	if(tbd_write_uint32_t(size, stream) != 1)
+	if(tbd_write_uint32(size, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 
 	FILE *fp = tbd_stat_fopen(f, "rb");
@@ -410,9 +410,9 @@ tbd_create_cmd_file_delta(FILE        *stream,
 		fclose(fpb);
 		return err;
 	}
-	if((tbd_write_uint32_t(start, stream) != 1) ||
-	    (tbd_write_uint32_t(end, stream) != 1)   ||
-	    (tbd_write_uint32_t(size, stream) != 1)) {
+	if((tbd_write_uint32(start, stream) != 1) ||
+	    (tbd_write_uint32(end, stream) != 1)   ||
+	    (tbd_write_uint32(size, stream) != 1)) {
 		fclose(fpb);
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	}
