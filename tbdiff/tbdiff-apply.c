@@ -252,10 +252,14 @@ tbd_apply_cmd_file_create(FILE *stream)
 	for(; fsize != 0; fsize -= block) {
 		if(fsize < block)
 			block = fsize;
-		if(fread(fbuff, 1, block, stream) != block)
+		if(fread(fbuff, 1, block, stream) != block) {
+			fclose(fp);
 			return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
-		if(fwrite(fbuff, 1, block, fp) != block)
+		}
+		if(fwrite(fbuff, 1, block, fp) != block) {
+			fclose(fp);
 			return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+		}
 	}
 	fclose(fp);
 
@@ -280,6 +284,8 @@ tbd_apply_cmd_file_delta(FILE *stream)
 	gid_t gid;
 	mode_t mode;
 	uint16_t flen;
+	int error;
+
 	if(tbd_read_uint16_t(&flen, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	char fname[flen + 1];
@@ -315,45 +321,60 @@ tbd_apply_cmd_file_delta(FILE *stream)
 	}
 
 	uint32_t dstart, dend;
-	if(tbd_read_uint32_t(&dstart, stream) != 1)
-		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
-	if(tbd_read_uint32_t(&dend, stream) != 1)
-		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
+	if(tbd_read_uint32_t(&dstart, stream) != 1) {
+		error = TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		goto tbd_apply_cmd_file_delta_error;
+    }
+	if(tbd_read_uint32_t(&dend, stream) != 1) {
+		error = TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		goto tbd_apply_cmd_file_delta_error;
+    }
 
 	uintptr_t block;
 	uint8_t fbuff[256];
 	for(block = 256; dstart != 0; dstart -= block) {
 		if(dstart < block)
 			block = dstart;
-		if(fread(fbuff, 1, block, op) != block)
-			return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
-		if(fwrite(fbuff, 1, block, np) != block)
-			return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+		if(fread(fbuff, 1, block, op) != block) {
+			error = TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
+			goto tbd_apply_cmd_file_delta_error;
+		}
+		if(fwrite(fbuff, 1, block, np) != block) {
+			error = TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+			goto tbd_apply_cmd_file_delta_error;
+		}
 	}
 
 	uint32_t fsize;
-	if(tbd_read_uint32_t(&fsize, stream) != 1)
-		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
+	if(tbd_read_uint32_t(&fsize, stream) != 1) {
+		error = TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		goto tbd_apply_cmd_file_delta_error;
+	}
 
 	for(block = 256; fsize != 0; fsize -= block) {
 		if(fsize < block)
 			block = fsize;
-		if(fread(fbuff, 1, block, stream) != block)
-			return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
-		if(fwrite(fbuff, 1, block, np) != block)
-			return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+		if(fread(fbuff, 1, block, stream) != block) {
+			error = TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
+			goto tbd_apply_cmd_file_delta_error;
+		}
+		if(fwrite(fbuff, 1, block, np) != block) {
+			error = TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+			goto tbd_apply_cmd_file_delta_error;
+		}
 	}
 
 	if(fseek(op, dend, SEEK_SET) != 0) {
-		fclose(np);
-		fclose(op);
-		return TBD_ERROR(TBD_ERROR_UNABLE_TO_SEEK_THROUGH_STREAM);
+		error = TBD_ERROR(TBD_ERROR_UNABLE_TO_SEEK_THROUGH_STREAM);
+		goto tbd_apply_cmd_file_delta_error;
 	}
 
 	for(block = 256; block != 0;) {
 		block = fread(fbuff, 1, block, op);
-		if(fwrite(fbuff, 1, block, np) != block)
-			return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+		if(fwrite(fbuff, 1, block, np) != block) {
+			error = TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+			goto tbd_apply_cmd_file_delta_error;
+		}
 	}
 
 	fclose(np);
@@ -384,6 +405,12 @@ tbd_apply_cmd_file_delta(FILE *stream)
 	}
 
 	return 0;
+
+tbd_apply_cmd_file_delta_error:
+	fclose(np);
+	fclose(op);
+
+	return error;
 }
 
 static int tbd_apply_cmd_entity_delete_for_name(const char*);
