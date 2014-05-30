@@ -19,7 +19,7 @@
 #include <unistd.h>
 #include <assert.h>
 
-#include <tbdiff/tbdiff-stat.h>
+#include "tbdiff-stat.h"
 
 #if __STDC_VERSION__ >= 199901L
 #define RESTRICT restrict

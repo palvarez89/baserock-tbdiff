@@ -28,8 +28,8 @@
 
 #include <errno.h>
 
-#include <tbdiff/tbdiff-common.h>
-#include <tbdiff/tbdiff-xattrs.h>
+#include "tbdiff-common.h"
+#include "tbdiff-xattrs.h"
 
 int tbd_xattrs_names(char const *path, struct tbd_xattrs_names *names)
 {

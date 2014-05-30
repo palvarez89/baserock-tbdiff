@@ -27,7 +27,7 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#include <tbdiff/tbdiff-stat.h>
+#include "tbdiff-stat.h"
 
 static struct tbd_stat*
 tbd_stat_from_path(const char *name,

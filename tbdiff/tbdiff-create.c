@@ -25,10 +25,10 @@
 #include <dirent.h>
 #include <unistd.h>
 
-#include <tbdiff/tbdiff-common.h>
-#include <tbdiff/tbdiff-io.h>
-#include <tbdiff/tbdiff-private.h>
-#include <tbdiff/tbdiff-xattrs.h>
+#include "tbdiff-common.h"
+#include "tbdiff-io.h"
+#include "tbdiff-private.h"
+#include "tbdiff-xattrs.h"
 
 #define PATH_BUFFER_LENGTH 4096
 
