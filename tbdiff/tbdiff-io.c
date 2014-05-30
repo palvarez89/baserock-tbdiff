@@ -15,6 +15,7 @@
  *    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <stdbool.h>
 #include <endian.h>
 #include <unistd.h>
 #include <assert.h>
@@ -52,41 +53,42 @@ static inline void endianswap(void* value, size_t size)
 #define ENDIANSWAP(v)
 #endif
 
-size_t tbd_write_uint16(uint16_t value, FILE *stream) {
+bool tbd_write_uint16(uint16_t value, int stream) {
 	ENDIANSWAP(&value);
-	return fwrite(&value, sizeof(value), 1, stream);
+	return (write(stream, &value, sizeof(value)) == sizeof(value));
 }
 
-size_t tbd_write_uint32(uint32_t value, FILE *stream) {
+bool tbd_write_uint32(uint32_t value, int stream) {
 	ENDIANSWAP(&value);
-	return fwrite(&value, sizeof(value), 1, stream);
+	return (write(stream, &value, sizeof(value)) == sizeof(value));
 }
 
-size_t tbd_write_uint64(uint64_t value, FILE *stream) {
+bool tbd_write_uint64(uint64_t value, int stream) {
 	ENDIANSWAP(&value);
-	return fwrite(&value, sizeof(value), 1, stream);
+	return (write(stream, &value, sizeof(value)) == sizeof(value));
 }
 
-size_t tbd_write_time(time_t value, FILE *stream) {
+bool tbd_write_time(time_t value, int stream) {
 	uint64_t realv = value;
 	ENDIANSWAP(&realv);
-	return fwrite(&realv, sizeof(realv), 1, stream);
+	return (write(stream, &realv, sizeof(realv)) == sizeof(value));
 }
 
-size_t tbd_write_mode(mode_t value, FILE *stream) {
+bool tbd_write_mode(mode_t value, int stream) {
 	ENDIANSWAP(&value);
-	return fwrite(&value, sizeof(value), 1, stream);
+	return (write(stream, &value, sizeof(value)) == sizeof(value));
 }
 
-size_t tbd_write_uid(uid_t value, FILE *stream) {
+bool tbd_write_uid(uid_t value, int stream) {
 	ENDIANSWAP(&value);
-	return fwrite(&value, sizeof(value), 1, stream);
+	return (write(stream, &value, sizeof(value)) == sizeof(value));
 }
 
-size_t tbd_write_gid(gid_t value, FILE *stream) {
+bool tbd_write_gid(gid_t value, int stream) {
 	ENDIANSWAP(&value);
-	return fwrite(&value, sizeof(value), 1, stream);
+	return (write(stream, &value, sizeof(value)) == sizeof(value));
 }
+
 
 size_t tbd_read_uint16(uint16_t *value, FILE *stream) {
 	assert(value != NULL);

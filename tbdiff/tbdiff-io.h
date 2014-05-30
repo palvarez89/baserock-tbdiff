@@ -22,19 +22,20 @@
 #ifndef __TBDIFF_IO_H__
 #define __TBDIFF_IO_H__
 
+#include <stdbool.h>
 #include <endian.h>
 #include <unistd.h>
 #include <assert.h>
 
 #include <tbdiff/tbdiff-stat.h>
 
-size_t tbd_write_uint16(uint16_t value, FILE* stream);
-size_t tbd_write_uint32(uint32_t value, FILE* stream);
-size_t tbd_write_uint64(uint64_t value, FILE* stream);
-size_t tbd_write_time(time_t value, FILE* stream);
-size_t tbd_write_mode(mode_t value, FILE* stream);
-size_t tbd_write_uid(uid_t value, FILE* stream);
-size_t tbd_write_gid(gid_t value, FILE* stream);
+bool tbd_write_uint16(uint16_t value, int stream);
+bool tbd_write_uint32(uint32_t value, int stream);
+bool tbd_write_uint64(uint64_t value, int stream);
+bool tbd_write_time  (time_t   value, int stream);
+bool tbd_write_mode  (mode_t   value, int stream);
+bool tbd_write_uid   (uid_t    value, int stream);
+bool tbd_write_gid   (gid_t    value, int stream);
 
 size_t tbd_read_uint16(uint16_t *value, FILE* stream);
 size_t tbd_read_uint32(uint32_t *value, FILE* stream);

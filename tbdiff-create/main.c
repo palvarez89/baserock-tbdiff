@@ -18,7 +18,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <errno.h>
 
+#include <fcntl.h>
 #include <unistd.h>
 
 #include <tbdiff/tbdiff.h>
@@ -62,15 +64,17 @@ main(int    argc,
 		return EXIT_FAILURE;
 	}
 
-	FILE *fp = fopen(argv[1], "wb");
-	if(fp == NULL) {
-		fprintf(stderr, "ERROR: Unable to open patch for writing.\n");
+	int fd = open(argv[1],
+	              O_WRONLY | O_CREAT | O_TRUNC,
+	              S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+	if(fd < 0) {
+		fprintf(stderr, "Error(%d): Unable to open patch for writing.\n", errno);
 		return EXIT_FAILURE;
 	}
 
 	int err;
-	if((err = tbd_create(fp, tstat[0], tstat[1])) != 0) {
-		fclose(fp);	
+	if((err = tbd_create(fd, tstat[0], tstat[1])) != 0) {
+		close(fd);
 		tbd_stat_free(tstat[0]);
 		tbd_stat_free(tstat[1]);
 
@@ -89,7 +93,7 @@ main(int    argc,
 		return EXIT_FAILURE;
 	}
 
-	fclose(fp);
+	close(fd);
 	tbd_stat_free(tstat[0]);
 	tbd_stat_free(tstat[1]);
 
