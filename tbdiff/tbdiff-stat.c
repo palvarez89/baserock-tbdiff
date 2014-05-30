@@ -258,15 +258,3 @@ tbd_stat_open(struct tbd_stat *file, int flags)
 	free(path);
 	return fd;
 }
-
-FILE*
-tbd_stat_fopen(struct tbd_stat *file,
-               const char      *mode)
-{
-	char *path = tbd_stat_path(file);
-	if(path == NULL)
-		return NULL;
-	FILE *fp = fopen(path, mode);
-	free(path);
-	return fp;
-}

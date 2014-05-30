@@ -57,6 +57,5 @@ struct tbd_stat* tbd_stat_entry_find(struct tbd_stat *file, const char *name);
 char*            tbd_statubpath(struct tbd_stat *file, const char *entry);
 char*            tbd_stat_path(struct tbd_stat *file);
 int              tbd_stat_open(struct tbd_stat *file, int flags);
-FILE*            tbd_stat_fopen(struct tbd_stat *file, const char *mode);
 
 #endif /* !__TBDIFF_STAT_H__ */
