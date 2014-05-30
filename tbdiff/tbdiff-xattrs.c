@@ -31,7 +31,7 @@
 #include <tbdiff/tbdiff-common.h>
 #include <tbdiff/tbdiff-xattrs.h>
 
-int tbd_xattrs_names(char const *path, tbd_xattrs_names_t *names)
+int tbd_xattrs_names(char const *path, struct tbd_xattrs_names *names)
 {
 	char *attrnames = NULL;
 	/* get size of names list */
@@ -85,12 +85,12 @@ int tbd_xattrs_names(char const *path, tbd_xattrs_names_t *names)
 	return TBD_ERROR_SUCCESS;
 }
 
-void tbd_xattrs_names_free(tbd_xattrs_names_t *names)
+void tbd_xattrs_names_free(struct tbd_xattrs_names *names)
 {
 	free((void *)names->begin);
 }
 
-int tbd_xattrs_names_each(tbd_xattrs_names_t const *names,
+int tbd_xattrs_names_each(struct tbd_xattrs_names const *names,
                           int (*f)(char const *name, void *ud), void *ud)
 {
 	char const *name;
@@ -110,7 +110,8 @@ static int names_sum(char const *name, void *ud) {
 	(*((uint32_t*)ud))++;
 	return TBD_ERROR_SUCCESS;
 }
-int tbd_xattrs_names_count(tbd_xattrs_names_t const *names, uint32_t *count) {
+int tbd_xattrs_names_count(struct tbd_xattrs_names const *names,
+                                                uint32_t *count) {
 	uint32_t _count = 0;
 	int err;
 	if ((err = tbd_xattrs_names_each(names, &names_sum, &_count)) ==
@@ -137,7 +138,7 @@ static int name_remove(char const *name, void *ud) {
 int tbd_xattrs_removeall(char const *path)
 {
 	int err = TBD_ERROR_SUCCESS;
-	tbd_xattrs_names_t list;
+	struct tbd_xattrs_names list;
 
 	/* get the list of attributes */
 	if ((err = tbd_xattrs_names(path, &list)) != TBD_ERROR_SUCCESS) {
@@ -202,16 +203,16 @@ int tbd_xattrs_get(char const *path, char const* name, void **buf,
 	return TBD_ERROR_SUCCESS;
 }
 
-typedef struct {
+struct tbd_xattrs_pairs_params {
 	char const *path;
-	tbd_xattrs_pairs_callback_t f;
+	int (*f)(char const *, void const *, size_t, void *);
 	void *pairs_ud;
 	void *data;
 	size_t data_size;
-} tbd_xattrs_pairs_params_t;
+};
 static int call_with_data(char const *name, void *ud)
 {
-	tbd_xattrs_pairs_params_t *params;
+	struct tbd_xattrs_pairs_params *params;
 	params = ud;
 	size_t value_size;
 	int err;
@@ -222,10 +223,11 @@ static int call_with_data(char const *name, void *ud)
 	}
 	return params->f(name, params->data, value_size, params->pairs_ud);
 }
-int tbd_xattrs_pairs(tbd_xattrs_names_t const *names, char const *path,
-                     tbd_xattrs_pairs_callback_t f, void *ud)
+int  tbd_xattrs_pairs(struct tbd_xattrs_names const *names, char const *path,
+                      int (*f)(char const *, void const *, size_t, void *),
+                      void *ud)
 {
-	tbd_xattrs_pairs_params_t params = {
+	struct tbd_xattrs_pairs_params params = {
 		path, f, ud, NULL, 0,
 	};
 	int err = tbd_xattrs_names_each(names, &call_with_data, &params);

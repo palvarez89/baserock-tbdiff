@@ -29,7 +29,7 @@
 
 #include <tbdiff/tbdiff-stat.h>
 
-static tbd_stat_t*
+static struct tbd_stat*
 tbd_stat_from_path(const char *name,
                    const char *path)
 {
@@ -39,13 +39,15 @@ tbd_stat_from_path(const char *name,
 		return NULL;
 
 	size_t nlen = strlen(name);
-	tbd_stat_t *ret = (tbd_stat_t*)malloc(sizeof(tbd_stat_t) + (nlen + 1));
+	struct tbd_stat *ret = (struct tbd_stat*)malloc(
+	                          sizeof(struct tbd_stat) + (nlen + 1));
 	if(ret == NULL)
 		return NULL;
 
 	ret->parent = NULL;
 	ret->size = 0;
-	ret->name   = (char*)((uintptr_t)ret + sizeof(tbd_stat_t));
+	ret->name   = (char*)((uintptr_t)ret +
+                          sizeof(struct tbd_stat));
 	memcpy(ret->name, name, (nlen + 1));	
 
 	if(S_ISREG(info.st_mode)) {
@@ -93,27 +95,27 @@ tbd_stat_from_path(const char *name,
 	return ret;
 }
 
-tbd_stat_t*
+struct tbd_stat*
 tbd_stat(const char *path)
 {
-	tbd_stat_t *ret = tbd_stat_from_path(path, path);
+	struct tbd_stat *ret = tbd_stat_from_path(path, path);
 	return ret;
 }
 
 void
-tbd_stat_free(tbd_stat_t *file)
+tbd_stat_free(struct tbd_stat *file)
 {
 	free(file);
 }
 
 void
-tbd_stat_print(tbd_stat_t *file)
+tbd_stat_print(struct tbd_stat *file)
 {
 	(void)file;
 }
 
-tbd_stat_t*
-tbd_stat_entry(tbd_stat_t *file, uint32_t entry)
+struct tbd_stat*
+tbd_stat_entry(struct tbd_stat *file, uint32_t entry)
 {
 	if((file == NULL)
 	    || (file->type != TBD_STAT_TYPE_DIR)
@@ -140,16 +142,17 @@ tbd_stat_entry(tbd_stat_t *file, uint32_t entry)
 		    (strcmp(ds->d_name, "..") == 0))
 			i--;
 	}
-	char *name = strndup(ds->d_name, ds->d_reclen-offsetof(struct dirent, d_name));
+	char *name = strndup(ds->d_name,
+	                     ds->d_reclen-offsetof(struct dirent, d_name));
 	closedir (dp);
 
-	char *spath = tbd_stat_subpath(file, name);
+	char *spath = tbd_statubpath(file, name);
 	if(spath == NULL) {
 		free(name);
 		return NULL;
     }
 
-	tbd_stat_t *ret = tbd_stat_from_path(name, (const char*)spath);
+	struct tbd_stat *ret = tbd_stat_from_path(name, (const char*)spath);
 
 	free(name);
 	free(spath);
@@ -161,9 +164,9 @@ tbd_stat_entry(tbd_stat_t *file, uint32_t entry)
 	return ret;
 }
 
-tbd_stat_t*
-tbd_stat_entry_find(tbd_stat_t *file,
-                    const char *name)
+struct tbd_stat*
+tbd_stat_entry_find(struct tbd_stat *file,
+                    const char      *name)
 {
 	if((file == NULL)
 	    || (file->type != TBD_STAT_TYPE_DIR))
@@ -179,14 +182,15 @@ tbd_stat_entry_find(tbd_stat_t *file,
 	struct dirent *ds;
 	for(ds = readdir(dp); ds != NULL; ds = readdir(dp)) {
 		if(strcmp(ds->d_name, name) == 0) {
-			char *spath = tbd_stat_subpath(file, ds->d_name);
+			char *spath = tbd_statubpath(file, ds->d_name);
 
 			if(spath == NULL) {
 				closedir (dp);
 				return NULL;
 			}
 
-			tbd_stat_t *ret = tbd_stat_from_path(ds->d_name, (const char*)spath);
+			struct tbd_stat *ret = tbd_stat_from_path(ds->d_name,
+			                                   (const char*)spath);
 			free(spath);
 			ret->parent = file;
 
@@ -200,8 +204,8 @@ tbd_stat_entry_find(tbd_stat_t *file,
 }
 
 char*
-tbd_stat_subpath(tbd_stat_t *file,
-                 const char  *entry)
+tbd_statubpath(struct tbd_stat *file,
+                 const char    *entry)
 {
 	if(file == NULL)
 		return NULL;
@@ -209,10 +213,11 @@ tbd_stat_subpath(tbd_stat_t *file,
 	size_t elen = ((entry == NULL) ? 0 : (strlen(entry) + 1));
 	size_t plen;
 
-	tbd_stat_t *root;
+	struct tbd_stat *root;
 	for(root = file, plen = 0;
 	    root != NULL;
-	    plen += (strlen(root->name) + 1), root = (tbd_stat_t*)root->parent);
+	    plen += (strlen(root->name) + 1),
+	    root = (struct tbd_stat*)root->parent);
 
 	plen += elen;
 
@@ -226,7 +231,7 @@ tbd_stat_subpath(tbd_stat_t *file,
 		memcpy(ptr, entry, elen);
 	}
 
-	for(root = file; root != NULL; root = (tbd_stat_t*)root->parent) {
+	for(root = file; root != NULL; root = (struct tbd_stat*)root->parent) {
 		size_t rlen = strlen(root->name) + 1;
 		ptr = (char*)((uintptr_t)ptr - rlen);
 		memcpy(ptr, root->name, rlen);
@@ -238,13 +243,13 @@ tbd_stat_subpath(tbd_stat_t *file,
 }
 
 char*
-tbd_stat_path(tbd_stat_t *file)
+tbd_stat_path(struct tbd_stat *file)
 {
-	return tbd_stat_subpath(file, NULL);
+	return tbd_statubpath(file, NULL);
 }
 
 int
-tbd_stat_open(tbd_stat_t *file, int flags)
+tbd_stat_open(struct tbd_stat *file, int flags)
 {
 	char *path = tbd_stat_path(file);
 	if(path == NULL)
@@ -255,8 +260,8 @@ tbd_stat_open(tbd_stat_t *file, int flags)
 }
 
 FILE*
-tbd_stat_fopen(tbd_stat_t *file,
-               const char  *mode)
+tbd_stat_fopen(struct tbd_stat *file,
+               const char      *mode)
 {
 	char *path = tbd_stat_path(file);
 	if(path == NULL)

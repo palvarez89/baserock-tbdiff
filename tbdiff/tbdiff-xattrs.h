@@ -26,24 +26,24 @@
 #include <stdint.h>
 
 /* structure for names data */
-typedef struct tbd_xattrs_names {
+struct tbd_xattrs_names {
 	char const *begin;
 	char const *end;
-} tbd_xattrs_names_t;
+};
 
 /* gets a list of the names of the file referenced by path */
-int  tbd_xattrs_names(char const *path, tbd_xattrs_names_t *names_out);
+int  tbd_xattrs_names(char const *path, struct tbd_xattrs_names *names_out);
 
 /* frees up the INTERNAL resources of the list, doesn't free the list itself */
-void tbd_xattrs_names_free(tbd_xattrs_names_t *names);
+void tbd_xattrs_names_free(struct tbd_xattrs_names *names);
 
 /* calls f with every name in the list */
-int  tbd_xattrs_names_each(tbd_xattrs_names_t const *names,
+int  tbd_xattrs_names_each(struct tbd_xattrs_names const *names,
                                   int (*f)(char const *name, void *ud),
                                   void *ud);
 
 /* gets how many different attributes there are in the list */
-int tbd_xattrs_names_count(tbd_xattrs_names_t const *names, uint32_t *count);
+int tbd_xattrs_names_count(struct tbd_xattrs_names const *names, uint32_t *count);
 
 /* puts the value of the attribute called name into *buf with size *bufsize
  * if *buf is NULL or *bufsize is 0 then memory will be allocated for it
@@ -57,8 +57,7 @@ int  tbd_xattrs_get(char const *path, char const* name, void **buf,
 int  tbd_xattrs_removeall(char const *path);
 
 /* calls f for every attribute:value pair in the list */
-typedef int (*tbd_xattrs_pairs_callback_t)(char const *name, void const *data,
-                                           size_t size, void *ud);
-int  tbd_xattrs_pairs(tbd_xattrs_names_t const *names, char const *path,
-                             tbd_xattrs_pairs_callback_t f, void *ud);
+int  tbd_xattrs_pairs(struct tbd_xattrs_names const *names, char const *path,
+                      int (*f)(char const *, void const *, size_t, void *),
+                      void *ud);
 #endif /* !__TBDIFF_XATTRS_H__ */

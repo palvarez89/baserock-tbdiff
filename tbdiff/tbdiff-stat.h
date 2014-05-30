@@ -27,7 +27,7 @@
 #include <stdbool.h>
 #include <sys/types.h>
 
-typedef enum {
+enum tbd_stat_type {
 	TBD_STAT_TYPE_FILE    = 'f',
 	TBD_STAT_TYPE_DIR     = 'd',
 	TBD_STAT_TYPE_SYMLINK = 'l',
@@ -35,30 +35,28 @@ typedef enum {
 	TBD_STAT_TYPE_BLKDEV  = 'b',
 	TBD_STAT_TYPE_FIFO    = 'p',
 	TBD_STAT_TYPE_SOCKET  = 's'
-} tbd_stat_type_e;
-
-typedef struct tbd_stat_s tbd_stat_t;
-
-struct tbd_stat_s {
-	tbd_stat_t*      parent;
-	char*            name;
-	tbd_stat_type_e  type;
-	time_t           mtime;
-	uint32_t         size; /* Count for directory. */
-	uid_t            uid;
-	gid_t            gid;
-	mode_t           mode;
-	uint32_t         rdev;
 };
 
-tbd_stat_t*  tbd_stat(const char *path);
-void         tbd_stat_free(tbd_stat_t *file);
-void         tbd_stat_print(tbd_stat_t *file);
-tbd_stat_t*  tbd_stat_entry(tbd_stat_t *file, uint32_t entry);
-tbd_stat_t*  tbd_stat_entry_find(tbd_stat_t *file, const char *name);
-char*        tbd_stat_subpath(tbd_stat_t *file, const char *entry);
-char*        tbd_stat_path(tbd_stat_t *file);
-int          tbd_stat_open(tbd_stat_t *file, int flags);
-FILE*        tbd_stat_fopen(tbd_stat_t *file, const char *mode);
+struct tbd_stat {
+	struct tbd_stat*   parent;
+	char*              name;
+	enum tbd_stat_type type;
+	time_t             mtime;
+	uint32_t           size; /* Count for directory. */
+	uid_t              uid;
+	gid_t              gid;
+	mode_t             mode;
+	uint32_t           rdev;
+};
+
+struct tbd_stat* tbd_stat(const char *path);
+void             tbd_stat_free(struct tbd_stat *file);
+void             tbd_stat_print(struct tbd_stat *file);
+struct tbd_stat* tbd_stat_entry(struct tbd_stat *file, uint32_t entry);
+struct tbd_stat* tbd_stat_entry_find(struct tbd_stat *file, const char *name);
+char*            tbd_statubpath(struct tbd_stat *file, const char *entry);
+char*            tbd_stat_path(struct tbd_stat *file);
+int              tbd_stat_open(struct tbd_stat *file, int flags);
+FILE*            tbd_stat_fopen(struct tbd_stat *file, const char *mode);
 
 #endif /* !__TBDIFF_STAT_H__ */

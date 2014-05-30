@@ -1,5 +1,5 @@
 /*
- *    Copyright (C) 2011-2012 Codethink Ltd.
+ *    Copyright (C) 2011-2014 Codethink Ltd.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License Version 2 as
@@ -38,7 +38,7 @@ main(int    argc,
 	if(getcwd(cwd_buff, cwd_size) == NULL)
 		return EXIT_FAILURE;
 
-	tbd_stat_t *tstat[2];
+	struct tbd_stat *tstat[2];
 
 	tstat[0] = tbd_stat(argv[2]);
 	if(tstat[0] == NULL) {
