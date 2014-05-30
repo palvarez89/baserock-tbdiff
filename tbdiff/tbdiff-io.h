@@ -28,20 +28,20 @@
 
 #include <tbdiff/tbdiff-stat.h>
 
-extern size_t tbd_write_uint16(uint16_t value, FILE* stream);
-extern size_t tbd_write_uint32(uint32_t value, FILE* stream);
-extern size_t tbd_write_uint64(uint64_t value, FILE* stream);
-extern size_t tbd_write_time(time_t value, FILE* stream);
-extern size_t tbd_write_mode(mode_t value, FILE* stream);
-extern size_t tbd_write_uid(uid_t value, FILE* stream);
-extern size_t tbd_write_gid(gid_t value, FILE* stream);
+size_t tbd_write_uint16(uint16_t value, FILE* stream);
+size_t tbd_write_uint32(uint32_t value, FILE* stream);
+size_t tbd_write_uint64(uint64_t value, FILE* stream);
+size_t tbd_write_time(time_t value, FILE* stream);
+size_t tbd_write_mode(mode_t value, FILE* stream);
+size_t tbd_write_uid(uid_t value, FILE* stream);
+size_t tbd_write_gid(gid_t value, FILE* stream);
 
-extern size_t tbd_read_uint16(uint16_t *value, FILE* stream);
-extern size_t tbd_read_uint32(uint32_t *value, FILE* stream);
-extern size_t tbd_read_uint64(uint64_t *value, FILE* stream);
-extern size_t tbd_read_time(time_t *value, FILE* stream);
-extern size_t tbd_read_mode(mode_t *value, FILE* stream);
-extern size_t tbd_read_uid(uid_t *value, FILE* stream);
-extern size_t tbd_read_gid(gid_t *value, FILE* stream);
+size_t tbd_read_uint16(uint16_t *value, FILE* stream);
+size_t tbd_read_uint32(uint32_t *value, FILE* stream);
+size_t tbd_read_uint64(uint64_t *value, FILE* stream);
+size_t tbd_read_time(time_t *value, FILE* stream);
+size_t tbd_read_mode(mode_t *value, FILE* stream);
+size_t tbd_read_uid(uid_t *value, FILE* stream);
+size_t tbd_read_gid(gid_t *value, FILE* stream);
 
 #endif /* !__TBDIFF_IO_H__ */

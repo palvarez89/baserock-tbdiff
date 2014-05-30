@@ -126,7 +126,7 @@ tbd_error(tbd_error_e e, char const *s, char const *func, int line,
 }
 #endif
 
-extern int tbd_apply (FILE *stream);
-extern int tbd_create(FILE *stream, tbd_stat_t *a, tbd_stat_t *b);
+int tbd_apply (FILE *stream);
+int tbd_create(FILE *stream, tbd_stat_t *a, tbd_stat_t *b);
 
 #endif /* !__TBDIFF_COMMON_H__ */

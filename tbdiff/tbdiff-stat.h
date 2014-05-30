@@ -51,14 +51,14 @@ struct tbd_stat_s {
 	uint32_t         rdev;
 };
 
-extern tbd_stat_t*  tbd_stat(const char *path);
-extern void         tbd_stat_free(tbd_stat_t *file);
-extern void         tbd_stat_print(tbd_stat_t *file);
-extern tbd_stat_t*  tbd_stat_entry(tbd_stat_t *file, uint32_t entry);
-extern tbd_stat_t*  tbd_stat_entry_find(tbd_stat_t *file, const char *name);
-extern char*        tbd_stat_subpath(tbd_stat_t *file, const char *entry);
-extern char*        tbd_stat_path(tbd_stat_t *file);
-extern int          tbd_stat_open(tbd_stat_t *file, int flags);
-extern FILE*        tbd_stat_fopen(tbd_stat_t *file, const char *mode);
+tbd_stat_t*  tbd_stat(const char *path);
+void         tbd_stat_free(tbd_stat_t *file);
+void         tbd_stat_print(tbd_stat_t *file);
+tbd_stat_t*  tbd_stat_entry(tbd_stat_t *file, uint32_t entry);
+tbd_stat_t*  tbd_stat_entry_find(tbd_stat_t *file, const char *name);
+char*        tbd_stat_subpath(tbd_stat_t *file, const char *entry);
+char*        tbd_stat_path(tbd_stat_t *file);
+int          tbd_stat_open(tbd_stat_t *file, int flags);
+FILE*        tbd_stat_fopen(tbd_stat_t *file, const char *mode);
 
 #endif /* !__TBDIFF_STAT_H__ */
