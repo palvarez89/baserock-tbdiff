@@ -16,7 +16,6 @@
  */
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -26,8 +25,11 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <dirent.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <utime.h>
+
+#include <errno.h>
 
 #include "config.h"
 
@@ -239,15 +241,12 @@ tbd_apply_cmd_file_create(int stream)
 
 	TBD_DEBUGF("cmd_file_create %s:%"PRId32"\n", fname, fsize);
 
-	FILE *fp = fopen(fname, "rb");
-	if(fp != NULL) {
-		fclose(fp);
-		return TBD_ERROR(TBD_ERROR_FILE_ALREADY_EXISTS);
-	}
-
-	fp = fopen(fname, "wb");
-	if(fp == NULL)
+	int fd = open(fname, O_WRONLY | O_CREAT | O_EXCL, mode);
+	if(fd < 0) {
+		if (errno == EEXIST)
+			return TBD_ERROR(TBD_ERROR_FILE_ALREADY_EXISTS);
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_WRITING);
+	}
 
 	uintptr_t block = 256;
 	uint8_t fbuff[block];
@@ -255,15 +254,15 @@ tbd_apply_cmd_file_create(int stream)
 		if(fsize < block)
 			block = fsize;
 		if(read(stream, fbuff, block) != block) {
-			fclose(fp);
+			close(fd);
 			return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 		}
-		if(fwrite(fbuff, 1, block, fp) != block) {
-			fclose(fp);
+		if(write(fd, fbuff, block) != block) {
+			close(fd);
 			return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 		}
 	}
-	fclose(fp);
+	close(fd);
 
 	/* Apply metadata. */
 	struct utimbuf timebuff = { time(NULL), mtime };
@@ -310,16 +309,16 @@ tbd_apply_cmd_file_delta(int stream)
 	   !tbd_read_uint32(&mode      , stream))
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
-	FILE *op = fopen(fname, "rb");
-	if(op == NULL)
+	int od = open(fname, O_RDONLY);
+	if(od < 0)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_READING);
 	if(remove(fname) != 0) {
-		fclose(op);
+		close(od);
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_REMOVE_FILE);
 	}
-	FILE *np = fopen(fname, "wb");
-	if(np == NULL) {
-		fclose(op);
+	int nd = open(fname, O_WRONLY | O_CREAT, mode);
+	if(nd < 0) {
+		close(od);
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_WRITING);
 	}
 
@@ -338,11 +337,11 @@ tbd_apply_cmd_file_delta(int stream)
 	for(block = 256; dstart != 0; dstart -= block) {
 		if(dstart < block)
 			block = dstart;
-		if(fread(fbuff, 1, block, op) != block) {
+		if(read(od, fbuff, block) != block) {
 			error = TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 			goto tbd_apply_cmd_file_delta_error;
 		}
-		if(fwrite(fbuff, 1, block, np) != block) {
+		if(write(nd, fbuff, block) != block) {
 			error = TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 			goto tbd_apply_cmd_file_delta_error;
 		}
@@ -361,27 +360,27 @@ tbd_apply_cmd_file_delta(int stream)
 			error = TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 			goto tbd_apply_cmd_file_delta_error;
 		}
-		if(fwrite(fbuff, 1, block, np) != block) {
+		if(write(nd, fbuff, block) != block) {
 			error = TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 			goto tbd_apply_cmd_file_delta_error;
 		}
 	}
 
-	if(fseek(op, dend, SEEK_SET) != 0) {
+	if(lseek(od, dend, SEEK_SET) < 0) {
 		error = TBD_ERROR(TBD_ERROR_UNABLE_TO_SEEK_THROUGH_STREAM);
 		goto tbd_apply_cmd_file_delta_error;
 	}
 
 	for(block = 256; block != 0;) {
-		block = fread(fbuff, 1, block, op);
-		if(fwrite(fbuff, 1, block, np) != block) {
+		block = read(od, fbuff, block);
+		if(write(nd, fbuff, block) != block) {
 			error = TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 			goto tbd_apply_cmd_file_delta_error;
 		}
 	}
 
-	fclose(np);
-	fclose(op);
+	close(nd);
+	close(od);
 
 	/* Apply metadata. */
 	/* file was removed so old permissions were lost
@@ -410,8 +409,8 @@ tbd_apply_cmd_file_delta(int stream)
 	return 0;
 
 tbd_apply_cmd_file_delta_error:
-	fclose(np);
-	fclose(op);
+	close(nd);
+	close(od);
 
 	return error;
 }
