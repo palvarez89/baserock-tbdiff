@@ -16,13 +16,13 @@
  */
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
 
 #include <sys/stat.h>
 #include <dirent.h>
+#include <fcntl.h>
 #include <unistd.h>
 
 #include "tbdiff-common.h"
@@ -236,20 +236,20 @@ tbd_create_cmd_file_create(int              stream,
 	if(!tbd_write_uint32(size, stream))
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 
-	FILE *fp = tbd_stat_fopen(f, "rb");
-	if(fp == NULL)
+	int fd = tbd_stat_open(f, O_RDONLY);
+	if(fd < 0)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_READING);
 
 	uint8_t buff[256];
 	uintptr_t b = 256;
 	for(b = 256; b == 256; ) {
-		b = fread(buff, 1, b, fp);
+		b = read(fd, buff, b);
 		if(write(stream, buff, b) != b) {
-			fclose(fp);
+			close(fd);
 			return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 		}
 	}
-	fclose(fp);
+	close(fd);
 
 	return tbd_create_cmd_write_xattrs(stream, f);
 }
@@ -300,12 +300,12 @@ tbd_create_cmd_file_delta(int              stream,
                           struct tbd_stat *a,
                           struct tbd_stat *b)
 {
-	FILE *fpa = tbd_stat_fopen(a, "rb");
-	if(fpa == NULL)
+	int fda = tbd_stat_open(a, O_RDONLY);
+	if(fda < 0)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_READING);
-	FILE *fpb = tbd_stat_fopen(b, "rb");
-	if(fpb == NULL) {
-		fclose(fpa);
+	int fdb = tbd_stat_open(b, O_RDONLY);
+	if(fdb < 0) {
+		close(fda);
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_READING);
 	}
 
@@ -315,8 +315,8 @@ tbd_create_cmd_file_delta(int              stream,
 
 	uintptr_t o;
 	for(o = 0; (blks[1] == blks[0]) && (blks[0] != 0); o += blks[1]) {
-		blks[0] = fread(buff[0], 1, blks[0], fpa);
-		blks[1] = fread(buff[1], 1, blks[0], fpb);
+		blks[0] = read(fda, buff[0], blks[0]);
+		blks[1] = read(fdb, buff[1], blks[0]);
 		if((blks[0] == 0) || (blks[1] == 0))
 			break;
 
@@ -332,20 +332,14 @@ tbd_create_cmd_file_delta(int              stream,
 	}
 	uint32_t start = o;
 
-	if((fseek(fpa, 0, SEEK_END) != 0) || (fseek(fpb, 0, SEEK_END) != 0)) {
-		fclose(fpa);
-		fclose(fpb);
-		return TBD_ERROR(TBD_ERROR_UNABLE_TO_SEEK_THROUGH_STREAM);
-	}
-
 	/* Find length. */
-	long flena = ftell(fpa);
-	long flenb = ftell(fpb);
+	off_t flena = lseek(fda, 0, SEEK_END);
+	off_t flenb = lseek(fdb, 0, SEEK_END);
 
 	if((flena < 0) || (flenb < 0)) {
-		fclose(fpa);
-		fclose(fpb);
-		return TBD_ERROR(TBD_ERROR_UNABLE_TO_DETECT_STREAM_POSITION);
+		close(fda);
+		close(fdb);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_SEEK_THROUGH_STREAM);
 	}
 
 	/* Find end. */
@@ -357,17 +351,17 @@ tbd_create_cmd_file_delta(int              stream,
 		if((blks[0] == 0) || (blks[1] == 0))
 			break;
 
-		if((fseek(fpa, flena - (o + blks[0]), SEEK_SET) != 0)
-		    || (fseek(fpb, flenb - (o + blks[1]), SEEK_SET) != 0)) {
-			fclose(fpa);
-			fclose(fpb);
+		if((lseek(fda, flena - (o + blks[0]), SEEK_SET) < 0)
+		    || (lseek(fdb, flenb - (o + blks[1]), SEEK_SET) < 0)) {
+			close(fda);
+			close(fdb);
 			return TBD_ERROR(TBD_ERROR_UNABLE_TO_SEEK_THROUGH_STREAM);
 		}
 
-		if((fread(buff[0], 1, blks[0], fpa) != blks[0])
-		    || (fread(buff[1], 1, blks[1], fpb) != blks[1])) {
-			fclose(fpa);
-			fclose(fpb);
+		if((read(fda, buff[0], blks[0]) != blks[0])
+		    || (read(fdb, buff[1], blks[1]) != blks[1])) {
+			close(fda);
+			close(fdb);
 			return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 		}
 
@@ -381,7 +375,7 @@ tbd_create_cmd_file_delta(int              stream,
 		if(i < blks[1])
 			break;
 	}
-	fclose(fpa);
+	close(fda);
 
 	/* Ensure that the start and end don't overlap for the new file. */
 	if((flenb - o) < start)
@@ -396,7 +390,7 @@ tbd_create_cmd_file_delta(int              stream,
 	/* Data is identical, only alter metadata */
 	if((end == start) && (size == 0)) {
 		tbd_create_cmd_file_metadata_update(stream, a, b);
-		fclose(fpb);
+		close(fdb);
 		return tbd_create_cmd_write_xattrs(stream, b);
 	}
 
@@ -411,7 +405,7 @@ tbd_create_cmd_file_delta(int              stream,
 	    ((err = tbd_create_write_uid   (stream, b->uid))            != 0) ||
 	    ((err = tbd_create_write_gid   (stream, b->gid))            != 0) ||
 	    ((err = tbd_create_write_mode  (stream, b->mode))           != 0)) {
-		fclose(fpb);
+		close(fdb);
 		return err;
 	}
 
@@ -421,24 +415,24 @@ tbd_create_cmd_file_delta(int              stream,
 		close(fdb);
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	}
-	if(fseek(fpb, start, SEEK_SET) != 0) {
-		fclose(fpb);
+	if(lseek(fdb, start, SEEK_SET) < 0) {
+		close(fdb);
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_SEEK_THROUGH_STREAM);
 	}
 
 	for(o = 0; o < size; o += 256) {
 		uintptr_t csize = ((size - o) > 256 ? 256 : (size - o));
-		if(fread(buff[0], 1, csize, fpb) != csize) {
-			fclose(fpb);
+		if(read(fdb, buff[0], csize) != csize) {
+			close(fdb);
 			return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 		}
 		if(write(stream, buff[0], csize) != csize) {
-			fclose(fpb);
+			close(fdb);
 			return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 		}
 	}
 
-	fclose(fpb);
+	close(fdb);
 	return tbd_create_cmd_write_xattrs(stream, b);
 }
 
