@@ -37,12 +37,12 @@ bool tbd_write_mode  (mode_t   value, int stream);
 bool tbd_write_uid   (uid_t    value, int stream);
 bool tbd_write_gid   (gid_t    value, int stream);
 
-size_t tbd_read_uint16(uint16_t *value, FILE* stream);
-size_t tbd_read_uint32(uint32_t *value, FILE* stream);
-size_t tbd_read_uint64(uint64_t *value, FILE* stream);
-size_t tbd_read_time(time_t *value, FILE* stream);
-size_t tbd_read_mode(mode_t *value, FILE* stream);
-size_t tbd_read_uid(uid_t *value, FILE* stream);
-size_t tbd_read_gid(gid_t *value, FILE* stream);
+bool tbd_read_uint16(uint16_t *value, int stream);
+bool tbd_read_uint32(uint32_t *value, int stream);
+bool tbd_read_uint64(uint64_t *value, int stream);
+bool tbd_read_time  (time_t   *value, int stream);
+bool tbd_read_mode  (mode_t   *value, int stream);
+bool tbd_read_uid   (uid_t    *value, int stream);
+bool tbd_read_gid   (gid_t    *value, int stream);
 
 #endif /* !__TBDIFF_IO_H__ */

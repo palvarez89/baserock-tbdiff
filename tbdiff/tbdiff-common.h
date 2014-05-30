@@ -126,7 +126,7 @@ tbd_error(enum tbd_error e, char const *s, char const *func, int line,
 }
 #endif
 
-int tbd_apply (FILE *stream);
+int tbd_apply (int stream);
 int tbd_create(int stream, struct tbd_stat *a, struct tbd_stat *b);
 
 #endif /* !__TBDIFF_COMMON_H__ */

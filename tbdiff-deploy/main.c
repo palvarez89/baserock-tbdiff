@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
 
@@ -33,19 +34,19 @@ main(int    argc,
 		return EXIT_FAILURE;
 	}
 
-	FILE* patch = fopen(argv[1], "rb");
-	if(patch == NULL) {
+	int patch = open(argv[1], O_RDONLY);
+	if(patch < 0) {
 		fprintf(stderr, "Error: Can't open patch stream for reading.\n");
 		return EXIT_FAILURE;
 	}
 
 	int err;
 	if((err = tbd_apply(patch)) != 0) {
-		fclose(patch);
+		close(patch);
 		fprintf(stderr, "Error: Error applying patch stream (err=%d).\n", err);
 		return EXIT_FAILURE;
 	}
 
-	fclose(patch);
+	close(patch);
 	return EXIT_SUCCESS;
 }
