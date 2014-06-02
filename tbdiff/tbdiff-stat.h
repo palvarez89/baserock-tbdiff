@@ -51,7 +51,6 @@ struct tbd_stat {
 
 struct tbd_stat* tbd_stat(const char *path);
 void             tbd_stat_free(struct tbd_stat *file);
-void             tbd_stat_print(struct tbd_stat *file);
 struct tbd_stat* tbd_stat_entry(struct tbd_stat *file, uint32_t entry);
 struct tbd_stat* tbd_stat_entry_find(struct tbd_stat *file, const char *name);
 char*            tbd_statubpath(struct tbd_stat *file, const char *entry);

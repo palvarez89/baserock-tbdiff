@@ -108,12 +108,6 @@ tbd_stat_free(struct tbd_stat *file)
 	free(file);
 }
 
-void
-tbd_stat_print(struct tbd_stat *file)
-{
-	(void)file;
-}
-
 struct tbd_stat*
 tbd_stat_entry(struct tbd_stat *file, uint32_t entry)
 {
