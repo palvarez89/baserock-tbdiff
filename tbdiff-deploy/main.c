@@ -43,7 +43,9 @@ main(int    argc,
 
 	int patch = open(argv[1], O_RDONLY);
 	if(patch < 0) {
-		fprintf(stderr, "Error: Can't open patch stream for reading.\n");
+		fprintf(stderr,
+                "Error: Can't open patch stream for reading (err=%d).\n",
+                errno);
 		return EXIT_FAILURE;
 	}
 
