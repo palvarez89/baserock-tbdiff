@@ -1,5 +1,5 @@
 /*
- *    Copyright (C) 2011-2012 Codethink Ltd.
+ *    Copyright (C) 2011-2014 Codethink Ltd.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License Version 2 as
@@ -29,7 +29,13 @@
 #include <unistd.h>
 #include <utime.h>
 
+#include "config.h"
+
+#if HAVE_ATTR_XATTR_H
 #include <attr/xattr.h>
+#else
+#include <sys/xattr.h>
+#endif
 
 #include <tbdiff/tbdiff-common.h>
 #include <tbdiff/tbdiff-io.h>
@@ -37,10 +43,10 @@
 #include <tbdiff/tbdiff-xattrs.h>
 
 char*
-tbd_apply_fread_string(FILE *stream)
+tbd_apply_read_string(FILE *stream)
 {
 	uint16_t dlen;
-	if(tbd_read_uint16_t(&dlen, stream) != 1)
+	if(tbd_read_uint16(&dlen, stream) != 1)
 		return NULL;
 	char dname[dlen + 1];
 	if(fread(dname, 1, dlen, stream) != dlen)
@@ -60,7 +66,8 @@ tbd_apply_fread_string(FILE *stream)
  *  - or realloc doesn't free old memory (though this will be a memory leak)
  *  - or your allocator does nothing when asked to free non-allocated memory
  */
-int tbd_apply_fread_block(FILE *stream, void **data, size_t *size)
+int
+tbd_apply_read_block(FILE *stream, void **data, size_t *size)
 {
 	{
 		size_t _size;
@@ -86,13 +93,13 @@ int tbd_apply_fread_block(FILE *stream, void **data, size_t *size)
 static int
 tbd_apply_identify(FILE *stream)
 {
-	uint8_t cmd;
-	if(fread(&cmd, 1, 1, stream) != 1)
+	tbd_cmd_t cmd;
+	if(fread(&cmd, sizeof(tbd_cmd_t), 1, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	if(cmd != TBD_CMD_IDENTIFY)
 		return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
 	uint16_t nlen;
-	if(tbd_read_uint16_t(&nlen, stream) != 1)
+	if(tbd_read_uint16(&nlen, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	if(strlen(TB_DIFF_PROTOCOL_ID) != nlen)
 		return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
@@ -108,40 +115,41 @@ static int
 tbd_apply_cmd_dir_create(FILE *stream)
 {
 	uint16_t dlen;
-	if(tbd_read_uint16_t(&dlen, stream) != 1)
+	if(tbd_read_uint16(&dlen, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	char dname[dlen + 1];
 	if(fread(dname, 1, dlen, stream) != dlen)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	dname[dlen] = '\0';
-	fprintf(stderr, "cmd_dir_create %s\n", dname);
+	TBD_DEBUGF("cmd_dir_create %s\n", dname);
 	if(strchr(dname, '/') != NULL)
 		return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
 
 	time_t mtime;
-	if(tbd_read_time_t(&mtime, stream) != 1)
+	if(tbd_read_time(&mtime, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	uid_t uid;
-	if(tbd_read_uid_t(&uid, stream) != 1)
+	if(tbd_read_uid(&uid, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	gid_t gid;
-	if(tbd_read_gid_t(&gid, stream) != 1)
+	if(tbd_read_gid(&gid, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	mode_t mode;
-	if(tbd_read_mode_t(&mode, stream) != 1)
+	if(tbd_read_mode(&mode, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	if(mkdir(dname, (mode_t)mode) != 0)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_CREATE_DIR);
 
-	// Apply metadata.
+	/* Apply metadata. */
 	struct utimbuf timebuff = { time(NULL), mtime };
-	utime(dname, &timebuff); // Don't care if it succeeds right now.
+	utime(dname, &timebuff); /* Don't care if it succeeds right now. */
 
-	chown(dname, (uid_t)uid, (gid_t)gid);
+	if (chown(dname, (uid_t)uid, (gid_t)gid) < 0)
+		TBD_WARN("Failed to change ownership of directory");
 	chmod (dname, mode);
 
 	return 0;
@@ -152,13 +160,13 @@ tbd_apply_cmd_dir_enter(FILE      *stream,
                         uintptr_t *depth)
 {
 	uint16_t dlen;
-	if(tbd_read_uint16_t(&dlen, stream) != 1)
+	if(tbd_read_uint16(&dlen, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	char dname[dlen + 1];
 	if(fread(dname, 1, dlen, stream) != dlen)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	dname[dlen] = '\0';
-	fprintf(stderr, "cmd_dir_enter %s\n", dname);
+	TBD_DEBUGF("cmd_dir_enter %s\n", dname);
 	if((strchr(dname, '/') != NULL) || (strcmp(dname, "..") == 0))
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_CHANGE_DIR);
 	if(depth != NULL)
@@ -176,12 +184,12 @@ tbd_apply_cmd_dir_leave(FILE      *stream,
 	int err = TBD_ERROR_SUCCESS;
 	struct utimbuf time;
 
-	if (tbd_read_time_t(&(time.modtime), stream) != 1) {
+	if (tbd_read_time(&(time.modtime), stream) != 1) {
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	}
 	time.actime = time.modtime;/* not sure what the best atime to use is */
 
-	fprintf(stderr, "cmd_dir_leave\n");
+	TBD_DEBUG("cmd_dir_leave\n");
 
 	/* test for leaving shallowest depth */
 	if ((depth != NULL) && (*depth < 1)) {
@@ -207,7 +215,7 @@ static int
 tbd_apply_cmd_file_create(FILE *stream)
 {
 	uint16_t flen;
-	if(tbd_read_uint16_t(&flen, stream) != 1)
+	if(tbd_read_uint16(&flen, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	char fname[flen + 1];
 	if(fread(fname, 1, flen, stream) != flen)
@@ -222,14 +230,14 @@ tbd_apply_cmd_file_create(FILE *stream)
 	gid_t gid;
 	uint32_t fsize;
 
-	if(tbd_read_time_t(&mtime, stream) != 1 ||
-	    tbd_read_uint32_t(&mode, stream) != 1 ||
-	    tbd_read_uid_t(&uid, stream)   != 1 ||
-	    tbd_read_gid_t(&gid, stream)   != 1 ||
-	    tbd_read_uint32_t(&fsize, stream) != 1)
+	if(tbd_read_time  (&mtime, stream) != 1 ||
+	   tbd_read_uint32(&mode , stream) != 1 ||
+	   tbd_read_uid   (&uid  , stream) != 1 ||
+	   tbd_read_gid   (&gid  , stream) != 1 ||
+	   tbd_read_uint32(&fsize, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
-	fprintf(stderr, "cmd_file_create %s:%"PRId32"\n", fname, fsize);
+	TBD_DEBUGF("cmd_file_create %s:%"PRId32"\n", fname, fsize);
 
 	FILE *fp = fopen(fname, "rb");
 	if(fp != NULL) {
@@ -246,20 +254,25 @@ tbd_apply_cmd_file_create(FILE *stream)
 	for(; fsize != 0; fsize -= block) {
 		if(fsize < block)
 			block = fsize;
-		if(fread(fbuff, 1, block, stream) != block)
+		if(fread(fbuff, 1, block, stream) != block) {
+			fclose(fp);
 			return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
-		if(fwrite(fbuff, 1, block, fp) != block)
+		}
+		if(fwrite(fbuff, 1, block, fp) != block) {
+			fclose(fp);
 			return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+		}
 	}
 	fclose(fp);
 
-	// Apply metadata.
+	/* Apply metadata. */
 	struct utimbuf timebuff = { time(NULL), mtime };
 
-	// Don't care if it succeeds right now.
+	/* Don't care if it succeeds right now. */
 	utime(fname, &timebuff);
 	/* Chown ALWAYS have to be done before chmod */
-	chown(fname, (uid_t)uid, (gid_t)gid);
+	if (chown(fname, (uid_t)uid, (gid_t)gid) < 0)
+		TBD_WARN("Failed to change ownership of file");
 	chmod(fname, mode);
 
 	return 0;
@@ -274,25 +287,27 @@ tbd_apply_cmd_file_delta(FILE *stream)
 	gid_t gid;
 	mode_t mode;
 	uint16_t flen;
-	if(tbd_read_uint16_t(&flen, stream) != 1)
+	int error;
+
+	if(tbd_read_uint16(&flen, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	char fname[flen + 1];
 	if(fread(fname, 1, flen, stream) != flen)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	fname[flen] = '\0';
 
-	fprintf(stderr, "cmd_file_delta %s\n", fname);
+	TBD_DEBUGF("cmd_file_delta %s\n", fname);
 
 	if((strchr(fname, '/') != NULL) ||
 	    (strcmp(fname, "..") == 0))
 		return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
 
 	/* Reading metadata */
-	if(tbd_read_uint16_t(&mdata_mask, stream) != 1 ||
-	    tbd_read_time_t(&mtime, stream) != 1 ||
-	    tbd_read_uid_t(&uid, stream) != 1 ||
-	    tbd_read_gid_t(&gid, stream) != 1 ||
-	    tbd_read_uint32_t(&mode, stream) != 1)
+	if(tbd_read_uint16(&mdata_mask, stream) != 1 ||
+	   tbd_read_time  (&mtime     , stream) != 1 ||
+	   tbd_read_uid   (&uid       , stream) != 1 ||
+	   tbd_read_gid   (&gid       , stream) != 1 ||
+	   tbd_read_uint32(&mode      , stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	FILE *op = fopen(fname, "rb");
@@ -309,51 +324,66 @@ tbd_apply_cmd_file_delta(FILE *stream)
 	}
 
 	uint32_t dstart, dend;
-	if(tbd_read_uint32_t(&dstart, stream) != 1)
-		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
-	if(tbd_read_uint32_t(&dend, stream) != 1)
-		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
+	if(tbd_read_uint32(&dstart, stream) != 1) {
+		error = TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		goto tbd_apply_cmd_file_delta_error;
+    }
+	if(tbd_read_uint32(&dend, stream) != 1) {
+		error = TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		goto tbd_apply_cmd_file_delta_error;
+    }
 
 	uintptr_t block;
 	uint8_t fbuff[256];
 	for(block = 256; dstart != 0; dstart -= block) {
 		if(dstart < block)
 			block = dstart;
-		if(fread(fbuff, 1, block, op) != block)
-			return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
-		if(fwrite(fbuff, 1, block, np) != block)
-			return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+		if(fread(fbuff, 1, block, op) != block) {
+			error = TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
+			goto tbd_apply_cmd_file_delta_error;
+		}
+		if(fwrite(fbuff, 1, block, np) != block) {
+			error = TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+			goto tbd_apply_cmd_file_delta_error;
+		}
 	}
 
 	uint32_t fsize;
-	if(tbd_read_uint32_t(&fsize, stream) != 1)
-		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
+	if(tbd_read_uint32(&fsize, stream) != 1) {
+		error = TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
+		goto tbd_apply_cmd_file_delta_error;
+	}
 
 	for(block = 256; fsize != 0; fsize -= block) {
 		if(fsize < block)
 			block = fsize;
-		if(fread(fbuff, 1, block, stream) != block)
-			return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
-		if(fwrite(fbuff, 1, block, np) != block)
-			return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+		if(fread(fbuff, 1, block, stream) != block) {
+			error = TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
+			goto tbd_apply_cmd_file_delta_error;
+		}
+		if(fwrite(fbuff, 1, block, np) != block) {
+			error = TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+			goto tbd_apply_cmd_file_delta_error;
+		}
 	}
 
 	if(fseek(op, dend, SEEK_SET) != 0) {
-		fclose(np);
-		fclose(op);
-		return TBD_ERROR(TBD_ERROR_UNABLE_TO_SEEK_THROUGH_STREAM);
+		error = TBD_ERROR(TBD_ERROR_UNABLE_TO_SEEK_THROUGH_STREAM);
+		goto tbd_apply_cmd_file_delta_error;
 	}
 
 	for(block = 256; block != 0;) {
 		block = fread(fbuff, 1, block, op);
-		if(fwrite(fbuff, 1, block, np) != block)
-			return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+		if(fwrite(fbuff, 1, block, np) != block) {
+			error = TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
+			goto tbd_apply_cmd_file_delta_error;
+		}
 	}
 
 	fclose(np);
 	fclose(op);
 
-	// Apply metadata.
+	/* Apply metadata. */
 	/* file was removed so old permissions were lost
 	 * all permissions need to be reapplied, all were sent in this protocol
 	 * if only changed sent will have to save mdata from file before it is
@@ -378,10 +408,19 @@ tbd_apply_cmd_file_delta(FILE *stream)
 	}
 
 	return 0;
+
+tbd_apply_cmd_file_delta_error:
+	fclose(np);
+	fclose(op);
+
+	return error;
 }
 
-static int tbd_apply_cmd_entity_delete_for_name(const char*);
-static int tbd_apply_cmd_dir_delete(const char *name)
+static int
+tbd_apply_cmd_entity_delete_for_name(const char*);
+
+static int
+tbd_apply_cmd_dir_delete(const char *name)
 {
 	int err = TBD_ERROR_SUCCESS;
 	DIR *dp;
@@ -396,7 +435,7 @@ static int tbd_apply_cmd_dir_delete(const char *name)
 	}
 
 	while ((entry = readdir(dp)) != NULL) {
-		if ((strcmp(entry->d_name, ".") == 0) ||
+		if ((strcmp(entry->d_name, "." ) == 0) ||
 		    (strcmp(entry->d_name, "..") == 0)) {
 			continue;
 		}
@@ -441,14 +480,14 @@ static int
 tbd_apply_cmd_entity_delete(FILE *stream)
 {
 	uint16_t elen;
-	if(tbd_read_uint16_t(&elen, stream) != 1)
+	if(tbd_read_uint16(&elen, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	char ename[elen + 1];
 	if(fread(ename, 1, elen, stream) != elen)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	ename[elen] = '\0';
 
-	fprintf(stderr, "cmd_entity_delete %s\n", ename);
+	TBD_DEBUGF("cmd_entity_delete %s\n", ename);
 
 	if((strchr(ename, '/') != NULL) || (strcmp(ename, "..") == 0))
 		return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
@@ -463,13 +502,13 @@ tbd_apply_cmd_symlink_create(FILE *stream)
 	uid_t uid;
 	gid_t gid;
 
-	if(tbd_read_time_t(&mtime, stream) != 1 ||
-	    tbd_read_uid_t(&uid, stream) != 1 ||
-	    tbd_read_gid_t(&gid, stream) != 1)
+	if(tbd_read_time(&mtime, stream) != 1 ||
+	    tbd_read_uid(&uid  , stream) != 1 ||
+	    tbd_read_gid(&gid  , stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	/* Reading link file name */
-	if(tbd_read_uint16_t(&len, stream) != 1)
+	if(tbd_read_uint16(&len, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	char linkname[len + 1];
@@ -478,7 +517,7 @@ tbd_apply_cmd_symlink_create(FILE *stream)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
 	/* Reading target path */
-	if(tbd_read_uint16_t(&len, stream) != 1)
+	if(tbd_read_uint16(&len, stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	char linkpath[len+1];
 	linkpath[len] = '\0';
@@ -486,7 +525,7 @@ tbd_apply_cmd_symlink_create(FILE *stream)
 	if(fread(linkpath, sizeof(char), len, stream) != len)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
-	fprintf(stderr, "cmd_symlink_create %s -> %s\n", linkname, linkpath);
+	TBD_DEBUGF("cmd_symlink_create %s -> %s\n", linkname, linkpath);
 
 	if(symlink(linkpath, linkname))
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_CREATE_SYMLINK);
@@ -496,8 +535,9 @@ tbd_apply_cmd_symlink_create(FILE *stream)
 	tv[1].tv_sec = (long) mtime;
 	tv[1].tv_usec = 0;
 
-	lutimes(linkname, tv); // Don't care if it succeeds right now.
-	lchown(linkname, (uid_t)uid, (uid_t)gid);
+	lutimes(linkname, tv); /* Don't care if it succeeds right now. */
+	if (lchown(linkname, (uid_t)uid, (uid_t)gid) < 0)
+		TBD_WARN("Failed to change ownership of symlink");
 
 	return TBD_ERROR_SUCCESS;
 }
@@ -505,7 +545,7 @@ tbd_apply_cmd_symlink_create(FILE *stream)
 static int
 tbd_apply_cmd_special_create(FILE *stream)
 {
-	char *name = tbd_apply_fread_string(stream);
+	char *name = tbd_apply_read_string(stream);
 	time_t mtime;
 	mode_t mode;
 	uid_t uid;
@@ -513,16 +553,16 @@ tbd_apply_cmd_special_create(FILE *stream)
 	uint32_t dev;
 
 	if(name == NULL ||
-	    tbd_read_time_t(&mtime, stream) != 1 ||
-	    tbd_read_mode_t(&mode, stream)  != 1 ||
-	    tbd_read_uid_t(&uid, stream)   != 1 ||
-	    tbd_read_gid_t(&gid, stream)   != 1 ||
-	    tbd_read_uint32_t(&dev, stream)   != 1) {
+	    tbd_read_time  (&mtime, stream) != 1 ||
+	    tbd_read_mode  (&mode , stream) != 1 ||
+	    tbd_read_uid   (&uid  , stream) != 1 ||
+	    tbd_read_gid   (&gid  , stream) != 1 ||
+	    tbd_read_uint32(&dev  , stream) != 1) {
 		free(name);
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	}
 
-	fprintf(stderr, "cmd_special_create %s\n", name);
+	TBD_DEBUGF("cmd_special_create %s\n", name);
 
 	if(mknod(name, mode, (dev_t)dev) != 0) {
 		free(name);
@@ -530,9 +570,10 @@ tbd_apply_cmd_special_create(FILE *stream)
 	}
 
 	struct utimbuf timebuff = { time(NULL), mtime };
-	utime(name, &timebuff); // Don't care if it succeeds right now.
+	utime(name, &timebuff); /* Don't care if it succeeds right now. */
 
-	chown(name, (uid_t)uid, (gid_t)gid);
+	if (chown(name, (uid_t)uid, (gid_t)gid) < 0)
+		TBD_WARN("Failed to change ownership of node");
 	chmod(name, mode);
 
 	free(name);
@@ -548,25 +589,27 @@ tbd_apply_cmd_dir_delta(FILE *stream)
 	gid_t gid;
 	mode_t mode;
 
-	if(tbd_read_uint16_t(&metadata_mask, stream) != 1 ||
-	    tbd_read_time_t(&mtime, stream)         != 1 ||
-	    tbd_read_uid_t(&uid, stream)           != 1 ||
-	    tbd_read_gid_t(&gid, stream)           != 1 ||
-	    tbd_read_uint32_t(&mode, stream)          != 1)
+	if(tbd_read_uint16(&metadata_mask, stream) != 1 ||
+	   tbd_read_time  (&mtime        , stream) != 1 ||
+	   tbd_read_uid   (&uid          , stream) != 1 ||
+	   tbd_read_gid   (&gid          , stream) != 1 ||
+	   tbd_read_uint32(&mode         , stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
-	char *dname = tbd_apply_fread_string(stream);
+	char *dname = tbd_apply_read_string(stream);
 	if(dname == NULL)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
-	fprintf(stderr, "cmd_dir_delta %s\n", dname);
+	TBD_DEBUGF("cmd_dir_delta %s\n", dname);
 
 	if(metadata_mask & TBD_METADATA_MTIME) {
 		struct utimbuf timebuff = { time(NULL), mtime };
-		utime(dname, &timebuff); // Don't care if it succeeds right now.
+		utime(dname, &timebuff); /* Don't care if it succeeds right now. */
 	}
-	if(metadata_mask & TBD_METADATA_UID || metadata_mask & TBD_METADATA_GID)
-		chown(dname, (uid_t)uid, (gid_t)gid);
+	if(metadata_mask & TBD_METADATA_UID || metadata_mask & TBD_METADATA_GID) {
+		if (chown(dname, (uid_t)uid, (gid_t)gid) < 0)
+			TBD_WARN("Failed to change ownership during file modification");
+	}
 	if(metadata_mask | TBD_METADATA_MODE)
 		chmod(dname, mode);
 
@@ -583,25 +626,28 @@ tbd_apply_cmd_file_mdata_update(FILE *stream)
 	gid_t gid;
 	mode_t mode;
 
-	if(tbd_read_uint16_t(&metadata_mask, stream) != 1 ||
-	    tbd_read_time_t(&mtime, stream)         != 1 ||
-	    tbd_read_uid_t(&uid, stream)           != 1 ||
-	    tbd_read_gid_t(&gid, stream)           != 1 ||
-	    tbd_read_uint32_t(&mode, stream)          != 1)
+	if(tbd_read_uint16(&metadata_mask, stream) != 1 ||
+	   tbd_read_time  (&mtime        , stream) != 1 ||
+	   tbd_read_uid   (&uid          , stream) != 1 ||
+	   tbd_read_gid   (&gid          , stream) != 1 ||
+	   tbd_read_uint32(&mode         , stream) != 1)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
-	char *dname = tbd_apply_fread_string(stream);
+	char *dname = tbd_apply_read_string(stream);
 	if(dname == NULL)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 
-	fprintf(stderr, "cmd_metadata_update %s\n", dname);
+	TBD_DEBUGF("cmd_metadata_update %s\n", dname);
 
 	if(metadata_mask & TBD_METADATA_MTIME) {
 		struct utimbuf timebuff = { time(NULL), mtime };
-		utime(dname, &timebuff); // Don't care if it succeeds right now.
+		utime(dname, &timebuff); /* Don't care if it succeeds right now. */
 	}
-	if(metadata_mask & TBD_METADATA_UID || metadata_mask & TBD_METADATA_GID)
-		chown(dname, (uid_t)uid, (gid_t)gid);
+	if(metadata_mask & TBD_METADATA_UID || metadata_mask & TBD_METADATA_GID) {
+		if (chown(dname, (uid_t)uid, (gid_t)gid) < 0)
+			TBD_WARN("Failed to change ownership"
+			         " during file attribute modification");
+	}
 	if(metadata_mask | TBD_METADATA_MODE)
 		chmod(dname, mode);
 
@@ -609,7 +655,8 @@ tbd_apply_cmd_file_mdata_update(FILE *stream)
 	return TBD_ERROR_SUCCESS;
 }
 
-static int tbd_apply_cmd_xattrs_update(FILE *stream)
+static int
+tbd_apply_cmd_xattrs_update(FILE *stream)
 {
 	int err = TBD_ERROR_SUCCESS;
 	char *fname;
@@ -617,7 +664,7 @@ static int tbd_apply_cmd_xattrs_update(FILE *stream)
 	void *data = NULL;
 	size_t dsize = 0;
 	/* read the name of the file to operate on */
-	if ((fname = tbd_apply_fread_string(stream)) == NULL) {
+	if ((fname = tbd_apply_read_string(stream)) == NULL) {
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 	}
 
@@ -627,21 +674,21 @@ static int tbd_apply_cmd_xattrs_update(FILE *stream)
 	}
 
 	/* read how many attributes to process */
-	if (tbd_read_uint32_t(&count, stream) != 1) {
+	if (tbd_read_uint32(&count, stream) != 1) {
 		err = TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 		goto cleanup;
 	}
 
 	/* operate on each attribute */
 	while (count > 0) {
-		char *aname = tbd_apply_fread_string(stream);
+		char *aname = tbd_apply_read_string(stream);
 		if (aname == NULL) {
 			err=TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 			goto cleanup;
 		}
 
 		/* read a block of data, reallocating if needed */
-		if ((err = tbd_apply_fread_block(stream, &data, &dsize))
+		if ((err = tbd_apply_read_block(stream, &data, &dsize))
 		    != TBD_ERROR_SUCCESS) {
 			free(aname);
 			goto cleanup;
@@ -674,8 +721,8 @@ tbd_apply(FILE *stream)
 	uintptr_t depth = 0;
 	bool flush = false;
 	while(!flush) {
-		uint8_t cmd;
-		if(fread(&cmd, 1, 1, stream) != 1)
+		tbd_cmd_t cmd;
+		if(fread(&cmd, sizeof(tbd_cmd_t), 1, stream) != 1)
 			return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 		switch(cmd) {
 		case TBD_CMD_DIR_CREATE:
@@ -722,7 +769,7 @@ tbd_apply(FILE *stream)
 			break;
 		case TBD_CMD_ENTITY_MOVE:
 		case TBD_CMD_ENTITY_COPY:
-			return TBD_ERROR(TBD_ERROR_FEATURE_NOT_IMPLEMENTED); // TODO - Implement.
+			return TBD_ERROR(TBD_ERROR_FEATURE_NOT_IMPLEMENTED); /* TODO - Implement. */
 		case TBD_CMD_ENTITY_DELETE:
 			if((err = tbd_apply_cmd_entity_delete(stream)) != 0)
 				return err;
@@ -731,7 +778,7 @@ tbd_apply(FILE *stream)
 			flush = true;
 			break;
 		default:
-			fprintf(stderr, "Error: Invalid command 0x%02"PRIx8".\n", cmd);
+			TBD_DEBUGF("Invalid command 0x%02"PRIx8".\n", cmd);
 			return TBD_ERROR(TBD_ERROR_INVALID_PARAMETER);
 		}
 	}

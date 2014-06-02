@@ -1,5 +1,5 @@
 /*
- *    Copyright (C) 2011-2012 Codethink Ltd.
+ *    Copyright (C) 2011-2014 Codethink Ltd.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License Version 2 as
@@ -37,17 +37,19 @@ typedef enum {
 	TBD_STAT_TYPE_SOCKET  = 's'
 } tbd_stat_type_e;
 
-typedef struct {
-	void*            parent;
+typedef struct tbd_stat_s tbd_stat_t;
+
+struct tbd_stat_s {
+	tbd_stat_t*      parent;
 	char*            name;
 	tbd_stat_type_e  type;
 	time_t           mtime;
-	uint32_t         size; // Count for directory.
-	uid_t         uid;
-	gid_t         gid;
-	mode_t         mode;
+	uint32_t         size; /* Count for directory. */
+	uid_t            uid;
+	gid_t            gid;
+	mode_t           mode;
 	uint32_t         rdev;
-} tbd_stat_t;
+};
 
 extern tbd_stat_t*  tbd_stat(const char *path);
 extern void         tbd_stat_free(tbd_stat_t *file);

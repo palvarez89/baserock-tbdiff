@@ -1,5 +1,5 @@
 /*
- *    Copyright (C) 2011-2012 Codethink Ltd.
+ *    Copyright (C) 2011-2014 Codethink Ltd.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License Version 2 as
@@ -21,146 +21,120 @@
 
 #include <tbdiff/tbdiff-stat.h>
 
-#if __BYTE_ORDER == __BIG_ENDIAN
-//inverts the indices of an array of bytes.
-static void byteswap (char* value, int size) {
-    char tmp;
-    int i;
-    for (i = 0; i < size/2; i++) {
-        tmp = value[i];
-        value[i] = value[size-i-1];
-        value[size-i-1] = tmp;
-    }   
-}
+#if __STDC_VERSION__ >= 199901L
+#define RESTRICT restrict
+#elif defined(__GNUC__)
+#define RESTRICT __restrict__
+#else
+#define RESTRICT
 #endif
 
-size_t tbd_write_uint16_t (uint16_t value, FILE* stream) {
 #if __BYTE_ORDER == __BIG_ENDIAN
-        byteswap((char*)&value, sizeof(value));
-#endif
-    return fwrite(&value, sizeof(value), 1, stream);
+static inline void byteswap(char *RESTRICT a, char *RESTRICT b)
+{
+	char swap = *a;
+	*a = *b;
+	*b = swap;
 }
 
-size_t tbd_write_uint32_t (uint32_t value, FILE* stream) {
-#if __BYTE_ORDER == __BIG_ENDIAN
-        byteswap((char*)&value, sizeof(value));
-#endif
-    return fwrite(&value, sizeof(value), 1, stream);
+/*inverts the indices of an array of bytes. */
+static inline void endianswap(void* value, size_t size)
+{
+
+	char* cvalue = value;
+	int i, j;
+	for (i = 0, j = (size - 1); i < (size / 2); i++, j--)
+		byteswap(&cvalue[i], &cvalue[j]);
 }
 
-size_t tbd_write_uint64_t (uint64_t value, FILE* stream) {
-#if __BYTE_ORDER == __BIG_ENDIAN
-        byteswap((char*)&value, sizeof(value));
+#define ENDIANSWAP(v) endianswap(v, sizeof(*v))
+#else
+#define ENDIANSWAP(v)
 #endif
-    return fwrite(&value, sizeof(value), 1, stream);
+
+size_t tbd_write_uint16(uint16_t value, FILE *stream) {
+	ENDIANSWAP(&value);
+	return fwrite(&value, sizeof(value), 1, stream);
 }
 
-size_t tbd_write_time_t (time_t value, FILE* stream) {
-    uint64_t realv = value;
-#if __BYTE_ORDER == __BIG_ENDIAN
-        byteswap((char*)&realv, sizeof(realv));
-#endif
-    return fwrite(&realv, sizeof(realv), 1, stream);
+size_t tbd_write_uint32(uint32_t value, FILE *stream) {
+	ENDIANSWAP(&value);
+	return fwrite(&value, sizeof(value), 1, stream);
 }
 
-size_t tbd_write_mode_t (mode_t value, FILE* stream) {
-#if __BYTE_ORDER == __BIG_ENDIAN
-        byteswap((char*)&value, sizeof(value));
-#endif
-    return fwrite(&value, sizeof(value), 1, stream);
+size_t tbd_write_uint64(uint64_t value, FILE *stream) {
+	ENDIANSWAP(&value);
+	return fwrite(&value, sizeof(value), 1, stream);
 }
 
-size_t tbd_write_uid_t (uid_t value, FILE* stream) {
-#if __BYTE_ORDER == __BIG_ENDIAN
-        byteswap((char*)&value, sizeof(value));
-#endif
-    return fwrite(&value, sizeof(value), 1, stream);
+size_t tbd_write_time(time_t value, FILE *stream) {
+	uint64_t realv = value;
+	ENDIANSWAP(&realv);
+	return fwrite(&realv, sizeof(realv), 1, stream);
 }
 
-size_t tbd_write_gid_t (gid_t value, FILE* stream) {
-#if __BYTE_ORDER == __BIG_ENDIAN
-        byteswap((char*)&value, sizeof(value));
-#endif
-    return fwrite(&value, sizeof(value), 1, stream);
+size_t tbd_write_mode(mode_t value, FILE *stream) {
+	ENDIANSWAP(&value);
+	return fwrite(&value, sizeof(value), 1, stream);
 }
 
-size_t tbd_write_size_t (size_t value, FILE* stream) {
-#if __BYTE_ORDER == __BIG_ENDIAN
-        byteswap((char*)&value, sizeof(value));
-#endif
-    return fwrite(&value, sizeof(value), 1, stream);
+size_t tbd_write_uid(uid_t value, FILE *stream) {
+	ENDIANSWAP(&value);
+	return fwrite(&value, sizeof(value), 1, stream);
 }
 
-size_t tbd_read_uint16_t (uint16_t *value, FILE* stream) {
-    assert(value != NULL);
-    size_t rval = fread(value, sizeof(*value), 1, stream);
-#if __BYTE_ORDER == __BIG_ENDIAN
-        byteswap((char*)value, sizeof(*value));
-#endif
-    return rval;
+size_t tbd_write_gid(gid_t value, FILE *stream) {
+	ENDIANSWAP(&value);
+	return fwrite(&value, sizeof(value), 1, stream);
 }
 
-size_t tbd_read_uint32_t (uint32_t *value, FILE* stream) {
-    assert(value != NULL);
-    size_t rval = fread(value, sizeof(*value), 1, stream);
-#if __BYTE_ORDER == __BIG_ENDIAN
-        byteswap((char*)value, sizeof(*value));
-#endif
-    return rval;
+size_t tbd_read_uint16(uint16_t *value, FILE *stream) {
+	assert(value != NULL);
+	size_t rval = fread(value, sizeof(*value), 1, stream);
+	ENDIANSWAP(value);
+	return rval;
 }
 
-size_t tbd_read_uint64_t (uint64_t *value, FILE* stream) {
-    assert(value != NULL);
-    size_t rval = fread(value, sizeof(*value), 1, stream);
-#if __BYTE_ORDER == __BIG_ENDIAN
-        byteswap((char*)value, sizeof(*value));
-#endif
-    return rval;
+size_t tbd_read_uint32(uint32_t *value, FILE *stream) {
+	assert(value != NULL);
+	size_t rval = fread(value, sizeof(*value), 1, stream);
+	ENDIANSWAP(value);
+	return rval;
 }
 
-size_t tbd_read_time_t (time_t *value, FILE* stream) {
-    assert(value != NULL);
-    uint64_t realv;
-    size_t rval = fread(&realv, sizeof(realv), 1, stream);
-#if __BYTE_ORDER == __BIG_ENDIAN
-        byteswap((char*)&realv, sizeof(realv));        
-#endif
-    *value = realv;
-    return rval;
-    }
+size_t tbd_read_uint64(uint64_t *value, FILE *stream) {
+	assert(value != NULL);
+	size_t rval = fread(value, sizeof(*value), 1, stream);
+	ENDIANSWAP(value);
+	return rval;
+}
 
-size_t tbd_read_mode_t (mode_t *value, FILE* stream) {
-    assert(value != NULL);
-    size_t rval = fread(value, sizeof(*value), 1, stream);
-#if __BYTE_ORDER == __BIG_ENDIAN
-        byteswap((char*)value, sizeof(*value));
-#endif
-    return rval;
-    }
+size_t tbd_read_time(time_t *value, FILE *stream) {
+	assert(value != NULL);
+	uint64_t realv;
+	size_t rval = fread(&realv, sizeof(realv), 1, stream);
+	ENDIANSWAP(&realv);
+	*value = realv;
+	return rval;
+}
 
-size_t tbd_read_uid_t (uid_t *value, FILE* stream) {
-    assert(value != NULL);
-    size_t rval = fread(value, sizeof(*value), 1, stream);
-#if __BYTE_ORDER == __BIG_ENDIAN
-        byteswap((char*)value, sizeof(*value));
-#endif
-    return rval;
-    }
+size_t tbd_read_mode(mode_t *value, FILE *stream) {
+	assert(value != NULL);
+	size_t rval = fread(value, sizeof(*value), 1, stream);
+	ENDIANSWAP(value);
+	return rval;
+}
 
-size_t tbd_read_gid_t (gid_t *value, FILE* stream) {
-    assert(value != NULL);
-    size_t rval = fread(value, sizeof(*value), 1, stream);
-#if __BYTE_ORDER == __BIG_ENDIAN
-        byteswap((char*)value, sizeof(*value));
-#endif
-    return rval;
-    }
+size_t tbd_read_uid(uid_t *value, FILE *stream) {
+	assert(value != NULL);
+	size_t rval = fread(value, sizeof(*value), 1, stream);
+	ENDIANSWAP(value);
+	return rval;
+}
 
-size_t tbd_read_size_t (size_t *value, FILE* stream) {
-    assert(value != NULL);
-    size_t rval = fread(value, sizeof(*value), 1, stream);
-#if __BYTE_ORDER == __BIG_ENDIAN
-        byteswap((char*)value, sizeof(*value));
-#endif
-    return rval;
-    }
+size_t tbd_read_gid(gid_t *value, FILE *stream) {
+	assert(value != NULL);
+	size_t rval = fread(value, sizeof(*value), 1, stream);
+	ENDIANSWAP(value);
+	return rval;
+}
