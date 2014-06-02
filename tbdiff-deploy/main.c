@@ -1,5 +1,5 @@
 /*
- *    Copyright (C) 2011-2012 Codethink Ltd.
+ *    Copyright (C) 2011-2014 Codethink Ltd.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License Version 2 as
@@ -25,12 +25,19 @@
 
 #include <tbdiff/tbdiff.h>
 
+static void
+print_usage(const char *name)
+{
+	printf("Usage: %s <patch-stream>\n", name);
+}
+
 int
 main(int    argc,
      char **argv)
 {
 	if(argc < 2) {
 		fprintf(stderr, "Error: No patch stream specified.\n");
+		print_usage(argv[0]);
 		return EXIT_FAILURE;
 	}
 
