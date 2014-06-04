@@ -15,11 +15,12 @@
  *    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <stdbool.h>
 #include <endian.h>
 #include <unistd.h>
 #include <assert.h>
 
-#include <tbdiff/tbdiff-stat.h>
+#include "tbdiff-stat.h"
 
 #if __STDC_VERSION__ >= 199901L
 #define RESTRICT restrict
@@ -52,89 +53,104 @@ static inline void endianswap(void* value, size_t size)
 #define ENDIANSWAP(v)
 #endif
 
-size_t tbd_write_uint16(uint16_t value, FILE *stream) {
+bool tbd_write_uint16(uint16_t value, int stream) {
 	ENDIANSWAP(&value);
-	return fwrite(&value, sizeof(value), 1, stream);
+	return (write(stream, &value, sizeof(value)) == sizeof(value));
 }
 
-size_t tbd_write_uint32(uint32_t value, FILE *stream) {
+bool tbd_write_uint32(uint32_t value, int stream) {
 	ENDIANSWAP(&value);
-	return fwrite(&value, sizeof(value), 1, stream);
+	return (write(stream, &value, sizeof(value)) == sizeof(value));
 }
 
-size_t tbd_write_uint64(uint64_t value, FILE *stream) {
+bool tbd_write_uint64(uint64_t value, int stream) {
 	ENDIANSWAP(&value);
-	return fwrite(&value, sizeof(value), 1, stream);
+	return (write(stream, &value, sizeof(value)) == sizeof(value));
 }
 
-size_t tbd_write_time(time_t value, FILE *stream) {
+bool tbd_write_time(time_t value, int stream) {
 	uint64_t realv = value;
 	ENDIANSWAP(&realv);
-	return fwrite(&realv, sizeof(realv), 1, stream);
+	return (write(stream, &realv, sizeof(realv)) == sizeof(value));
 }
 
-size_t tbd_write_mode(mode_t value, FILE *stream) {
+bool tbd_write_mode(mode_t value, int stream) {
 	ENDIANSWAP(&value);
-	return fwrite(&value, sizeof(value), 1, stream);
+	return (write(stream, &value, sizeof(value)) == sizeof(value));
 }
 
-size_t tbd_write_uid(uid_t value, FILE *stream) {
+bool tbd_write_uid(uid_t value, int stream) {
 	ENDIANSWAP(&value);
-	return fwrite(&value, sizeof(value), 1, stream);
+	return (write(stream, &value, sizeof(value)) == sizeof(value));
 }
 
-size_t tbd_write_gid(gid_t value, FILE *stream) {
+bool tbd_write_gid(gid_t value, int stream) {
 	ENDIANSWAP(&value);
-	return fwrite(&value, sizeof(value), 1, stream);
+	return (write(stream, &value, sizeof(value)) == sizeof(value));
 }
 
-size_t tbd_read_uint16(uint16_t *value, FILE *stream) {
+
+bool tbd_read_uint16(uint16_t *value, int stream) {
 	assert(value != NULL);
-	size_t rval = fread(value, sizeof(*value), 1, stream);
+	size_t rval = read(stream, value, sizeof(*value));
+	if (rval != sizeof(*value))
+		return false;
 	ENDIANSWAP(value);
-	return rval;
+	return true;
 }
 
-size_t tbd_read_uint32(uint32_t *value, FILE *stream) {
+bool tbd_read_uint32(uint32_t *value, int stream) {
 	assert(value != NULL);
-	size_t rval = fread(value, sizeof(*value), 1, stream);
+	size_t rval = read(stream, value, sizeof(*value));
+	if (rval != sizeof(*value))
+		return false;
 	ENDIANSWAP(value);
-	return rval;
+	return true;
 }
 
-size_t tbd_read_uint64(uint64_t *value, FILE *stream) {
+bool tbd_read_uint64(uint64_t *value, int stream) {
 	assert(value != NULL);
-	size_t rval = fread(value, sizeof(*value), 1, stream);
+	size_t rval = read(stream, value, sizeof(*value));
+	if (rval != sizeof(*value))
+		return false;
 	ENDIANSWAP(value);
-	return rval;
+	return true;
 }
 
-size_t tbd_read_time(time_t *value, FILE *stream) {
+bool tbd_read_time(time_t *value, int stream) {
 	assert(value != NULL);
 	uint64_t realv;
-	size_t rval = fread(&realv, sizeof(realv), 1, stream);
+	size_t rval = read(stream, &realv, sizeof(realv));
+	if (rval != sizeof(*value))
+		return false;
 	ENDIANSWAP(&realv);
 	*value = realv;
-	return rval;
+	return true;
 }
 
-size_t tbd_read_mode(mode_t *value, FILE *stream) {
+bool tbd_read_mode(mode_t *value, int stream) {
 	assert(value != NULL);
-	size_t rval = fread(value, sizeof(*value), 1, stream);
+	ssize_t rval = read(stream, value, sizeof(*value));
+	if (rval != sizeof(*value))
+		return false;
 	ENDIANSWAP(value);
-	return rval;
+	return true;
 }
 
-size_t tbd_read_uid(uid_t *value, FILE *stream) {
+bool tbd_read_uid(uid_t *value, int stream) {
 	assert(value != NULL);
-	size_t rval = fread(value, sizeof(*value), 1, stream);
+	size_t rval = read(stream, value, sizeof(*value));
+	if (rval != sizeof(*value))
+		return false;
 	ENDIANSWAP(value);
-	return rval;
+	return true;
 }
 
-size_t tbd_read_gid(gid_t *value, FILE *stream) {
+bool tbd_read_gid(gid_t *value, int stream) {
 	assert(value != NULL);
-	size_t rval = fread(value, sizeof(*value), 1, stream);
+	size_t rval = read(stream, value, sizeof(*value));
+	if (rval != sizeof(*value))
+		return false;
 	ENDIANSWAP(value);
-	return rval;
+	return true;
 }

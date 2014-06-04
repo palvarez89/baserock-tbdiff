@@ -1,5 +1,5 @@
 /*
- *    Copyright (C) 2011-2012 Codethink Ltd.
+ *    Copyright (C) 2011-2014 Codethink Ltd.
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License Version 2 as
@@ -19,10 +19,17 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
 
 #include <tbdiff/tbdiff.h>
+
+static void
+print_usage(const char *name)
+{
+	printf("Usage: %s <patch-stream>\n", name);
+}
 
 int
 main(int    argc,
@@ -30,22 +37,25 @@ main(int    argc,
 {
 	if(argc < 2) {
 		fprintf(stderr, "Error: No patch stream specified.\n");
+		print_usage(argv[0]);
 		return EXIT_FAILURE;
 	}
 
-	FILE* patch = fopen(argv[1], "rb");
-	if(patch == NULL) {
-		fprintf(stderr, "Error: Can't open patch stream for reading.\n");
+	int patch = open(argv[1], O_RDONLY);
+	if(patch < 0) {
+		fprintf(stderr,
+                "Error: Can't open patch stream for reading (err=%d).\n",
+                errno);
 		return EXIT_FAILURE;
 	}
 
 	int err;
 	if((err = tbd_apply(patch)) != 0) {
-		fclose(patch);
+		close(patch);
 		fprintf(stderr, "Error: Error applying patch stream (err=%d).\n", err);
 		return EXIT_FAILURE;
 	}
 
-	fclose(patch);
+	close(patch);
 	return EXIT_SUCCESS;
 }

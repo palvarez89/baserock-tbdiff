@@ -16,113 +16,113 @@
  */
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
 
 #include <sys/stat.h>
 #include <dirent.h>
+#include <fcntl.h>
 #include <unistd.h>
 
-#include <tbdiff/tbdiff-common.h>
-#include <tbdiff/tbdiff-io.h>
-#include <tbdiff/tbdiff-private.h>
-#include <tbdiff/tbdiff-xattrs.h>
+#include "tbdiff-common.h"
+#include "tbdiff-io.h"
+#include "tbdiff-private.h"
+#include "tbdiff-xattrs.h"
 
 #define PATH_BUFFER_LENGTH 4096
 
 static int
-tbd_create_write_cmd(FILE     *stream,
-                     tbd_cmd_t cmd)
+tbd_create_write_cmd(int          stream,
+                     tbd_cmd_type cmd)
 {
-	if(fwrite(&cmd, sizeof(tbd_cmd_t), 1, stream) != 1)
+	if(write(stream, &cmd, sizeof(tbd_cmd_type)) != sizeof(tbd_cmd_type))
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
 
 static int
-tbd_create_write_string(FILE       *stream,
+tbd_create_write_string(int         stream,
                         const char *string)
 {
 	uint16_t slen = strlen(string);
-	if((tbd_write_uint16(slen, stream) != 1)
-	    || (fwrite(string, 1, slen, stream) != slen))
+	if((!tbd_write_uint16(slen, stream))
+	    || (write(stream, string, slen) != slen))
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
 
 static int
-tbd_create_write_block(FILE       *stream,
+tbd_create_write_block(int         stream,
                        void const *data,
                        size_t      size)
 {
-	if (fwrite(&size, 1, sizeof(size), stream) != sizeof(size)) {
+	if (write(stream, &size, sizeof(size)) != sizeof(size)) {
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	}
 
-	if (fwrite(data, 1, size, stream) != size) {
+	if (write(stream, data, size) != size) {
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	}
 	return TBD_ERROR_SUCCESS;
 }
 
 static int
-tbd_create_write_mdata_mask(FILE    *stream,
+tbd_create_write_mdata_mask(int      stream,
                             uint16_t mask)
 {
-	if(tbd_write_uint16(mask, stream) != 1)
+	if(!tbd_write_uint16(mask, stream))
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
 
 static int
-tbd_create_write_mtime(FILE  *stream,
+tbd_create_write_mtime(int    stream,
                        time_t mtime)
 {
-	if(tbd_write_time(mtime, stream) != 1)
+	if(!tbd_write_time(mtime, stream))
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
 
 static int
-tbd_create_write_mode(FILE  *stream,
+tbd_create_write_mode(int    stream,
                       mode_t mode)
 {
-	if(tbd_write_mode(mode, stream) != 1)
+	if(!tbd_write_mode(mode, stream))
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
 
 static int
-tbd_create_write_gid(FILE *stream,
+tbd_create_write_gid(int   stream,
                      gid_t gid)
 {
-	if(tbd_write_gid(gid, stream) != 1)
+	if(!tbd_write_gid(gid, stream))
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
 
 static int
-tbd_create_write_uid(FILE *stream,
+tbd_create_write_uid(int   stream,
                      uid_t uid)
 {
-	if(tbd_write_uid(uid, stream) != 1)
+	if(!tbd_write_uid(uid, stream))
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
 
 static int
-tbd_create_write_dev(FILE    *stream,
+tbd_create_write_dev(int      stream,
                      uint32_t dev)
 {
-	if(tbd_write_uint32(dev, stream) != 1)
+	if(!tbd_write_uint32(dev, stream))
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	return 0;
 }
 
 static int
-tbd_create_cmd_ident(FILE *stream)
+tbd_create_cmd_ident(int stream)
 {
 	int err;
 
@@ -134,7 +134,7 @@ tbd_create_cmd_ident(FILE *stream)
 }
 
 static int
-tbd_create_cmd_update(FILE *stream)
+tbd_create_cmd_update(int stream)
 {
 	return tbd_create_write_cmd(stream, TBD_CMD_UPDATE);
 }
@@ -146,9 +146,10 @@ static int
 tbd_create_cmd_write_xattr_pair(char const *name,
                                 void const *data,
                                 size_t      size,
-                                void       *stream)
+                                void       *ud)
 {
 	int err;
+	int stream = *((int *)ud);
 
 	if ((err = tbd_create_write_string(stream, name)) !=
 	    TBD_ERROR_SUCCESS)
@@ -162,10 +163,10 @@ tbd_create_cmd_write_xattr_pair(char const *name,
 }
 
 static int
-tbd_create_cmd_write_xattrs(FILE *stream, tbd_stat_t *f)
+tbd_create_cmd_write_xattrs(int stream, struct tbd_stat *f)
 {
 	int err = TBD_ERROR_SUCCESS;
-	tbd_xattrs_names_t names;
+	struct tbd_xattrs_names names;
 	char *path = tbd_stat_path(f);
 	if (path == NULL) {
 		return TBD_ERROR(TBD_ERROR_OUT_OF_MEMORY);
@@ -199,7 +200,7 @@ tbd_create_cmd_write_xattrs(FILE *stream, tbd_stat_t *f)
 			goto cleanup_names;
 		}
 
-		if (tbd_write_uint32(count, stream) != 1) {
+		if (!tbd_write_uint32(count, stream)) {
 			err = TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 			goto cleanup_names;
 		}
@@ -209,7 +210,7 @@ tbd_create_cmd_write_xattrs(FILE *stream, tbd_stat_t *f)
 	err = tbd_xattrs_pairs(&names,
 	                        path,
 	                        tbd_create_cmd_write_xattr_pair,
-	                        stream);
+	                        &stream);
 
 cleanup_names:
 	tbd_xattrs_names_free(&names);
@@ -219,8 +220,8 @@ cleanup_path:
 }
 
 static int
-tbd_create_cmd_file_create(FILE       *stream,
-                           tbd_stat_t *f)
+tbd_create_cmd_file_create(int              stream,
+                           struct tbd_stat *f)
 {
 	int err;
 	if((err = tbd_create_write_cmd(stream, TBD_CMD_FILE_CREATE)) != 0 ||
@@ -232,30 +233,30 @@ tbd_create_cmd_file_create(FILE       *stream,
 		return err;
 
 	uint32_t size = f->size;
-	if(tbd_write_uint32(size, stream) != 1)
+	if(!tbd_write_uint32(size, stream))
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 
-	FILE *fp = tbd_stat_fopen(f, "rb");
-	if(fp == NULL)
+	int fd = tbd_stat_open(f, O_RDONLY);
+	if(fd < 0)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_READING);
 
 	uint8_t buff[256];
 	uintptr_t b = 256;
 	for(b = 256; b == 256; ) {
-		b = fread(buff, 1, b, fp);
-		if(fwrite(buff, 1, b, stream) != b) {
-			fclose(fp);
+		b = read(fd, buff, b);
+		if(write(stream, buff, b) != b) {
+			close(fd);
 			return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 		}
 	}
-	fclose(fp);
+	close(fd);
 
 	return tbd_create_cmd_write_xattrs(stream, f);
 }
 
 static uint16_t
-tbd_metadata_mask(tbd_stat_t *a,
-                  tbd_stat_t *b)
+tbd_metadata_mask(struct tbd_stat *a,
+                  struct tbd_stat *b)
 {
 	uint16_t metadata_mask = TBD_METADATA_NONE;
 
@@ -273,9 +274,9 @@ tbd_metadata_mask(tbd_stat_t *a,
 }
 
 static int
-tbd_create_cmd_file_metadata_update(FILE       *stream,
-                                    tbd_stat_t *a,
-                                    tbd_stat_t *b)
+tbd_create_cmd_file_metadata_update(int              stream,
+                                    struct tbd_stat *a,
+                                    struct tbd_stat *b)
 {
 	int err;
 	uint16_t metadata_mask = tbd_metadata_mask(a, b);
@@ -295,16 +296,16 @@ tbd_create_cmd_file_metadata_update(FILE       *stream,
 }
 
 static int
-tbd_create_cmd_file_delta(FILE        *stream,
-                          tbd_stat_t  *a,
-                          tbd_stat_t  *b)
+tbd_create_cmd_file_delta(int              stream,
+                          struct tbd_stat *a,
+                          struct tbd_stat *b)
 {
-	FILE *fpa = tbd_stat_fopen(a, "rb");
-	if(fpa == NULL)
+	int fda = tbd_stat_open(a, O_RDONLY);
+	if(fda < 0)
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_READING);
-	FILE *fpb = tbd_stat_fopen(b, "rb");
-	if(fpb == NULL) {
-		fclose(fpa);
+	int fdb = tbd_stat_open(b, O_RDONLY);
+	if(fdb < 0) {
+		close(fda);
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_OPEN_FILE_FOR_READING);
 	}
 
@@ -314,8 +315,8 @@ tbd_create_cmd_file_delta(FILE        *stream,
 
 	uintptr_t o;
 	for(o = 0; (blks[1] == blks[0]) && (blks[0] != 0); o += blks[1]) {
-		blks[0] = fread(buff[0], 1, blks[0], fpa);
-		blks[1] = fread(buff[1], 1, blks[0], fpb);
+		blks[0] = read(fda, buff[0], blks[0]);
+		blks[1] = read(fdb, buff[1], blks[0]);
 		if((blks[0] == 0) || (blks[1] == 0))
 			break;
 
@@ -331,20 +332,14 @@ tbd_create_cmd_file_delta(FILE        *stream,
 	}
 	uint32_t start = o;
 
-	if((fseek(fpa, 0, SEEK_END) != 0) || (fseek(fpb, 0, SEEK_END) != 0)) {
-		fclose(fpa);
-		fclose(fpb);
-		return TBD_ERROR(TBD_ERROR_UNABLE_TO_SEEK_THROUGH_STREAM);
-	}
-
 	/* Find length. */
-	long flena = ftell(fpa);
-	long flenb = ftell(fpb);
+	off_t flena = lseek(fda, 0, SEEK_END);
+	off_t flenb = lseek(fdb, 0, SEEK_END);
 
 	if((flena < 0) || (flenb < 0)) {
-		fclose(fpa);
-		fclose(fpb);
-		return TBD_ERROR(TBD_ERROR_UNABLE_TO_DETECT_STREAM_POSITION);
+		close(fda);
+		close(fdb);
+		return TBD_ERROR(TBD_ERROR_UNABLE_TO_SEEK_THROUGH_STREAM);
 	}
 
 	/* Find end. */
@@ -356,17 +351,17 @@ tbd_create_cmd_file_delta(FILE        *stream,
 		if((blks[0] == 0) || (blks[1] == 0))
 			break;
 
-		if((fseek(fpa, flena - (o + blks[0]), SEEK_SET) != 0)
-		    || (fseek(fpb, flenb - (o + blks[1]), SEEK_SET) != 0)) {
-			fclose(fpa);
-			fclose(fpb);
+		if((lseek(fda, flena - (o + blks[0]), SEEK_SET) < 0)
+		    || (lseek(fdb, flenb - (o + blks[1]), SEEK_SET) < 0)) {
+			close(fda);
+			close(fdb);
 			return TBD_ERROR(TBD_ERROR_UNABLE_TO_SEEK_THROUGH_STREAM);
 		}
 
-		if((fread(buff[0], 1, blks[0], fpa) != blks[0])
-		    || (fread(buff[1], 1, blks[1], fpb) != blks[1])) {
-			fclose(fpa);
-			fclose(fpb);
+		if((read(fda, buff[0], blks[0]) != blks[0])
+		    || (read(fdb, buff[1], blks[1]) != blks[1])) {
+			close(fda);
+			close(fdb);
 			return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 		}
 
@@ -380,7 +375,7 @@ tbd_create_cmd_file_delta(FILE        *stream,
 		if(i < blks[1])
 			break;
 	}
-	fclose(fpa);
+	close(fda);
 
 	/* Ensure that the start and end don't overlap for the new file. */
 	if((flenb - o) < start)
@@ -395,7 +390,7 @@ tbd_create_cmd_file_delta(FILE        *stream,
 	/* Data is identical, only alter metadata */
 	if((end == start) && (size == 0)) {
 		tbd_create_cmd_file_metadata_update(stream, a, b);
-		fclose(fpb);
+		close(fdb);
 		return tbd_create_cmd_write_xattrs(stream, b);
 	}
 
@@ -410,39 +405,40 @@ tbd_create_cmd_file_delta(FILE        *stream,
 	    ((err = tbd_create_write_uid   (stream, b->uid))            != 0) ||
 	    ((err = tbd_create_write_gid   (stream, b->gid))            != 0) ||
 	    ((err = tbd_create_write_mode  (stream, b->mode))           != 0)) {
-		fclose(fpb);
+		close(fdb);
 		return err;
 	}
-	if((tbd_write_uint32(start, stream) != 1) ||
-	    (tbd_write_uint32(end, stream) != 1)   ||
-	    (tbd_write_uint32(size, stream) != 1)) {
-		fclose(fpb);
+
+	if((!tbd_write_uint32(start, stream)) ||
+	   (!tbd_write_uint32(end  , stream)) ||
+	   (!tbd_write_uint32(size , stream))) {
+		close(fdb);
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 	}
-	if(fseek(fpb, start, SEEK_SET) != 0) {
-		fclose(fpb);
+	if(lseek(fdb, start, SEEK_SET) < 0) {
+		close(fdb);
 		return TBD_ERROR(TBD_ERROR_UNABLE_TO_SEEK_THROUGH_STREAM);
 	}
 
 	for(o = 0; o < size; o += 256) {
 		uintptr_t csize = ((size - o) > 256 ? 256 : (size - o));
-		if(fread(buff[0], 1, csize, fpb) != csize) {
-			fclose(fpb);
+		if(read(fdb, buff[0], csize) != csize) {
+			close(fdb);
 			return TBD_ERROR(TBD_ERROR_UNABLE_TO_READ_STREAM);
 		}
-		if(fwrite(buff[0], 1, csize, stream) != csize) {
-			fclose(fpb);
+		if(write(stream, buff[0], csize) != csize) {
+			close(fdb);
 			return TBD_ERROR(TBD_ERROR_UNABLE_TO_WRITE_STREAM);
 		}
 	}
 
-	fclose(fpb);
+	close(fdb);
 	return tbd_create_cmd_write_xattrs(stream, b);
 }
 
 static int
-tbd_create_cmd_dir_create(FILE       *stream,
-                          tbd_stat_t *d)
+tbd_create_cmd_dir_create(int              stream,
+                          struct tbd_stat *d)
 {
 	int err;
 
@@ -457,7 +453,7 @@ tbd_create_cmd_dir_create(FILE       *stream,
 }
 
 static int
-tbd_create_cmd_dir_enter(FILE       *stream,
+tbd_create_cmd_dir_enter(int         stream,
                          const char *name)
 {
 	int err;
@@ -467,8 +463,8 @@ tbd_create_cmd_dir_enter(FILE       *stream,
 }
 
 static int
-tbd_create_cmd_dir_leave(FILE       *stream,
-                         tbd_stat_t *dir)
+tbd_create_cmd_dir_leave(int              stream,
+                         struct tbd_stat *dir)
 {
 	int err;
 	if ((err = tbd_create_write_cmd(stream, TBD_CMD_DIR_LEAVE)) !=
@@ -480,7 +476,7 @@ tbd_create_cmd_dir_leave(FILE       *stream,
 }
 
 static int
-tbd_create_cmd_entity_delete(FILE       *stream,
+tbd_create_cmd_entity_delete(int         stream,
                              const char *name)
 {
 	int err;
@@ -490,9 +486,9 @@ tbd_create_cmd_entity_delete(FILE       *stream,
 }
 
 static int
-tbd_create_cmd_dir_delta(FILE        *stream,
-                         tbd_stat_t  *a,
-                         tbd_stat_t  *b)
+tbd_create_cmd_dir_delta(int               stream,
+                         struct tbd_stat  *a,
+                         struct tbd_stat  *b)
 {
 	int err;
 	uint16_t metadata_mask = tbd_metadata_mask(a, b);
@@ -512,8 +508,8 @@ tbd_create_cmd_dir_delta(FILE        *stream,
 }
 
 static int
-tbd_create_cmd_symlink_create(FILE       *stream,
-                              tbd_stat_t *symlink)
+tbd_create_cmd_symlink_create(int              stream,
+                              struct tbd_stat *symlink)
 {
 	int err;
 	char path[PATH_BUFFER_LENGTH];
@@ -536,9 +532,9 @@ tbd_create_cmd_symlink_create(FILE       *stream,
 }
 
 static int
-tbd_create_cmd_symlink_delta(FILE       *stream,
-                             tbd_stat_t *a,
-                             tbd_stat_t *b)
+tbd_create_cmd_symlink_delta(int              stream,
+                             struct tbd_stat *a,
+                             struct tbd_stat *b)
 {
 	int err;
 	char path_a[PATH_BUFFER_LENGTH];
@@ -574,8 +570,8 @@ tbd_create_cmd_symlink_delta(FILE       *stream,
 }
 
 static int
-tbd_create_cmd_special_create(FILE       *stream,
-                              tbd_stat_t *nod)
+tbd_create_cmd_special_create(int              stream,
+                              struct tbd_stat *nod)
 {
 	int err;
 
@@ -590,9 +586,9 @@ tbd_create_cmd_special_create(FILE       *stream,
 }
 
 static int
-tbd_create_cmd_special_delta(FILE       *stream,
-                             tbd_stat_t *a,
-                             tbd_stat_t *b)
+tbd_create_cmd_special_delta(int              stream,
+                             struct tbd_stat *a,
+                             struct tbd_stat *b)
 {
 	uint16_t metadata_mask = tbd_metadata_mask(a, b);
 	if(a->rdev != b->rdev)
@@ -610,8 +606,8 @@ tbd_create_cmd_special_delta(FILE       *stream,
 }
 
 static int
-tbd_create_cmd_socket_create(FILE       *stream,
-                             tbd_stat_t *nod)
+tbd_create_cmd_socket_create(int              stream,
+                             struct tbd_stat *nod)
 {
 	(void)stream;
 	(void)nod;
@@ -619,9 +615,9 @@ tbd_create_cmd_socket_create(FILE       *stream,
 }
 
 static int
-tbd_create_cmd_socket_delta(FILE       *stream,
-                            tbd_stat_t *a,
-                            tbd_stat_t *b)
+tbd_create_cmd_socket_delta(int              stream,
+                            struct tbd_stat *a,
+                            struct tbd_stat *b)
 {
 	(void)stream;
 	(void)a;
@@ -630,8 +626,8 @@ tbd_create_cmd_socket_delta(FILE       *stream,
 }
 
 static int
-tbd_create_dir(FILE        *stream,
-               tbd_stat_t  *d)
+tbd_create_dir(int              stream,
+               struct tbd_stat *d)
 {
 	int err;
 	if(((err =tbd_create_cmd_dir_create(stream, d))       != 0) ||
@@ -640,7 +636,7 @@ tbd_create_dir(FILE        *stream,
 
 	uintptr_t i;
 	for(i = 0; i < d->size; i++) {
-		tbd_stat_t *f = tbd_stat_entry(d, i);
+		struct tbd_stat *f = tbd_stat_entry(d, i);
 
 		if(f == NULL)
 			return TBD_ERROR(TBD_ERROR_UNABLE_TO_STAT_FILE);
@@ -675,9 +671,9 @@ tbd_create_dir(FILE        *stream,
 }
 
 static int
-tbd_create_impl(FILE       *stream,
-                tbd_stat_t *a,
-                tbd_stat_t *b,
+tbd_create_impl(int              stream,
+                struct tbd_stat *a,
+                struct tbd_stat *b,
                 bool        top)
 {
 	if((a == NULL) && (b == NULL))
@@ -748,10 +744,10 @@ tbd_create_impl(FILE       *stream,
 	/* Handle changes/additions. */
 	uintptr_t i;
 	for(i = 0; i < b->size; i++) {
-		tbd_stat_t *_b = tbd_stat_entry(b, i);
+		struct tbd_stat *_b = tbd_stat_entry(b, i);
 		if(_b == NULL)
 			return TBD_ERROR(TBD_ERROR_UNABLE_TO_STAT_FILE);
-		tbd_stat_t *_a = tbd_stat_entry_find(a, _b->name);
+		struct tbd_stat *_a = tbd_stat_entry_find(a, _b->name);
 		err = tbd_create_impl(stream, _a, _b, false);
 		tbd_stat_free(_a);
 		tbd_stat_free(_b);
@@ -763,10 +759,10 @@ tbd_create_impl(FILE       *stream,
 	for(i = 0; i < a->size; i++) {
 		err = 0;
 
-		tbd_stat_t *_a = tbd_stat_entry(a, i);
+		struct tbd_stat *_a = tbd_stat_entry(a, i);
 		if(_a == NULL)
 			return TBD_ERROR(TBD_ERROR_UNABLE_TO_STAT_FILE);
-		tbd_stat_t *_b = tbd_stat_entry_find(b, _a->name);
+		struct tbd_stat *_b = tbd_stat_entry_find(b, _a->name);
 
 		if (_b == NULL)
 			err = tbd_create_cmd_entity_delete(stream, _a->name);
@@ -786,12 +782,12 @@ tbd_create_impl(FILE       *stream,
 }
 
 int
-tbd_create(FILE       *stream,
-           tbd_stat_t *a,
-           tbd_stat_t *b)
+tbd_create(int              stream,
+           struct tbd_stat *a,
+           struct tbd_stat *b)
 {
 	int err;
-	if((stream == NULL) || (a == NULL) || (b == NULL))
+	if((stream < 0) || (a == NULL) || (b == NULL))
 		return TBD_ERROR(TBD_ERROR_NULL_POINTER);
 
 	if((err = tbd_create_cmd_ident(stream))        != 0 ||

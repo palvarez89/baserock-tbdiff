@@ -28,7 +28,7 @@
 
 #include <tbdiff/tbdiff-stat.h>
 
-typedef enum {
+enum tbd_cmd {
 	TBD_CMD_IDENTIFY             = 0x00,
 	TBD_CMD_UPDATE               = 0x01,
 	TBD_CMD_DIR_CREATE           = 0x10,
@@ -44,20 +44,20 @@ typedef enum {
 	TBD_CMD_SYMLINK_CREATE       = 0x40,
 	TBD_CMD_SPECIAL_CREATE       = 0x50,
 	TBD_CMD_XATTRS_UPDATE        = 0x60,
-} tbd_cmd_e;
+};
 
-typedef uint8_t tbd_cmd_t;
+typedef uint8_t tbd_cmd_type;
 
-typedef enum {
+enum tbd_metadata_type {
 	TBD_METADATA_NONE  = 0x0,
 	TBD_METADATA_MTIME = 0x1,
 	TBD_METADATA_MODE  = 0x2,
 	TBD_METADATA_UID   = 0x4,
 	TBD_METADATA_GID   = 0x8,
 	TBD_METADATA_RDEV  = 0x10,
-} tbd_metadata_type_e;
+};
 
-typedef enum {
+enum tbd_error {
 	TBD_ERROR_SUCCESS                          =   0,
 	TBD_ERROR_FAILURE                          =  -1,
 	TBD_ERROR_OUT_OF_MEMORY                    =  -2,
@@ -83,7 +83,7 @@ typedef enum {
 	TBD_ERROR_UNABLE_TO_CREATE_SOCKET_FILE     = -22,
 	TBD_ERROR_XATTRS_NOT_SUPPORTED             = -23,
 	TBD_ERROR_XATTRS_MISSING_ATTR              = -24,
-} tbd_error_e;
+};
 
 #ifdef NDEBUG
 #define TBD_DEBUG(d)
@@ -116,8 +116,8 @@ tbd_log(char const *t, char const *s, char const *func, int line,
 }
 
 #define TBD_ERROR(e) tbd_error(e, #e, __func__, __LINE__, __FILE__)
-static inline tbd_error_e
-tbd_error(tbd_error_e e, char const *s, char const *func, int line,
+static inline enum tbd_error
+tbd_error(enum tbd_error e, char const *s, char const *func, int line,
                                                    char const* file)
 {
 	if (e != TBD_ERROR_SUCCESS)
@@ -126,7 +126,7 @@ tbd_error(tbd_error_e e, char const *s, char const *func, int line,
 }
 #endif
 
-extern int tbd_apply (FILE *stream);
-extern int tbd_create(FILE *stream, tbd_stat_t *a, tbd_stat_t *b);
+int tbd_apply (int stream);
+int tbd_create(int stream, struct tbd_stat *a, struct tbd_stat *b);
 
 #endif /* !__TBDIFF_COMMON_H__ */
