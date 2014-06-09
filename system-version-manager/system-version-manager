@@ -244,7 +244,7 @@ class SystemVersionManager(object):
         device = os.path.realpath(device)
         return device, current_system
 
-    def cmd_remove (self, system_name):
+    def cmd_remove(self, system_name):
         self._check_system_exists(system_name)
 
         default_system = self._get_default()
@@ -268,7 +268,7 @@ class SystemVersionManager(object):
 
         self._rewrite_boot_menu(self.device, default_system, self._get_systems())
 
-    def cmd_set_default (self, system_name):
+    def cmd_set_default(self, system_name):
         self._check_system_exists(system_name)
         self._rewrite_boot_menu(self.device, system_name, self._get_systems())
 
