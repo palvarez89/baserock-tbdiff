@@ -144,10 +144,8 @@ class SystemVersionManager(object):
         os.rename(temp_config, config)
 
         default_path = os.path.join(self.mount_dir, 'systems', 'default')
-        default_path_tmp = os.path.join(self.mount_dir, 'systems', 'default-tmp')
         if os.path.islink(default_path):
-            os.symlink(default, default_path_tmp)
-            os.rename(default_path_tmp, default_path)
+            self._atomic_symlink_update(default, default_path)
 
     def cmd_list(self):
         for system in self._get_systems():
