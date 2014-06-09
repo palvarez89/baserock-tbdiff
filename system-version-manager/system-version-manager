@@ -17,8 +17,10 @@
 
 
 import argparse
+import errno
 import subprocess
 import tempfile
+import json
 import os
 import sys
 import shutil
@@ -39,6 +41,7 @@ class SystemVersionManager(object):
     def __init__(self, args, mount_dir):
         self.device, self.current_system = self._get_mount_info()
         self.mount_dir = mount_dir
+        self.device_uuid = self._get_device_uuid(self.device)
 
         # create the top-level parser
         parser = argparse.ArgumentParser(prog='system-version-manager')
@@ -112,6 +115,19 @@ class SystemVersionManager(object):
 
         return self.current_system
 
+    def _get_deployment_config(self, system):
+        try:
+            meta = open(os.path.join(self.mount_dir, 'systems', system,
+                                    'run/baserock/deployment.meta'))
+        except IOError as e:
+            if e.errno != errno.ENOENT:
+                raise
+            deployment_config = {}
+        else:
+            deployment_config = json.load(meta).get('configuration', {})
+            meta.close()
+        return deployment_config
+
     def _atomic_symlink_update(self, source, link_name):
         dirname = os.path.dirname(link_name)
         temp_dir = tempfile.mkdtemp(dir=dirname)
@@ -136,11 +152,18 @@ class SystemVersionManager(object):
             f.write('prompt 0\n')
             f.write('ontimeout ' + default +'\n')
             for system in systems:
-                f.write('label ' + system +'\n')
-                f.write('kernel /systems/'+ system +'/kernel\n')
-                f.write('append root='+ device +' '
-                        'rootflags=subvol=systems/'+ system +'/run '
-                        'init=/sbin/init rw\n')
+                deployment_config = self._get_deployment_config(system)
+                f.write('label ' + system + '\n')
+                f.write('kernel /systems/' + system + '/kernel\n')
+                kernel_args = ('rw init=/sbin/init rootfstype=btrfs '
+                               'rootflags=subvol=systems/'+ system +'/run ')
+                if 'INITRAMFS_PATH' in deployment_config:
+                    f.write('initrd /systems/%s/initramfs\n' % system)
+                    kernel_args += ('root=UUID=%s ' % self.device_uuid)
+                else:
+                    kernel_args += ('root=%s ' % self.device)
+                kernel_args += deployment_config.get('KERNEL_ARGS', '')
+                f.write('append %s\n' % kernel_args)
         os.rename(temp_config, config)
 
         default_path = os.path.join(self.mount_dir, 'systems', 'default')
@@ -209,11 +232,18 @@ class SystemVersionManager(object):
             self.status(msg="Installing the kernel")
             self._install_kernel(version_root)
 
+            deployment_config = self._get_deployment_config(label)
+            if 'INITRAMFS_PATH' in deployment_config:
+                self.status(msg="Installing the initramfs")
+                self._install_initramfs(deployment_config['INITRAMFS_PATH'],
+                                        version_root)
+
         except Exception as e:
             # We are not controlling if deleting the suvolume fails
             subprocess.call(['btrfs', 'subvolume', 'delete', run_dir])
             raise
 
+        self.status(msg="Rewriting boot menu")
         self._rewrite_boot_menu(self.device, self._get_default(), self._get_systems())
 
     def _install_kernel(self, version_root):
@@ -230,6 +260,16 @@ class SystemVersionManager(object):
                 shutil.copy2(try_path, kernel_dest)
                 break
 
+    def _install_initramfs(self, initramfs_path, version_root):
+        '''Install the initramfs outside of 'orig' or 'run' subvolumes
+
+        This code is kind of duplicated in morphlib/writeexts.py.
+
+        '''
+        initramfs_dest = os.path.join(version_root, 'initramfs')
+        initramfs_src = os.path.join(version_root, 'run', initramfs_path)
+        shutil.copy2(initramfs_src, initramfs_dest)
+
     def _get_mount_info(self):
         mountpoint = subprocess.check_output(
             ['findmnt', '/', '-l', '-n', '-o', 'SOURCE'])
@@ -240,6 +280,13 @@ class SystemVersionManager(object):
         # Following the symlink of the device.
         device = os.path.realpath(device)
         return device, current_system
+
+    def _get_device_uuid(self, device):
+        # Find block device's UUID. Does not work with busybox blkid,
+        # but given this is written in python, that's probably the least
+        # of our worries
+        return subprocess.check_output(
+            ['blkid', '-s', 'UUID', '-o', 'value', device]).strip()
 
     def cmd_remove(self, system_name):
         self._check_system_exists(system_name)
