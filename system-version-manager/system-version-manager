@@ -129,9 +129,8 @@ class SystemVersionManager(object):
         # Logic copied from morphlib.SaveFile to not create
         # a morphlib dependency.
         fd, temp_config = tempfile.mkstemp(dir=self.mount_dir)
-        os.close(fd)
         config = os.path.join(self.mount_dir, 'extlinux.conf')
-        with open(temp_config, 'w') as f:
+        with os.fdopen(fd, 'w') as f:
             f.write('default menu.c32\n')
             f.write('timeout 50\n')
             f.write('prompt 0\n')
