@@ -147,6 +147,12 @@ class SystemVersionManager(object):
         fd, temp_config = tempfile.mkstemp(dir=self.mount_dir)
         config = os.path.join(self.mount_dir, 'extlinux.conf')
         with os.fdopen(fd, 'w') as f:
+            # If theres no menu.c32 file, add a menu to the extlinux.conf file
+            if self._check_system_syslinux():
+                f.write('default menu.c32\n')
+            else:
+                f.write('default ' + default + '\n')
+                f.write('menu title baserock boot options\n')
             f.write('default menu.c32\n')
             f.write('timeout 50\n')
             f.write('prompt 0\n')
@@ -322,10 +328,13 @@ class SystemVersionManager(object):
     def umount_fs(self):
         subprocess.call(['umount', self.mount_dir])
 
-    def _check_system_compatibility(self):
+    def _check_system_syslinux(self):
+        # It's not essential to have a menu.c32 file, if it's not there we can
+        # add a menu directly to the extlinux.conf file later
         menu_file = os.path.join(self.mount_dir, 'menu.c32')
         if not os.path.isfile(menu_file):
-            raise SystemNotCompatibleError("menu.c32 not found")
+            return False
+        return True
 
     def run(self):
         args = self.args
@@ -333,8 +342,6 @@ class SystemVersionManager(object):
 
         self.mount_fs()
         try:
-            self._check_system_compatibility()
-
             if action == "list":
                 self.cmd_list()
             elif action == "deploy":
