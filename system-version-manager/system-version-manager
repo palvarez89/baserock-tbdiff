@@ -147,6 +147,12 @@ class SystemVersionManager(object):
         fd, temp_config = tempfile.mkstemp(dir=self.mount_dir)
         config = os.path.join(self.mount_dir, 'extlinux.conf')
         with os.fdopen(fd, 'w') as f:
+            # If theres no menu.c32 file, add a menu to the extlinux.conf file
+            if self._check_system_syslinux():
+                f.write('default menu.c32\n')
+            else:
+                f.write('default ' + default + '\n')
+                f.write('menu title baserock boot options\n')
             f.write('default menu.c32\n')
             f.write('timeout 50\n')
             f.write('prompt 0\n')
@@ -162,6 +168,9 @@ class SystemVersionManager(object):
                     kernel_args += ('root=UUID=%s ' % self.device_uuid)
                 else:
                     kernel_args += ('root=%s ' % self.device)
+                if 'DTB_PATH' in deployment_config:
+                    f.write('devicetree /systems/%s/dtb\n' % system)
+
                 kernel_args += deployment_config.get('KERNEL_ARGS', '')
                 f.write('append %s\n' % kernel_args)
         os.rename(temp_config, config)
@@ -237,6 +246,10 @@ class SystemVersionManager(object):
                 self.status(msg="Installing the initramfs")
                 self._install_initramfs(deployment_config['INITRAMFS_PATH'],
                                         version_root)
+            if 'DTB_PATH' in deployment_config:
+                self.status(msg="Installing the device tree")
+                self._install_dtb(deployment_config['DTB_PATH'],
+                                  version_root)
 
         except Exception as e:
             # We are not controlling if deleting the suvolume fails
@@ -259,6 +272,18 @@ class SystemVersionManager(object):
             if os.path.exists(try_path):
                 shutil.copy2(try_path, kernel_dest)
                 break
+
+    def _install_dtb(self, dtb_path, version_root):
+        '''Install the devicetree outside of 'orig' or 'run' subvolumes
+
+        This code is kind of duplicated in morphlib/writeexts.py.
+
+        '''
+        self.status(msg='Installing devicetree')
+        self.status(msg='Device tree path=%s' % dtb_path)
+        dtb_dest = os.path.join(version_root, 'dtb')
+        try_path = os.path.join(version_root, 'run', dtb_path)
+        shutil.copy2(try_path, dtb_dest)
 
     def _install_initramfs(self, initramfs_path, version_root):
         '''Install the initramfs outside of 'orig' or 'run' subvolumes
@@ -322,10 +347,13 @@ class SystemVersionManager(object):
     def umount_fs(self):
         subprocess.call(['umount', self.mount_dir])
 
-    def _check_system_compatibility(self):
+    def _check_system_syslinux(self):
+        # It's not essential to have a menu.c32 file, if it's not there we can
+        # add a menu directly to the extlinux.conf file later
         menu_file = os.path.join(self.mount_dir, 'menu.c32')
         if not os.path.isfile(menu_file):
-            raise SystemNotCompatibleError("menu.c32 not found")
+            return False
+        return True
 
     def run(self):
         args = self.args
@@ -333,8 +361,6 @@ class SystemVersionManager(object):
 
         self.mount_fs()
         try:
-            self._check_system_compatibility()
-
             if action == "list":
                 self.cmd_list()
             elif action == "deploy":
