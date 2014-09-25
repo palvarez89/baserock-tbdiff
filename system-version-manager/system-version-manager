@@ -180,8 +180,14 @@ class SystemVersionManager(object):
             self._atomic_symlink_update(default, default_path)
 
     def cmd_list(self):
+        default_system = self._get_default() 
         for system in self._get_systems():
-            print system
+            output = system
+            if system == self.current_system:
+                output += " (running)"
+            if system == default_system:
+                output += " (default)"
+            print output
 
     def cmd_get_default(self):
         print self._get_default()
